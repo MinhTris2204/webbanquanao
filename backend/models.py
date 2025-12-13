@@ -50,7 +50,7 @@ class Product(db.Model):
     size = db.Column(db.String(50))
     chat_lieu = db.Column(db.String(100))
     gioi_tinh = db.Column(db.Enum('Nam', 'Nữ', 'Unisex', name='gioi_tinh_enum'), default='Unisex')
-    hinh_anh = db.Column(db.String(500))
+    hinh_anh = db.Column(db.Text)  # Changed to Text to support base64 images
     trang_thai = db.Column(db.Enum('Con_hang', 'Het_hang', 'Ngung_ban', name='trang_thai_enum'), default='Con_hang')
     created_at = db.Column(db.TIMESTAMP, default=datetime.utcnow)
     embedding = db.Column(Vector(384))  # pgvector for product search
