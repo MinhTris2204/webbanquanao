@@ -5,6 +5,7 @@ export default function AdminProducts() {
   const [products, setProducts] = useState([])
   const [showForm, setShowForm] = useState(false)
   const [editingProduct, setEditingProduct] = useState(null)
+  const [imagePreview, setImagePreview] = useState('')
   const [formData, setFormData] = useState({
     ten_san_pham: '',
     gia_ban: '',
@@ -60,7 +61,30 @@ export default function AdminProducts() {
       hinh_anh: product.hinh_anh || '',
       trang_thai: product.trang_thai || 'Con_hang'
     })
+    setImagePreview(product.hinh_anh || '')
     setShowForm(true)
+  }
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setImagePreview(reader.result)
+        setFormData({ ...formData, hinh_anh: reader.result })
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const formatPrice = (value) => {
+    const number = value.replace(/\D/g, '')
+    return number.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+  }
+
+  const handlePriceChange = (e) => {
+    const rawValue = e.target.value.replace(/\./g, '')
+    setFormData({ ...formData, gia_ban: rawValue })
   }
 
   const handleDelete = async (id) => {
@@ -86,6 +110,7 @@ export default function AdminProducts() {
       hinh_anh: '',
       trang_thai: 'Con_hang'
     })
+    setImagePreview('')
   }
 
   return (
@@ -154,12 +179,11 @@ export default function AdminProducts() {
                     Giá bán (VNĐ) <span className="text-red-500">*</span>
                   </label>
                   <input
-                    type="number"
-                    step="0.01"
+                    type="text"
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                     placeholder="0"
-                    value={formData.gia_ban}
-                    onChange={(e) => setFormData({ ...formData, gia_ban: e.target.value })}
+                    value={formatPrice(formData.gia_ban.toString())}
+                    onChange={handlePriceChange}
                     required
                   />
                 </div>
@@ -176,12 +200,12 @@ export default function AdminProducts() {
                     required
                   >
                     <option value="">-- Chọn loại --</option>
-                    <option value="Áo">👕 Áo</option>
-                    <option value="Quần">👖 Quần</option>
-                    <option value="Váy">👗 Váy</option>
-                    <option value="Đầm">👗 Đầm</option>
-                    <option value="Áo khoác">🧥 Áo khoác</option>
-                    <option value="Phụ kiện">👜 Phụ kiện</option>
+                    <option value="Áo">Áo</option>
+                    <option value="Quần">Quần</option>
+                    <option value="Váy">Váy</option>
+                    <option value="Đầm">Đầm</option>
+                    <option value="Áo khoác">Áo khoác</option>
+                    <option value="Phụ kiện">Phụ kiện</option>
                   </select>
                 </div>
 
@@ -202,13 +226,19 @@ export default function AdminProducts() {
                 {/* Size */}
                 <div>
                   <label className="block text-gray-700 mb-2 font-semibold text-sm">Size</label>
-                  <input
-                    type="text"
-                    placeholder="VD: S, M, L, XL"
+                  <select
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                     value={formData.size}
                     onChange={(e) => setFormData({ ...formData, size: e.target.value })}
-                  />
+                  >
+                    <option value="">-- Chọn size --</option>
+                    <option value="S">S</option>
+                    <option value="M">M</option>
+                    <option value="L">L</option>
+                    <option value="XL">XL</option>
+                    <option value="XXL">XXL</option>
+                    <option value="Free Size">Free Size</option>
+                  </select>
                 </div>
 
                 {/* Chất liệu */}
@@ -237,26 +267,39 @@ export default function AdminProducts() {
                   </select>
                 </div>
 
-                {/* URL hình ảnh */}
+                {/* Hình ảnh */}
                 <div className="md:col-span-2">
-                  <label className="block text-gray-700 mb-2 font-semibold text-sm">URL hình ảnh</label>
-                  <input
-                    type="text"
-                    placeholder="https://example.com/image.jpg"
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                    value={formData.hinh_anh}
-                    onChange={(e) => setFormData({ ...formData, hinh_anh: e.target.value })}
-                  />
-                  {formData.hinh_anh && (
-                    <div className="mt-3">
-                      <img 
-                        src={formData.hinh_anh} 
-                        alt="Preview" 
-                        className="w-32 h-32 object-cover rounded-lg border-2 border-gray-200"
-                        onError={(e) => e.target.style.display = 'none'}
+                  <label className="block text-gray-700 mb-2 font-semibold text-sm">Hình ảnh sản phẩm</label>
+                  <div className="flex items-start gap-4">
+                    <div className="flex-1">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                       />
+                      <p className="text-xs text-gray-500 mt-2">Chọn file ảnh từ máy tính (JPG, PNG, GIF)</p>
                     </div>
-                  )}
+                    {imagePreview && (
+                      <div className="relative">
+                        <img 
+                          src={imagePreview} 
+                          alt="Preview" 
+                          className="w-32 h-32 object-cover rounded-lg border-2 border-gray-200 shadow-md"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setImagePreview('')
+                            setFormData({ ...formData, hinh_anh: '' })
+                          }}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Mô tả */}
