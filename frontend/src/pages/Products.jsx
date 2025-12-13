@@ -5,18 +5,31 @@ import api from '../utils/api'
 export default function Products() {
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('')
   const [selectedGender, setSelectedGender] = useState('')
+  const [selectedSize, setSelectedSize] = useState('')
+  const [priceRange, setPriceRange] = useState({ min: '', max: '' })
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalProducts, setTotalProducts] = useState(0)
+  const itemsPerPage = 12
 
   useEffect(() => {
     fetchProducts()
-  }, [search])
+  }, [currentPage])
 
   const fetchProducts = async () => {
+    setLoading(true)
     try {
-      const res = await api.get('/api/products', { params: { search, per_page: 50 } })
+      const res = await api.get('/api/products', { 
+        params: { 
+          page: currentPage,
+          per_page: itemsPerPage
+        } 
+      })
       setProducts(res.data.products)
+      setTotalPages(res.data.pages)
+      setTotalProducts(res.data.total)
     } catch (err) {
       console.error(err)
     } finally {
@@ -27,8 +40,26 @@ export default function Products() {
   const filteredProducts = products.filter(product => {
     const matchCategory = !selectedCategory || product.loai === selectedCategory
     const matchGender = !selectedGender || product.gioi_tinh === selectedGender
-    return matchCategory && matchGender
+    
+    // Filter by size
+    const matchSize = !selectedSize || (product.size && product.size.includes(selectedSize))
+    
+    // Filter by price range
+    const price = parseFloat(product.gia_ban)
+    const minPrice = priceRange.min ? parseFloat(priceRange.min) : 0
+    const maxPrice = priceRange.max ? parseFloat(priceRange.max) : Infinity
+    const matchPrice = price >= minPrice && price <= maxPrice
+    
+    return matchCategory && matchGender && matchSize && matchPrice
   })
+
+  const handleResetFilters = () => {
+    setSelectedCategory('')
+    setSelectedGender('')
+    setSelectedSize('')
+    setPriceRange({ min: '', max: '' })
+    setCurrentPage(1)
+  }
 
   if (loading) {
     return (
@@ -45,55 +76,96 @@ export default function Products() {
     <div className="max-w-7xl mx-auto px-4 py-8">
       <h1 className="text-4xl font-bold mb-8 text-gray-800">🛍️ Sản phẩm</h1>
 
-      {/* Search and Filters */}
-      <div className="mb-8 space-y-4">
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="🔍 Tìm kiếm sản phẩm..."
-            className="w-full px-6 py-4 pl-12 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition text-lg"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          <svg 
-            className="w-6 h-6 text-gray-400 absolute left-4 top-1/2 transform -translate-y-1/2" 
-            fill="none" 
-            stroke="currentColor" 
-            viewBox="0 0 24 24"
+      {/* Filters */}
+      <div className="mb-8 bg-white rounded-xl shadow-lg p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold text-gray-800">🔧 Bộ lọc</h2>
+          <button
+            onClick={handleResetFilters}
+            className="text-sm text-blue-600 hover:text-blue-700 font-semibold"
           >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
+            ↻ Đặt lại
+          </button>
         </div>
 
-        <div className="flex flex-wrap gap-4">
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="">Tất cả loại</option>
-            <option value="Áo">Áo</option>
-            <option value="Quần">Quần</option>
-            <option value="Váy">Váy</option>
-            <option value="Đầm">Đầm</option>
-            <option value="Áo khoác">Áo khoác</option>
-            <option value="Phụ kiện">Phụ kiện</option>
-          </select>
-
-          <select
-            value={selectedGender}
-            onChange={(e) => setSelectedGender(e.target.value)}
-            className="px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="">Tất cả giới tính</option>
-            <option value="Nam">Nam</option>
-            <option value="Nữ">Nữ</option>
-            <option value="Unisex">Unisex</option>
-          </select>
-
-          <div className="ml-auto text-sm text-gray-600 bg-gray-100 px-4 py-2 rounded-lg flex items-center">
-            Hiển thị: <span className="font-bold text-blue-600 ml-2">{filteredProducts.length}</span> sản phẩm
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Category Filter */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Loại sản phẩm</label>
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+            >
+              <option value="">Tất cả</option>
+              <option value="Áo">Áo</option>
+              <option value="Quần">Quần</option>
+              <option value="Váy">Váy</option>
+              <option value="Đầm">Đầm</option>
+              <option value="Áo khoác">Áo khoác</option>
+              <option value="Phụ kiện">Phụ kiện</option>
+            </select>
           </div>
+
+          {/* Gender Filter */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Giới tính</label>
+            <select
+              value={selectedGender}
+              onChange={(e) => setSelectedGender(e.target.value)}
+              className="w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+            >
+              <option value="">Tất cả</option>
+              <option value="Nam">Nam</option>
+              <option value="Nữ">Nữ</option>
+              <option value="Unisex">Unisex</option>
+            </select>
+          </div>
+
+          {/* Size Filter */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Size</label>
+            <select
+              value={selectedSize}
+              onChange={(e) => setSelectedSize(e.target.value)}
+              className="w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+            >
+              <option value="">Tất cả</option>
+              <option value="S">S</option>
+              <option value="M">M</option>
+              <option value="L">L</option>
+              <option value="XL">XL</option>
+              <option value="XXL">XXL</option>
+            </select>
+          </div>
+
+          {/* Price Range Filter */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Khoảng giá (VNĐ)</label>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                placeholder="Từ"
+                value={priceRange.min}
+                onChange={(e) => setPriceRange({ ...priceRange, min: e.target.value })}
+                className="w-1/2 px-3 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+              />
+              <input
+                type="number"
+                placeholder="Đến"
+                value={priceRange.max}
+                onChange={(e) => setPriceRange({ ...priceRange, max: e.target.value })}
+                className="w-1/2 px-3 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Results Count */}
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          <p className="text-sm text-gray-600">
+            Hiển thị <span className="font-bold text-blue-600">{filteredProducts.length}</span> / {totalProducts} sản phẩm
+          </p>
         </div>
       </div>
 
@@ -150,11 +222,83 @@ export default function Products() {
         ))}
       </div>
 
-      {filteredProducts.length === 0 && (
+      {filteredProducts.length === 0 && !loading && (
         <div className="text-center py-20">
           <div className="text-6xl mb-4">🔍</div>
           <p className="text-gray-500 text-xl font-medium">Không tìm thấy sản phẩm</p>
-          <p className="text-gray-400 text-sm mt-2">Thử tìm kiếm với từ khóa khác hoặc thay đổi bộ lọc</p>
+          <p className="text-gray-400 text-sm mt-2">Thử thay đổi bộ lọc để xem thêm sản phẩm</p>
+          <button
+            onClick={handleResetFilters}
+            className="mt-4 bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition"
+          >
+            Đặt lại bộ lọc
+          </button>
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && filteredProducts.length > 0 && (
+        <div className="mt-8 flex items-center justify-between bg-white px-6 py-4 rounded-xl shadow-lg">
+          <div className="text-sm text-gray-600">
+            Trang <span className="font-bold text-blue-600">{currentPage}</span> / {totalPages}
+          </div>
+          
+          <div className="flex gap-2">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                currentPage === 1
+                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  : 'bg-blue-500 text-white hover:bg-blue-600 shadow-md hover:shadow-lg'
+              }`}
+            >
+              ← Trước
+            </button>
+            
+            <div className="flex gap-1">
+              {[...Array(totalPages)].map((_, index) => {
+                const page = index + 1
+                if (
+                  page === 1 ||
+                  page === totalPages ||
+                  (page >= currentPage - 1 && page <= currentPage + 1)
+                ) {
+                  return (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`w-10 h-10 rounded-lg font-semibold transition-all ${
+                        currentPage === page
+                          ? 'bg-blue-600 text-white shadow-lg'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  )
+                } else if (
+                  page === currentPage - 2 ||
+                  page === currentPage + 2
+                ) {
+                  return <span key={page} className="px-2 py-2 text-gray-400">...</span>
+                }
+                return null
+              })}
+            </div>
+            
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+              className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                currentPage === totalPages
+                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  : 'bg-blue-500 text-white hover:bg-blue-600 shadow-md hover:shadow-lg'
+              }`}
+            >
+              Sau →
+            </button>
+          </div>
         </div>
       )}
     </div>
