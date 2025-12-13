@@ -32,13 +32,13 @@ def register():
 @auth_bp.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
-    email = data.get('email')
+    taikhoan = data.get('taikhoan')
     password = data.get('matkhau')
     
-    user = User.query.filter_by(email=email).first()
+    user = User.query.filter_by(taikhoan=taikhoan).first()
     
     if not user or not user.check_password(password):
-        return jsonify({'error': 'Email hoặc mật khẩu không đúng'}), 401
+        return jsonify({'error': 'Tài khoản hoặc mật khẩu không đúng'}), 401
     
     access_token = create_access_token(identity=user.user_id)
     

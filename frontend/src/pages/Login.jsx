@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 export default function Login() {
-  const [formData, setFormData] = useState({ email: '', matkhau: '' })
+  const [formData, setFormData] = useState({ taikhoan: '', matkhau: '' })
   const [error, setError] = useState('')
   const { login } = useAuth()
   const navigate = useNavigate()
@@ -12,7 +12,7 @@ export default function Login() {
     e.preventDefault()
     setError('')
     try {
-      const data = await login(formData.email, formData.matkhau)
+      const data = await login(formData.taikhoan, formData.matkhau)
       
       // Check if user is customer
       if (data.user.role === 'admin') {
@@ -47,13 +47,13 @@ export default function Login() {
 
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label className="block text-gray-700 mb-2 font-semibold">Email</label>
+            <label className="block text-gray-700 mb-2 font-semibold">Tài khoản</label>
             <input
-              type="email"
+              type="text"
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="your@email.com"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              placeholder="username"
+              value={formData.taikhoan}
+              onChange={(e) => setFormData({ ...formData, taikhoan: e.target.value })}
               required
             />
           </div>

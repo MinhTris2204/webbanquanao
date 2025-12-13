@@ -1,26 +1,27 @@
 import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext'
+import { useNavigate } from 'react-router-dom'
+import api from '../../utils/api'
 
 export default function AdminLogin() {
-  const [formData, setFormData] = useState({ email: '', matkhau: '' })
+  const [formData, setFormData] = useState({ taikhoan: '', matkhau: '' })
   const [error, setError] = useState('')
-  const { login } = useAuth()
   const navigate = useNavigate()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     try {
-      const data = await login(formData.email, formData.matkhau)
+      const res = await api.post('/api/auth/login', formData)
       
       // Check if user is admin
-      if (data.user.role !== 'admin') {
+      if (res.data.user.role !== 'admin') {
         setError('Bạn không có quyền truy cập trang quản trị')
         return
       }
       
+      localStorage.setItem('token', res.data.access_token)
       navigate('/')
+      window.location.reload() // Reload to update auth context
     } catch (err) {
       setError(err.response?.data?.error || 'Đăng nhập thất bại')
     }
@@ -47,13 +48,13 @@ export default function AdminLogin() {
 
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label className="block text-gray-700 mb-2 font-semibold">Email</label>
+            <label className="block text-gray-700 mb-2 font-semibold">Tài khoản</label>
             <input
-              type="email"
+              type="text"
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800"
-              placeholder="admin@example.com"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              placeholder="admin"
+              value={formData.taikhoan}
+              onChange={(e) => setFormData({ ...formData, taikhoan: e.target.value })}
               required
             />
           </div>
@@ -86,8 +87,8 @@ export default function AdminLogin() {
 
         <div className="mt-4 p-3 bg-gray-50 rounded text-sm text-gray-600">
           <p className="font-semibold mb-1">Tài khoản demo:</p>
-          <p>Email: admin@example.com</p>
-          <p>Password: admin123</p>
+          <p>Tài khoản: admin</p>
+          <p>Mật khẩu: admin123</p>
         </div>
       </div>
     </div>
