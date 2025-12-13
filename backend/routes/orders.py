@@ -39,7 +39,7 @@ def create_order():
         sdt=data.get('sdt'),
         diachi_giaohang=data.get('diachi_giaohang'),
         payment_method=data.get('payment_method', 'COD'),
-        trangthai='pending'
+        trangthai='cho_xac_nhan'
     )
     
     db.session.add(order)
@@ -60,7 +60,7 @@ def create_order():
         )
         db.session.add(order_detail)
     
-    order.tongdon = total
+    order.tongtien = total
     cart.status = 'completed'
     
     db.session.commit()
