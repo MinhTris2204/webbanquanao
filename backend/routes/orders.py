@@ -41,6 +41,9 @@ def create_order():
         line_total = unit_price * item.quantity
         total += line_total
     
+    # Convert total to float for calculations
+    total_float = float(total)
+    
     # Apply voucher if provided
     voucher_id = None
     discount_amount = 0
@@ -52,10 +55,11 @@ def create_order():
             # Validate voucher
             now = datetime.utcnow()
             if voucher.is_active and voucher.start_date <= now <= voucher.end_date:
-                if (voucher.usage_limit is None or voucher.used_count < voucher.usage_limit) and total >= voucher.min_order_value:
+                min_order = float(voucher.min_order_value) if voucher.min_order_value else 0
+                if (voucher.usage_limit is None or voucher.used_count < voucher.usage_limit) and total_float >= min_order:
                     # Calculate discount
                     if voucher.discount_type == 'percent':
-                        discount_amount = (total * float(voucher.discount_value)) / 100
+                        discount_amount = (total_float * float(voucher.discount_value)) / 100
                         if voucher.max_discount:
                             discount_amount = min(discount_amount, float(voucher.max_discount))
                     else:
@@ -65,7 +69,7 @@ def create_order():
                     # Increase used count
                     voucher.used_count += 1
     
-    final_total = max(0, total - discount_amount)
+    final_total = max(0, total_float - discount_amount)
     
     # Create order with total
     order = Order(
