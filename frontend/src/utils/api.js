@@ -8,7 +8,10 @@ const api = axios.create({
 })
 
 api.interceptors.request.use(config => {
-  const token = localStorage.getItem('token')
+  // Determine if we're in admin app or customer app
+  const isAdminApp = window.location.pathname.includes('admin.html')
+  const tokenKey = isAdminApp ? 'admin_token' : 'customer_token'
+  const token = localStorage.getItem(tokenKey)
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
