@@ -58,13 +58,19 @@ export default function Checkout() {
     setVoucherError('')
 
     try {
-      const res = await api.post('/api/vouchers/apply', {
-        ma_voucher: voucherCode.trim()
+      const res = await api.post('/api/vouchers/validate', {
+        code: voucherCode.trim(),
+        order_total: cart.total
       })
-      setAppliedVoucher(res.data)
-      setVoucherError('')
+      if (res.data.valid) {
+        setAppliedVoucher(res.data.voucher)
+        setVoucherError('')
+      } else {
+        setVoucherError(res.data.message || 'Mã voucher không hợp lệ')
+        setAppliedVoucher(null)
+      }
     } catch (err) {
-      setVoucherError(err.response?.data?.error || 'Mã voucher không hợp lệ')
+      setVoucherError(err.response?.data?.message || err.response?.data?.error || 'Mã voucher không hợp lệ')
       setAppliedVoucher(null)
     } finally {
       setApplyingVoucher(false)
@@ -80,11 +86,11 @@ export default function Checkout() {
   const calculateDiscount = () => {
     if (!appliedVoucher) return 0
     
-    if (appliedVoucher.loai_giam === 'percent') {
-      const discount = (cart.total * appliedVoucher.giatri_giam) / 100
-      return Math.min(discount, appliedVoucher.giam_toi_da || discount)
+    if (appliedVoucher.discount_type === 'percent') {
+      const discount = (cart.total * appliedVoucher.discount_value) / 100
+      return Math.min(discount, appliedVoucher.max_discount || discount)
     } else {
-      return appliedVoucher.giatri_giam
+      return appliedVoucher.discount_value
     }
   }
 
@@ -100,7 +106,7 @@ export default function Checkout() {
     try {
       const orderData = {
         ...formData,
-        ma_voucher: appliedVoucher?.ma_voucher || null
+        ma_voucher: appliedVoucher?.code || null
       }
       await api.post('/api/orders/create', orderData)
       navigate('/orders?success=true')
@@ -287,11 +293,11 @@ export default function Checkout() {
                   <div className="bg-green-50 border-2 border-green-500 rounded-lg p-3">
                     <div className="flex justify-between items-start">
                       <div>
-                        <p className="font-bold text-green-700">{appliedVoucher.ma_voucher}</p>
+                        <p className="font-bold text-green-700">{appliedVoucher.code}</p>
                         <p className="text-sm text-green-600">
-                          Giảm {appliedVoucher.loai_giam === 'percent' 
-                            ? `${appliedVoucher.giatri_giam}%` 
-                            : `${appliedVoucher.giatri_giam.toLocaleString('vi-VN')}₫`}
+                          Giảm {appliedVoucher.discount_type === 'percent' 
+                            ? `${appliedVoucher.discount_value}%` 
+                            : `${appliedVoucher.discount_value.toLocaleString('vi-VN')}₫`}
                         </p>
                       </div>
                       <button
