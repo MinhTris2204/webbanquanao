@@ -7,6 +7,10 @@ export default function AdminProducts() {
   const [editingProduct, setEditingProduct] = useState(null)
   const [imagePreview, setImagePreview] = useState('')
   const [selectedSizes, setSelectedSizes] = useState([])
+  const [searchTerm, setSearchTerm] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalProducts, setTotalProducts] = useState(0)
   const [formData, setFormData] = useState({
     ten_san_pham: '',
     gia_ban: '',
@@ -23,15 +27,28 @@ export default function AdminProducts() {
 
   useEffect(() => {
     fetchProducts()
-  }, [])
+  }, [currentPage, searchTerm])
 
   const fetchProducts = async () => {
     try {
-      const res = await api.get('/api/products')
+      const res = await api.get('/api/products', {
+        params: {
+          page: currentPage,
+          per_page: 10,
+          search: searchTerm
+        }
+      })
       setProducts(res.data.products)
+      setTotalPages(res.data.pages)
+      setTotalProducts(res.data.total)
     } catch (err) {
       console.error(err)
     }
+  }
+
+  const handleSearch = (e) => {
+    setSearchTerm(e.target.value)
+    setCurrentPage(1) // Reset to first page when searching
   }
 
   const handleSubmit = async (e) => {
@@ -151,6 +168,30 @@ export default function AdminProducts() {
           </svg>
           Thêm sản phẩm
         </button>
+      </div>
+
+      {/* Search Bar */}
+      <div className="mb-6 flex items-center gap-4">
+        <div className="flex-1 relative">
+          <input
+            type="text"
+            placeholder="🔍 Tìm kiếm sản phẩm theo tên..."
+            value={searchTerm}
+            onChange={handleSearch}
+            className="w-full px-4 py-3 pl-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+          />
+          <svg 
+            className="w-5 h-5 text-gray-400 absolute left-4 top-1/2 transform -translate-y-1/2" 
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+        <div className="text-sm text-gray-600 bg-gray-100 px-4 py-3 rounded-lg">
+          Tổng: <span className="font-bold text-blue-600">{totalProducts}</span> sản phẩm
+        </div>
       </div>
 
       {/* Modal Form */}
@@ -478,11 +519,82 @@ export default function AdminProducts() {
         {products.length === 0 && (
           <div className="text-center py-16">
             <div className="text-6xl mb-4">📦</div>
-            <p className="text-gray-500 text-lg font-medium">Chưa có sản phẩm nào</p>
-            <p className="text-gray-400 text-sm mt-2">Nhấn nút "Thêm sản phẩm" để bắt đầu</p>
+            <p className="text-gray-500 text-lg font-medium">
+              {searchTerm ? 'Không tìm thấy sản phẩm nào' : 'Chưa có sản phẩm nào'}
+            </p>
+            <p className="text-gray-400 text-sm mt-2">
+              {searchTerm ? 'Thử tìm kiếm với từ khóa khác' : 'Nhấn nút "Thêm sản phẩm" để bắt đầu'}
+            </p>
           </div>
         )}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="mt-6 flex items-center justify-between bg-white px-6 py-4 rounded-xl shadow-lg">
+          <div className="text-sm text-gray-600">
+            Trang <span className="font-bold text-blue-600">{currentPage}</span> / {totalPages}
+          </div>
+          
+          <div className="flex gap-2">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                currentPage === 1
+                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  : 'bg-blue-500 text-white hover:bg-blue-600 shadow-md hover:shadow-lg'
+              }`}
+            >
+              ← Trước
+            </button>
+            
+            <div className="flex gap-1">
+              {[...Array(totalPages)].map((_, index) => {
+                const page = index + 1
+                // Show first page, last page, current page, and pages around current
+                if (
+                  page === 1 ||
+                  page === totalPages ||
+                  (page >= currentPage - 1 && page <= currentPage + 1)
+                ) {
+                  return (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`w-10 h-10 rounded-lg font-semibold transition-all ${
+                        currentPage === page
+                          ? 'bg-blue-600 text-white shadow-lg'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  )
+                } else if (
+                  page === currentPage - 2 ||
+                  page === currentPage + 2
+                ) {
+                  return <span key={page} className="px-2 py-2 text-gray-400">...</span>
+                }
+                return null
+              })}
+            </div>
+            
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+              className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                currentPage === totalPages
+                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  : 'bg-blue-500 text-white hover:bg-blue-600 shadow-md hover:shadow-lg'
+              }`}
+            >
+              Sau →
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
