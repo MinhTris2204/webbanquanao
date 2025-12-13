@@ -125,9 +125,6 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
           <p>&copy; 2025 Shop Quần Áo. All rights reserved.</p>
-          <p className="mt-2 text-sm">
-            Designed with ❤️ by Your Team
-          </p>
         </div>
       </div>
     </footer>
