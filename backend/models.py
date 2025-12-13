@@ -149,3 +149,58 @@ class OrderDetail(db.Model):
             'selected_size': self.selected_size,
             'product': self.product.to_dict() if self.product else None
         }
+
+class Voucher(db.Model):
+    __tablename__ = 'vouchers'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    code = db.Column(db.String(50), unique=True, nullable=False)
+    discount_type = db.Column(db.Enum('percent', 'fixed', name='discount_type_enum'), nullable=False)
+    discount_value = db.Column(db.Numeric(12, 2), nullable=False)
+    min_order_value = db.Column(db.Numeric(12, 2), default=0)
+    max_discount = db.Column(db.Numeric(12, 2))
+    usage_limit = db.Column(db.Integer)
+    used_count = db.Column(db.Integer, default=0)
+    start_date = db.Column(db.TIMESTAMP, nullable=False)
+    end_date = db.Column(db.TIMESTAMP, nullable=False)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.TIMESTAMP, default=datetime.utcnow)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'code': self.code,
+            'discount_type': self.discount_type,
+            'discount_value': float(self.discount_value) if self.discount_value else None,
+            'min_order_value': float(self.min_order_value) if self.min_order_value else None,
+            'max_discount': float(self.max_discount) if self.max_discount else None,
+            'usage_limit': self.usage_limit,
+            'used_count': self.used_count,
+            'start_date': self.start_date.isoformat() if self.start_date else None,
+            'end_date': self.end_date.isoformat() if self.end_date else None,
+            'is_active': self.is_active,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+    
+    def is_valid(self, order_total):
+        now = datetime.utcnow()
+        if not self.is_active:
+            return False, "Voucher không còn hiệu lực"
+        if now < self.start_date:
+            return False, "Voucher chưa đến thời gian sử dụng"
+        if now > self.end_date:
+            return False, "Voucher đã hết hạn"
+        if self.usage_limit and self.used_count >= self.usage_limit:
+            return False, "Voucher đã hết lượt sử dụng"
+        if order_total < self.min_order_value:
+            return False, f"Đơn hàng tối thiểu {float(self.min_order_value):,.0f}₫"
+        return True, "Voucher hợp lệ"
+    
+    def calculate_discount(self, order_total):
+        if self.discount_type == 'percent':
+            discount = order_total * (float(self.discount_value) / 100)
+            if self.max_discount:
+                discount = min(discount, float(self.max_discount))
+        else:  # fixed
+            discount = float(self.discount_value)
+        return min(discount, order_total)
