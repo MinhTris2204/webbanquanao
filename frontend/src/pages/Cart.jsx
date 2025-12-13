@@ -109,9 +109,9 @@ export default function Cart() {
                           {item.product.loai}
                         </span>
                       )}
-                      {item.product.size && (
+                      {item.selected_size && (
                         <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-semibold">
-                          Size: {item.product.size}
+                          Size: {item.selected_size}
                         </span>
                       )}
                     </div>

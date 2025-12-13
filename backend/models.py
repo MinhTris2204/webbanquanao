@@ -91,6 +91,7 @@ class CartItem(db.Model):
     cart_id = db.Column(db.Integer, db.ForeignKey('carts.id'), nullable=False)
     products_id = db.Column(db.Integer, db.ForeignKey('products.products_id'), nullable=False)
     quantity = db.Column(db.Integer, nullable=False, default=1)
+    selected_size = db.Column(db.String(10))
     created_at = db.Column(db.TIMESTAMP, default=datetime.utcnow)
 
 class Order(db.Model):
@@ -134,6 +135,7 @@ class OrderDetail(db.Model):
     unit_price = db.Column(db.Numeric(12, 2), nullable=False)
     quantity = db.Column(db.Integer, nullable=False)
     line_total = db.Column(db.Numeric(12, 2), nullable=False)
+    selected_size = db.Column(db.String(10))
     created_at = db.Column(db.TIMESTAMP, default=datetime.utcnow)
     
     def to_dict(self):
@@ -144,5 +146,6 @@ class OrderDetail(db.Model):
             'unit_price': float(self.unit_price) if self.unit_price else None,
             'quantity': self.quantity,
             'line_total': float(self.line_total) if self.line_total else None,
+            'selected_size': self.selected_size,
             'product': self.product.to_dict() if self.product else None
         }

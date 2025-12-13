@@ -157,6 +157,9 @@ export default function Orders() {
                         />
                         <div className="flex-1">
                           <p className="font-semibold text-gray-800">{detail.product?.ten_san_pham}</p>
+                          {detail.selected_size && (
+                            <p className="text-xs text-blue-600 font-semibold">Size: {detail.selected_size}</p>
+                          )}
                           <p className="text-sm text-gray-600">
                             {detail.unit_price?.toLocaleString('vi-VN')}₫ x {detail.quantity}
                           </p>

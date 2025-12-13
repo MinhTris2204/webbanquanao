@@ -23,6 +23,7 @@ def get_cart():
             'cart_item_id': item.cart_item_id,
             'product': product.to_dict(),
             'quantity': item.quantity,
+            'selected_size': item.selected_size,
             'item_total': item_total
         })
     
@@ -35,6 +36,7 @@ def add_to_cart():
     data = request.get_json()
     product_id = data.get('product_id')
     quantity = data.get('quantity', 1)
+    selected_size = data.get('selected_size')
     
     product = Product.query.get_or_404(product_id)
     
@@ -44,11 +46,22 @@ def add_to_cart():
         db.session.add(cart)
         db.session.commit()
     
-    cart_item = CartItem.query.filter_by(cart_id=cart.id, products_id=product_id).first()
+    # Check if same product with same size exists
+    cart_item = CartItem.query.filter_by(
+        cart_id=cart.id, 
+        products_id=product_id,
+        selected_size=selected_size
+    ).first()
+    
     if cart_item:
         cart_item.quantity += quantity
     else:
-        cart_item = CartItem(cart_id=cart.id, products_id=product_id, quantity=quantity)
+        cart_item = CartItem(
+            cart_id=cart.id, 
+            products_id=product_id, 
+            quantity=quantity,
+            selected_size=selected_size
+        )
         db.session.add(cart_item)
     
     db.session.commit()

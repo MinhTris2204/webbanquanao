@@ -65,7 +65,8 @@ def create_order():
             product_id=item.products_id,
             unit_price=unit_price,
             quantity=item.quantity,
-            line_total=line_total
+            line_total=line_total,
+            selected_size=item.selected_size
         )
         db.session.add(order_detail)
     

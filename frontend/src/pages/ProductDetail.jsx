@@ -48,7 +48,8 @@ export default function ProductDetail() {
     try {
       await api.post('/api/cart/add', {
         product_id: product.products_id,
-        quantity
+        quantity,
+        selected_size: selectedSize
       })
       setMessage({ text: '✅ Đã thêm vào giỏ hàng!', type: 'success' })
       setTimeout(() => setMessage({ text: '', type: '' }), 3000)
@@ -72,7 +73,8 @@ export default function ProductDetail() {
       // Add to cart first
       await api.post('/api/cart/add', {
         product_id: product.products_id,
-        quantity
+        quantity,
+        selected_size: selectedSize
       })
       // Go directly to checkout
       navigate('/checkout')
