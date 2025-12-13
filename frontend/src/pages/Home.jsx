@@ -47,16 +47,6 @@ export default function Home() {
           <p className="text-gray-600">Luôn sẵn sàng hỗ trợ khách hàng</p>
         </div>
       </div>
-
-      <div className="mt-12 text-center">
-        <p className="text-gray-600 mb-4">Bạn là quản trị viên?</p>
-        <a
-          href="/admin.html"
-          className="text-gray-700 hover:text-gray-900 underline"
-        >
-          Đăng nhập trang quản trị →
-        </a>
-      </div>
     </div>
   )
 }

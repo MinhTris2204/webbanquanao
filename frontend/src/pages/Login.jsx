@@ -84,12 +84,6 @@ export default function Login() {
             Đăng ký ngay
           </Link>
         </p>
-
-        <div className="mt-4 text-center">
-          <a href="/admin.html" className="text-gray-600 hover:text-gray-800 text-sm">
-            Đăng nhập với tư cách Admin →
-          </a>
-        </div>
       </div>
     </div>
   )
