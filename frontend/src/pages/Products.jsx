@@ -140,22 +140,79 @@ export default function Products() {
           </div>
 
           {/* Price Range Filter */}
-          <div>
+          <div className="md:col-span-2 lg:col-span-4">
             <label className="block text-sm font-semibold text-gray-700 mb-2">Khoảng giá (VNĐ)</label>
+            
+            {/* Quick Price Buttons */}
+            <div className="flex flex-wrap gap-2 mb-3">
+              <button
+                onClick={() => setPriceRange({ min: '', max: '' })}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
+                  !priceRange.min && !priceRange.max
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Tất cả
+              </button>
+              <button
+                onClick={() => setPriceRange({ min: '0', max: '200000' })}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
+                  priceRange.min === '0' && priceRange.max === '200000'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Dưới 200k
+              </button>
+              <button
+                onClick={() => setPriceRange({ min: '200000', max: '500000' })}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
+                  priceRange.min === '200000' && priceRange.max === '500000'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                200k - 500k
+              </button>
+              <button
+                onClick={() => setPriceRange({ min: '500000', max: '1000000' })}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
+                  priceRange.min === '500000' && priceRange.max === '1000000'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                500k - 1tr
+              </button>
+              <button
+                onClick={() => setPriceRange({ min: '1000000', max: '' })}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
+                  priceRange.min === '1000000' && !priceRange.max
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Trên 1tr
+              </button>
+            </div>
+
+            {/* Custom Price Inputs */}
             <div className="flex gap-2">
               <input
                 type="number"
                 placeholder="Từ"
                 value={priceRange.min}
                 onChange={(e) => setPriceRange({ ...priceRange, min: e.target.value })}
-                className="w-1/2 px-3 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                className="flex-1 px-3 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
               />
+              <span className="flex items-center text-gray-500">-</span>
               <input
                 type="number"
                 placeholder="Đến"
                 value={priceRange.max}
                 onChange={(e) => setPriceRange({ ...priceRange, max: e.target.value })}
-                className="w-1/2 px-3 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                className="flex-1 px-3 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
               />
             </div>
           </div>

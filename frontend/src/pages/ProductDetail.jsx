@@ -165,6 +165,14 @@ export default function ProductDetail() {
             )}
           </div>
 
+          {/* Description */}
+          {product.mo_ta && (
+            <div className="bg-gray-50 rounded-xl p-6">
+              <h3 className="font-bold text-xl mb-3 text-gray-800">📝 Mô tả sản phẩm:</h3>
+              <p className="text-gray-700 leading-relaxed whitespace-pre-line">{product.mo_ta}</p>
+            </div>
+          )}
+
           {/* Size Selection */}
           {availableSizes.length > 0 && (
             <div>
@@ -251,14 +259,6 @@ export default function ProductDetail() {
               ⚡ Mua ngay
             </button>
           </div>
-
-          {/* Description */}
-          {product.mo_ta && (
-            <div className="bg-gray-50 rounded-xl p-6">
-              <h3 className="font-bold text-xl mb-3 text-gray-800">📝 Mô tả sản phẩm:</h3>
-              <p className="text-gray-700 leading-relaxed whitespace-pre-line">{product.mo_ta}</p>
-            </div>
-          )}
         </div>
       </div>
     </div>
