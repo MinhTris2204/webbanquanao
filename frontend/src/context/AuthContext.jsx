@@ -42,9 +42,12 @@ export const AuthProvider = ({ children }) => {
     return res.data
   }
 
-  const logout = () => {
+  const logout = (redirectPath) => {
     localStorage.removeItem('token')
     setUser(null)
+    if (redirectPath) {
+      window.location.href = redirectPath
+    }
   }
 
   const value = {
