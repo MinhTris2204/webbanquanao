@@ -10,12 +10,12 @@ class User(db.Model):
     
     user_id = db.Column(db.Integer, primary_key=True)
     taikhoan = db.Column(db.String(50), unique=True, nullable=False)
-    matkhau = db.Column(db.String(255), nullable=False)
-    hoten = db.Column(db.String(100))
+    matkhau = db.Column(db.String(225), nullable=False)
+    hoten = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(100), unique=True, nullable=False)
     sdt = db.Column(db.String(20))
-    diachi = db.Column(db.String(255))
-    role = db.Column(db.String(20), default='customer')  # 'admin' or 'customer'
+    diachi = db.Column(db.String(225))
+    role = db.Column(db.Enum('admin', 'customer', name='role_enum'), default='customer')
     created_at = db.Column(db.TIMESTAMP, default=datetime.utcnow)
     
     carts = db.relationship('Cart', backref='user', lazy=True, cascade='all, delete-orphan')
@@ -44,14 +44,14 @@ class Product(db.Model):
     
     products_id = db.Column(db.Integer, primary_key=True)
     ten_san_pham = db.Column(db.String(200), nullable=False)
-    gia_ban = db.Column(db.Numeric(12, 2), nullable=False)
-    bai = db.Column(db.String(30))
+    gia_ban = db.Column(db.Numeric(12, 2), nullable=False, default=0.00)
+    loai = db.Column(db.String(100), nullable=False)  # Loại sản phẩm (quần, áo, ...)
     mo_ta = db.Column(db.Text)
     size = db.Column(db.String(50))
     chat_lieu = db.Column(db.String(100))
-    gia_tien = db.Column(db.Numeric(12, 2))
+    gioi_tinh = db.Column(db.Enum('Nam', 'Nữ', 'Unisex', name='gioi_tinh_enum'), default='Unisex')
     hinh_anh = db.Column(db.String(500))
-    trang_thai = db.Column(db.String(50))
+    trang_thai = db.Column(db.Enum('Con_hang', 'Het_hang', 'Ngung_ban', name='trang_thai_enum'), default='Con_hang')
     created_at = db.Column(db.TIMESTAMP, default=datetime.utcnow)
     embedding = db.Column(Vector(384))  # pgvector for product search
     
@@ -63,11 +63,11 @@ class Product(db.Model):
             'products_id': self.products_id,
             'ten_san_pham': self.ten_san_pham,
             'gia_ban': float(self.gia_ban) if self.gia_ban else None,
-            'bai': self.bai,
+            'loai': self.loai,
             'mo_ta': self.mo_ta,
             'size': self.size,
             'chat_lieu': self.chat_lieu,
-            'gia_tien': float(self.gia_tien) if self.gia_tien else None,
+            'gioi_tinh': self.gioi_tinh,
             'hinh_anh': self.hinh_anh,
             'trang_thai': self.trang_thai,
             'created_at': self.created_at.isoformat() if self.created_at else None
@@ -98,13 +98,13 @@ class Order(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
-    tongdon = db.Column(db.Numeric(12, 2))
-    trangthai = db.Column(db.String(50))
-    diachi_giaohang = db.Column(db.String(255))
-    hoten = db.Column(db.String(100))
-    sdt = db.Column(db.String(30))
-    payment_method = db.Column(db.String(50))
-    payment_token = db.Column(db.String(255))
+    tongtien = db.Column(db.Numeric(12, 2), nullable=False)
+    trangthai = db.Column(db.Enum('cho_xac_nhan', 'dang_giao', 'hoan_thanh', 'huy', name='order_status_enum'), default='cho_xac_nhan')
+    diachi_giaohang = db.Column(db.String(225), nullable=False)
+    hoten = db.Column(db.String(100), nullable=False)
+    sdt = db.Column(db.String(30), nullable=False)
+    payment_method = db.Column(db.String(50), nullable=False)
+    payment_token = db.Column(db.String(225))
     created_at = db.Column(db.TIMESTAMP, default=datetime.utcnow)
     updated_at = db.Column(db.TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
     
