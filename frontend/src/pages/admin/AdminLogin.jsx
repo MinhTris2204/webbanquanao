@@ -80,8 +80,8 @@ export default function AdminLogin() {
         </form>
 
         <div className="mt-6 text-center">
-          <a href="/" className="text-gray-600 hover:text-gray-800 text-sm">
-            ← Về trang chủ khách hàng
+          <a href="/index.html" className="text-gray-600 hover:text-gray-800 text-sm">
+            ← Về trang khách hàng
           </a>
         </div>
 
