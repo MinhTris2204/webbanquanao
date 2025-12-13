@@ -237,7 +237,6 @@ export default function AdminProducts() {
                     <option value="L">L</option>
                     <option value="XL">XL</option>
                     <option value="XXL">XXL</option>
-                    <option value="Free Size">Free Size</option>
                   </select>
                 </div>
 
