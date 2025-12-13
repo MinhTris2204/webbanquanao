@@ -6,6 +6,7 @@ export default function AdminProducts() {
   const [showForm, setShowForm] = useState(false)
   const [editingProduct, setEditingProduct] = useState(null)
   const [imagePreview, setImagePreview] = useState('')
+  const [selectedSizes, setSelectedSizes] = useState([])
   const [formData, setFormData] = useState({
     ten_san_pham: '',
     gia_ban: '',
@@ -17,6 +18,8 @@ export default function AdminProducts() {
     hinh_anh: '',
     trang_thai: 'Con_hang'
   })
+
+  const availableSizes = ['S', 'M', 'L', 'XL', 'XXL']
 
   useEffect(() => {
     fetchProducts()
@@ -34,10 +37,16 @@ export default function AdminProducts() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
+      // Convert selected sizes array to string
+      const dataToSubmit = {
+        ...formData,
+        size: selectedSizes.join(', ')
+      }
+      
       if (editingProduct) {
-        await api.put(`/api/admin/products/${editingProduct.products_id}`, formData)
+        await api.put(`/api/admin/products/${editingProduct.products_id}`, dataToSubmit)
       } else {
-        await api.post('/api/admin/products', formData)
+        await api.post('/api/admin/products', dataToSubmit)
       }
       setShowForm(false)
       setEditingProduct(null)
@@ -61,6 +70,9 @@ export default function AdminProducts() {
       hinh_anh: product.hinh_anh || '',
       trang_thai: product.trang_thai || 'Con_hang'
     })
+    // Parse sizes from string to array
+    const sizes = product.size ? product.size.split(', ') : []
+    setSelectedSizes(sizes)
     setImagePreview(product.hinh_anh || '')
     setShowForm(true)
   }
@@ -98,6 +110,14 @@ export default function AdminProducts() {
     }
   }
 
+  const handleSizeToggle = (size) => {
+    setSelectedSizes(prev => 
+      prev.includes(size) 
+        ? prev.filter(s => s !== size)
+        : [...prev, size]
+    )
+  }
+
   const resetForm = () => {
     setFormData({
       ten_san_pham: '',
@@ -110,6 +130,7 @@ export default function AdminProducts() {
       hinh_anh: '',
       trang_thai: 'Con_hang'
     })
+    setSelectedSizes([])
     setImagePreview('')
   }
 
@@ -225,19 +246,28 @@ export default function AdminProducts() {
 
                 {/* Size */}
                 <div>
-                  <label className="block text-gray-700 mb-2 font-semibold text-sm">Size</label>
-                  <select
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                    value={formData.size}
-                    onChange={(e) => setFormData({ ...formData, size: e.target.value })}
-                  >
-                    <option value="">-- Chọn size --</option>
-                    <option value="S">S</option>
-                    <option value="M">M</option>
-                    <option value="L">L</option>
-                    <option value="XL">XL</option>
-                    <option value="XXL">XXL</option>
-                  </select>
+                  <label className="block text-gray-700 mb-2 font-semibold text-sm">Size (có thể chọn nhiều)</label>
+                  <div className="flex flex-wrap gap-3 p-4 border border-gray-300 rounded-lg bg-gray-50">
+                    {availableSizes.map(size => (
+                      <label 
+                        key={size}
+                        className="flex items-center cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedSizes.includes(size)}
+                          onChange={() => handleSizeToggle(size)}
+                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                        />
+                        <span className="ml-2 text-sm font-medium text-gray-700">{size}</span>
+                      </label>
+                    ))}
+                  </div>
+                  {selectedSizes.length > 0 && (
+                    <p className="text-xs text-blue-600 mt-2">
+                      Đã chọn: {selectedSizes.join(', ')}
+                    </p>
+                  )}
                 </div>
 
                 {/* Chất liệu */}
