@@ -106,10 +106,13 @@ class Order(db.Model):
     sdt = db.Column(db.String(30), nullable=False)
     payment_method = db.Column(db.String(50), nullable=False)
     payment_token = db.Column(db.String(225))
+    voucher_id = db.Column(db.Integer, db.ForeignKey('vouchers.id'))
+    discount_amount = db.Column(db.Numeric(12, 2), default=0)
     created_at = db.Column(db.TIMESTAMP, default=datetime.utcnow)
     updated_at = db.Column(db.TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     order_details = db.relationship('OrderDetail', backref='order', lazy=True, cascade='all, delete-orphan')
+    voucher = db.relationship('Voucher', backref='orders', lazy=True)
     
     def to_dict(self):
         return {
@@ -121,6 +124,9 @@ class Order(db.Model):
             'hoten': self.hoten,
             'sdt': self.sdt,
             'payment_method': self.payment_method,
+            'voucher_id': self.voucher_id,
+            'discount_amount': float(self.discount_amount) if self.discount_amount else 0,
+            'voucher': self.voucher.to_dict() if self.voucher else None,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
             'order_details': [item.to_dict() for item in self.order_details]

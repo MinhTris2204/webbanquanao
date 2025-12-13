@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import api from '../utils/api'
 
 export default function Orders() {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, loading: authLoading } = useAuth()
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchParams, setSearchParams] = useSearchParams()
@@ -12,12 +12,14 @@ export default function Orders() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/login')
-    } else {
-      fetchOrders()
+    if (!authLoading) {
+      if (!isAuthenticated) {
+        navigate('/login')
+      } else {
+        fetchOrders()
+      }
     }
-  }, [isAuthenticated, navigate])
+  }, [isAuthenticated, authLoading, navigate])
 
   useEffect(() => {
     // Check for success message
@@ -45,6 +47,17 @@ export default function Orders() {
     } finally {
       setLoading(false)
     }
+  }
+
+  if (authLoading || loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Đang tải...</p>
+        </div>
+      </div>
+    )
   }
 
   const getStatusColor = (status) => {

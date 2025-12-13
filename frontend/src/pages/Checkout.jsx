@@ -4,12 +4,16 @@ import api from '../utils/api'
 import { useAuth } from '../context/AuthContext'
 
 export default function Checkout() {
-  const { user, isAuthenticated } = useAuth()
+  const { user, isAuthenticated, loading: authLoading } = useAuth()
   const navigate = useNavigate()
   const [cart, setCart] = useState({ cart_items: [], total: 0 })
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [voucherCode, setVoucherCode] = useState('')
+  const [appliedVoucher, setAppliedVoucher] = useState(null)
+  const [voucherError, setVoucherError] = useState('')
+  const [applyingVoucher, setApplyingVoucher] = useState(false)
   const [formData, setFormData] = useState({
     hoten: user?.hoten || '',
     sdt: user?.sdt || '',
@@ -19,12 +23,14 @@ export default function Checkout() {
   })
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/login')
-    } else {
-      fetchCart()
+    if (!authLoading) {
+      if (!isAuthenticated) {
+        navigate('/login')
+      } else {
+        fetchCart()
+      }
     }
-  }, [isAuthenticated, navigate])
+  }, [isAuthenticated, authLoading, navigate])
 
   const fetchCart = async () => {
     setLoading(true)
@@ -42,13 +48,61 @@ export default function Checkout() {
     }
   }
 
+  const applyVoucher = async () => {
+    if (!voucherCode.trim()) {
+      setVoucherError('Vui lòng nhập mã voucher')
+      return
+    }
+
+    setApplyingVoucher(true)
+    setVoucherError('')
+
+    try {
+      const res = await api.post('/api/vouchers/apply', {
+        ma_voucher: voucherCode.trim()
+      })
+      setAppliedVoucher(res.data)
+      setVoucherError('')
+    } catch (err) {
+      setVoucherError(err.response?.data?.error || 'Mã voucher không hợp lệ')
+      setAppliedVoucher(null)
+    } finally {
+      setApplyingVoucher(false)
+    }
+  }
+
+  const removeVoucher = () => {
+    setAppliedVoucher(null)
+    setVoucherCode('')
+    setVoucherError('')
+  }
+
+  const calculateDiscount = () => {
+    if (!appliedVoucher) return 0
+    
+    if (appliedVoucher.loai_giam === 'percent') {
+      const discount = (cart.total * appliedVoucher.giatri_giam) / 100
+      return Math.min(discount, appliedVoucher.giam_toi_da || discount)
+    } else {
+      return appliedVoucher.giatri_giam
+    }
+  }
+
+  const getFinalTotal = () => {
+    return Math.max(0, cart.total - calculateDiscount())
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setSubmitting(true)
     setError('')
 
     try {
-      await api.post('/api/orders/create', formData)
+      const orderData = {
+        ...formData,
+        ma_voucher: appliedVoucher?.ma_voucher || null
+      }
+      await api.post('/api/orders/create', orderData)
       navigate('/orders?success=true')
     } catch (err) {
       setError(err.response?.data?.error || 'Có lỗi xảy ra khi đặt hàng')
@@ -202,12 +256,68 @@ export default function Checkout() {
                 ))}
               </div>
 
+              {/* Voucher Section */}
+              <div className="border-t pt-4 mb-4">
+                <h3 className="font-bold text-gray-800 mb-3">🎟️ Mã giảm giá</h3>
+                
+                {!appliedVoucher ? (
+                  <div>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={voucherCode}
+                        onChange={(e) => setVoucherCode(e.target.value.toUpperCase())}
+                        placeholder="Nhập mã voucher"
+                        className="flex-1 px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                      <button
+                        type="button"
+                        onClick={applyVoucher}
+                        disabled={applyingVoucher}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 font-semibold"
+                      >
+                        {applyingVoucher ? '...' : 'Áp dụng'}
+                      </button>
+                    </div>
+                    {voucherError && (
+                      <p className="text-red-500 text-sm mt-2">{voucherError}</p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="bg-green-50 border-2 border-green-500 rounded-lg p-3">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-bold text-green-700">{appliedVoucher.ma_voucher}</p>
+                        <p className="text-sm text-green-600">
+                          Giảm {appliedVoucher.loai_giam === 'percent' 
+                            ? `${appliedVoucher.giatri_giam}%` 
+                            : `${appliedVoucher.giatri_giam.toLocaleString('vi-VN')}₫`}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={removeVoucher}
+                        className="text-red-500 hover:text-red-700 font-bold"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Summary */}
               <div className="space-y-3 border-t pt-4">
                 <div className="flex justify-between text-gray-600">
                   <span>Tạm tính</span>
                   <span className="font-semibold">{cart.total.toLocaleString('vi-VN')}₫</span>
                 </div>
+                {appliedVoucher && (
+                  <div className="flex justify-between text-green-600">
+                    <span>Giảm giá</span>
+                    <span className="font-semibold">-{calculateDiscount().toLocaleString('vi-VN')}₫</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-gray-600">
                   <span>Phí vận chuyển</span>
                   <span className="font-semibold text-green-600">Miễn phí</span>
@@ -215,7 +325,7 @@ export default function Checkout() {
                 <div className="border-t pt-3 flex justify-between items-center">
                   <span className="text-xl font-bold text-gray-800">Tổng cộng</span>
                   <span className="text-3xl font-bold text-blue-600">
-                    {cart.total.toLocaleString('vi-VN')}₫
+                    {getFinalTotal().toLocaleString('vi-VN')}₫
                   </span>
                 </div>
               </div>

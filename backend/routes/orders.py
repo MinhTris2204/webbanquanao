@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from models import db, Order, OrderDetail, Cart, CartItem
+from models import db, Order, OrderDetail, Cart, CartItem, Voucher
+from datetime import datetime
 
 orders_bp = Blueprint('orders', __name__)
 
@@ -40,6 +41,32 @@ def create_order():
         line_total = unit_price * item.quantity
         total += line_total
     
+    # Apply voucher if provided
+    voucher_id = None
+    discount_amount = 0
+    ma_voucher = data.get('ma_voucher')
+    
+    if ma_voucher:
+        voucher = Voucher.query.filter_by(ma_voucher=ma_voucher).first()
+        if voucher:
+            # Validate voucher
+            now = datetime.utcnow()
+            if voucher.trangthai == 'active' and voucher.ngay_bat_dau <= now <= voucher.ngay_ket_thuc:
+                if voucher.so_luong > 0 and total >= voucher.don_toi_thieu:
+                    # Calculate discount
+                    if voucher.loai_giam == 'percent':
+                        discount_amount = (total * voucher.giatri_giam) / 100
+                        if voucher.giam_toi_da:
+                            discount_amount = min(discount_amount, voucher.giam_toi_da)
+                    else:
+                        discount_amount = voucher.giatri_giam
+                    
+                    voucher_id = voucher.id
+                    # Decrease voucher quantity
+                    voucher.so_luong -= 1
+    
+    final_total = max(0, total - discount_amount)
+    
     # Create order with total
     order = Order(
         user_id=user_id,
@@ -48,7 +75,9 @@ def create_order():
         diachi_giaohang=data.get('diachi_giaohang'),
         payment_method=data.get('payment_method', 'COD'),
         trangthai='cho_xac_nhan',
-        tongtien=total
+        tongtien=final_total,
+        voucher_id=voucher_id,
+        discount_amount=discount_amount
     )
     
     db.session.add(order)

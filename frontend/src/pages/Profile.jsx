@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import api from '../utils/api'
 
 export default function Profile() {
-  const { user, isAuthenticated } = useAuth()
+  const { user, isAuthenticated, loading: authLoading } = useAuth()
   const navigate = useNavigate()
   const [formData, setFormData] = useState({
     hoten: '',
@@ -15,16 +15,18 @@ export default function Profile() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/login')
-    } else if (user) {
-      setFormData({
-        hoten: user.hoten || '',
-        sdt: user.sdt || '',
-        diachi: user.diachi || ''
-      })
+    if (!authLoading) {
+      if (!isAuthenticated) {
+        navigate('/login')
+      } else if (user) {
+        setFormData({
+          hoten: user.hoten || '',
+          sdt: user.sdt || '',
+          diachi: user.diachi || ''
+        })
+      }
     }
-  }, [user, isAuthenticated, navigate])
+  }, [user, isAuthenticated, authLoading, navigate])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -38,6 +40,17 @@ export default function Profile() {
     } catch (err) {
       setError(err.response?.data?.error || 'Có lỗi xảy ra')
     }
+  }
+
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Đang tải...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
