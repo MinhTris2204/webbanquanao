@@ -97,9 +97,15 @@ export default function Cart() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Cart Items */}
           <div className="lg:col-span-2 space-y-4">
-            {cart.cart_items.map((item) => (
+            {cart.cart_items.map((item, index) => (
               <div key={item.cart_item_id} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition">
                 <div className="flex flex-col md:flex-row gap-6">
+                  {/* Item Number */}
+                  <div className="flex-shrink-0 flex items-center justify-center">
+                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-full flex items-center justify-center font-bold text-lg shadow-lg">
+                      {index + 1}
+                    </div>
+                  </div>
                   {/* Product Image */}
                   <Link to={`/products/${item.product.products_id}`} className="flex-shrink-0">
                     <img
