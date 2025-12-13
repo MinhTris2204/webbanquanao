@@ -7,7 +7,7 @@ cart_bp = Blueprint('cart', __name__)
 @cart_bp.route('/', methods=['GET'])
 @jwt_required()
 def get_cart():
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     cart = Cart.query.filter_by(user_id=user_id, status='active').first()
     
     if not cart:
@@ -31,7 +31,7 @@ def get_cart():
 @cart_bp.route('/add', methods=['POST'])
 @jwt_required()
 def add_to_cart():
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     data = request.get_json()
     product_id = data.get('product_id')
     quantity = data.get('quantity', 1)
@@ -58,7 +58,7 @@ def add_to_cart():
 @cart_bp.route('/update/<int:cart_item_id>', methods=['PUT'])
 @jwt_required()
 def update_cart_item(cart_item_id):
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     data = request.get_json()
     quantity = data.get('quantity')
     
@@ -79,7 +79,7 @@ def update_cart_item(cart_item_id):
 @cart_bp.route('/remove/<int:cart_item_id>', methods=['DELETE'])
 @jwt_required()
 def remove_from_cart(cart_item_id):
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     cart_item = CartItem.query.get_or_404(cart_item_id)
     
     if cart_item.cart.user_id != user_id:

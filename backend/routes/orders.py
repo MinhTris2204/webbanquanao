@@ -7,14 +7,14 @@ orders_bp = Blueprint('orders', __name__)
 @orders_bp.route('/', methods=['GET'])
 @jwt_required()
 def get_orders():
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     orders = Order.query.filter_by(user_id=user_id).order_by(Order.created_at.desc()).all()
     return jsonify([order.to_dict() for order in orders]), 200
 
 @orders_bp.route('/<int:order_id>', methods=['GET'])
 @jwt_required()
 def get_order(order_id):
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     order = Order.query.get_or_404(order_id)
     
     if order.user_id != user_id:
@@ -25,7 +25,7 @@ def get_order(order_id):
 @orders_bp.route('/create', methods=['POST'])
 @jwt_required()
 def create_order():
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     data = request.get_json()
     
     cart = Cart.query.filter_by(user_id=user_id, status='active').first()
