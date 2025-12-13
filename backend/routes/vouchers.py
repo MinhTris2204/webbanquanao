@@ -29,13 +29,26 @@ def get_all_vouchers():
 def create_voucher():
     data = request.get_json()
     
+    # Handle empty strings for numeric fields
+    max_discount = data.get('max_discount')
+    if max_discount == '' or max_discount is None:
+        max_discount = None
+    else:
+        max_discount = float(max_discount)
+    
+    usage_limit = data.get('usage_limit')
+    if usage_limit == '' or usage_limit is None:
+        usage_limit = None
+    else:
+        usage_limit = int(usage_limit)
+    
     voucher = Voucher(
         code=data.get('code').upper(),
         discount_type=data.get('discount_type'),
-        discount_value=data.get('discount_value'),
-        min_order_value=data.get('min_order_value', 0),
-        max_discount=data.get('max_discount'),
-        usage_limit=data.get('usage_limit'),
+        discount_value=float(data.get('discount_value')),
+        min_order_value=float(data.get('min_order_value', 0)),
+        max_discount=max_discount,
+        usage_limit=usage_limit,
         start_date=datetime.fromisoformat(data.get('start_date')),
         end_date=datetime.fromisoformat(data.get('end_date')),
         is_active=data.get('is_active', True)
@@ -57,13 +70,15 @@ def update_voucher(voucher_id):
     if 'discount_type' in data:
         voucher.discount_type = data['discount_type']
     if 'discount_value' in data:
-        voucher.discount_value = data['discount_value']
+        voucher.discount_value = float(data['discount_value'])
     if 'min_order_value' in data:
-        voucher.min_order_value = data['min_order_value']
+        voucher.min_order_value = float(data['min_order_value'])
     if 'max_discount' in data:
-        voucher.max_discount = data['max_discount']
+        max_discount = data['max_discount']
+        voucher.max_discount = None if max_discount == '' or max_discount is None else float(max_discount)
     if 'usage_limit' in data:
-        voucher.usage_limit = data['usage_limit']
+        usage_limit = data['usage_limit']
+        voucher.usage_limit = None if usage_limit == '' or usage_limit is None else int(usage_limit)
     if 'start_date' in data:
         voucher.start_date = datetime.fromisoformat(data['start_date'])
     if 'end_date' in data:
