@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
-export default function Navbar() {
-  const { user, logout, isAuthenticated, isAdmin } = useAuth()
+export default function CustomerNavbar() {
+  const { user, logout, isAuthenticated } = useAuth()
 
   return (
     <nav className="bg-white shadow-lg">
@@ -25,11 +25,6 @@ export default function Navbar() {
                 <Link to="/orders" className="text-gray-700 hover:text-blue-600">
                   Đơn hàng
                 </Link>
-                {isAdmin && (
-                  <Link to="/admin" className="text-gray-700 hover:text-blue-600">
-                    Quản trị
-                  </Link>
-                )}
                 <span className="text-gray-700">Xin chào, {user?.hoten}</span>
                 <button
                   onClick={logout}
