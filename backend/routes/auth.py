@@ -75,6 +75,13 @@ def update_profile():
     
     data = request.get_json()
     
+    # Check if email is being changed and if it's already taken
+    if 'email' in data and data['email'] != user.email:
+        existing_user = User.query.filter_by(email=data['email']).first()
+        if existing_user:
+            return jsonify({'error': 'Email đã được sử dụng'}), 400
+        user.email = data['email']
+    
     if 'hoten' in data:
         user.hoten = data['hoten']
     if 'sdt' in data:
@@ -85,3 +92,48 @@ def update_profile():
     db.session.commit()
     
     return jsonify({'message': 'Cập nhật thành công', 'user': user.to_dict()}), 200
+
+@auth_bp.route('/change-password', methods=['PUT'])
+@jwt_required()
+def change_password():
+    user_id = int(get_jwt_identity())
+    user = User.query.get(user_id)
+    
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    data = request.get_json()
+    current_password = data.get('current_password')
+    new_password = data.get('new_password')
+    
+    if not current_password or not new_password:
+        return jsonify({'error': 'Vui lòng điền đầy đủ thông tin'}), 400
+    
+    # Verify current password
+    if not user.check_password(current_password):
+        return jsonify({'error': 'Mật khẩu hiện tại không đúng'}), 401
+    
+    # Check new password length
+    if len(new_password) < 6:
+        return jsonify({'error': 'Mật khẩu mới phải có ít nhất 6 ký tự'}), 400
+    
+    # Set new password
+    user.set_password(new_password)
+    db.session.commit()
+    
+    return jsonify({'message': 'Đổi mật khẩu thành công'}), 200
+
+@auth_bp.route('/delete-account', methods=['DELETE'])
+@jwt_required()
+def delete_account():
+    user_id = int(get_jwt_identity())
+    user = User.query.get(user_id)
+    
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    # Delete user (cascade will handle related records)
+    db.session.delete(user)
+    db.session.commit()
+    
+    return jsonify({'message': 'Tài khoản đã được xóa'}), 200
