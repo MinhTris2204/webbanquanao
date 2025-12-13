@@ -28,12 +28,6 @@ export default function AdminNavbar() {
             
             <div className="border-l border-gray-600 pl-4 ml-4">
               <span className="text-gray-300 mr-4">Admin: {user?.hoten}</span>
-              <a
-                href="/index.html"
-                className="text-gray-300 hover:text-white mr-4"
-              >
-                Về trang khách hàng
-              </a>
               <button
                 onClick={logout}
                 className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"

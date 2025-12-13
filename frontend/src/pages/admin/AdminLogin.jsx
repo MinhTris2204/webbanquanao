@@ -20,8 +20,8 @@ export default function AdminLogin() {
       }
       
       localStorage.setItem('token', res.data.access_token)
-      navigate('/')
-      window.location.reload() // Reload to update auth context
+      // Redirect to admin dashboard
+      window.location.href = '/admin.html'
     } catch (err) {
       setError(err.response?.data?.error || 'Đăng nhập thất bại')
     }
@@ -79,13 +79,7 @@ export default function AdminLogin() {
           </button>
         </form>
 
-        <div className="mt-6 text-center">
-          <a href="/index.html" className="text-gray-600 hover:text-gray-800 text-sm">
-            ← Về trang khách hàng
-          </a>
-        </div>
-
-        <div className="mt-4 p-3 bg-gray-50 rounded text-sm text-gray-600">
+        <div className="mt-6 p-3 bg-gray-50 rounded text-sm text-gray-600">
           <p className="font-semibold mb-1">Tài khoản demo:</p>
           <p>Tài khoản: admin</p>
           <p>Mật khẩu: admin123</p>
