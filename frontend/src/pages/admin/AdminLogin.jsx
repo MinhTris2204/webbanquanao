@@ -1,27 +1,28 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import api from '../../utils/api'
+import { useAuth } from '../../context/AuthContext'
 
 export default function AdminLogin() {
   const [formData, setFormData] = useState({ taikhoan: '', matkhau: '' })
   const [error, setError] = useState('')
   const navigate = useNavigate()
+  const { login } = useAuth()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     try {
-      const res = await api.post('/api/auth/login', formData)
+      const data = await login(formData.taikhoan, formData.matkhau)
       
       // Check if user is admin
-      if (res.data.user.role !== 'admin') {
+      if (data.user.role !== 'admin') {
         setError('Bạn không có quyền truy cập trang quản trị')
+        localStorage.removeItem('token')
         return
       }
       
-      localStorage.setItem('token', res.data.access_token)
-      // Redirect to admin dashboard
-      window.location.href = '/admin.html'
+      // Navigate to dashboard
+      navigate('/')
     } catch (err) {
       setError(err.response?.data?.error || 'Đăng nhập thất bại')
     }
