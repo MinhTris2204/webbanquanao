@@ -9,6 +9,9 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
     
+    # Disable strict slashes to avoid redirects
+    app.url_map.strict_slashes = False
+    
     # Configure CORS properly
     CORS(app, resources={
         r"/api/*": {
