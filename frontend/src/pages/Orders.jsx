@@ -11,7 +11,7 @@ export default function Orders() {
 
   const fetchOrders = async () => {
     try {
-      const res = await api.get('/orders')
+      const res = await api.get('/api/orders')
       setOrders(res.data)
     } catch (err) {
       console.error(err)

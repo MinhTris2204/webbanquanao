@@ -12,7 +12,7 @@ export default function Cart() {
 
   const fetchCart = async () => {
     try {
-      const res = await api.get('/cart')
+      const res = await api.get('/api/cart')
       setCart(res.data)
     } catch (err) {
       console.error(err)
@@ -21,7 +21,7 @@ export default function Cart() {
 
   const updateQuantity = async (cartItemId, quantity) => {
     try {
-      await api.put(`/cart/update/${cartItemId}`, { quantity })
+      await api.put(`/api/cart/update/${cartItemId}`, { quantity })
       fetchCart()
     } catch (err) {
       console.error(err)
@@ -30,7 +30,7 @@ export default function Cart() {
 
   const removeItem = async (cartItemId) => {
     try {
-      await api.delete(`/cart/remove/${cartItemId}`)
+      await api.delete(`/api/cart/remove/${cartItemId}`)
       fetchCart()
     } catch (err) {
       console.error(err)

@@ -13,7 +13,7 @@ export default function Products() {
 
   const fetchProducts = async () => {
     try {
-      const res = await api.get('/products', { params: { search } })
+      const res = await api.get('/api/products', { params: { search } })
       setProducts(res.data.products)
     } catch (err) {
       console.error(err)

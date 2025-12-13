@@ -21,7 +21,7 @@ export default function AdminProducts() {
 
   const fetchProducts = async () => {
     try {
-      const res = await api.get('/products')
+      const res = await api.get('/api/products')
       setProducts(res.data.products)
     } catch (err) {
       console.error(err)
@@ -32,9 +32,9 @@ export default function AdminProducts() {
     e.preventDefault()
     try {
       if (editingProduct) {
-        await api.put(`/admin/products/${editingProduct.products_id}`, formData)
+        await api.put(`/api/admin/products/${editingProduct.products_id}`, formData)
       } else {
-        await api.post('/admin/products', formData)
+        await api.post('/api/admin/products', formData)
       }
       setShowForm(false)
       setEditingProduct(null)
@@ -62,7 +62,7 @@ export default function AdminProducts() {
   const handleDelete = async (id) => {
     if (confirm('Bạn có chắc muốn xóa sản phẩm này?')) {
       try {
-        await api.delete(`/admin/products/${id}`)
+        await api.delete(`/api/admin/products/${id}`)
         fetchProducts()
       } catch (err) {
         alert('Có lỗi xảy ra')

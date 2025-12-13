@@ -22,7 +22,7 @@ export default function Checkout() {
 
   const fetchCart = async () => {
     try {
-      const res = await api.get('/cart')
+      const res = await api.get('/api/cart')
       setCart(res.data)
     } catch (err) {
       console.error(err)
@@ -35,7 +35,7 @@ export default function Checkout() {
     setError('')
 
     try {
-      await api.post('/orders/create', formData)
+      await api.post('/api/orders/create', formData)
       alert('Đặt hàng thành công!')
       navigate('/orders')
     } catch (err) {

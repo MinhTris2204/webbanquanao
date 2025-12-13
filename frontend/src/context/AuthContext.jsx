@@ -18,7 +18,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const token = localStorage.getItem('token')
     if (token) {
-      api.get('/auth/me')
+      api.get('/api/auth/me')
         .then(res => setUser(res.data))
         .catch(() => localStorage.removeItem('token'))
         .finally(() => setLoading(false))
@@ -28,14 +28,14 @@ export const AuthProvider = ({ children }) => {
   }, [])
 
   const login = async (email, matkhau) => {
-    const res = await api.post('/auth/login', { email, matkhau })
+    const res = await api.post('/api/auth/login', { email, matkhau })
     localStorage.setItem('token', res.data.access_token)
     setUser(res.data.user)
     return res.data
   }
 
   const register = async (userData) => {
-    const res = await api.post('/auth/register', userData)
+    const res = await api.post('/api/auth/register', userData)
     return res.data
   }
 

@@ -17,7 +17,7 @@ export default function ProductDetail() {
 
   const fetchProduct = async () => {
     try {
-      const res = await api.get(`/products/${id}`)
+      const res = await api.get(`/api/products/${id}`)
       setProduct(res.data)
     } catch (err) {
       console.error(err)
@@ -31,7 +31,7 @@ export default function ProductDetail() {
     }
 
     try {
-      await api.post('/cart/add', {
+      await api.post('/api/cart/add', {
         product_id: product.products_id,
         quantity
       })

@@ -11,7 +11,7 @@ export default function AdminOrders() {
 
   const fetchOrders = async () => {
     try {
-      const res = await api.get('/admin/orders')
+      const res = await api.get('/api/admin/orders')
       setOrders(res.data.orders)
     } catch (err) {
       console.error(err)
@@ -22,7 +22,7 @@ export default function AdminOrders() {
 
   const updateStatus = async (orderId, status) => {
     try {
-      await api.put(`/admin/orders/${orderId}/status`, { trangthai: status })
+      await api.put(`/api/admin/orders/${orderId}/status`, { trangthai: status })
       fetchOrders()
     } catch (err) {
       alert('Có lỗi xảy ra')
