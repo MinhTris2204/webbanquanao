@@ -47,23 +47,23 @@ def create_order():
     ma_voucher = data.get('ma_voucher')
     
     if ma_voucher:
-        voucher = Voucher.query.filter_by(ma_voucher=ma_voucher).first()
+        voucher = Voucher.query.filter_by(code=ma_voucher).first()
         if voucher:
             # Validate voucher
             now = datetime.utcnow()
-            if voucher.trangthai == 'active' and voucher.ngay_bat_dau <= now <= voucher.ngay_ket_thuc:
-                if voucher.so_luong > 0 and total >= voucher.don_toi_thieu:
+            if voucher.is_active and voucher.start_date <= now <= voucher.end_date:
+                if (voucher.usage_limit is None or voucher.used_count < voucher.usage_limit) and total >= voucher.min_order_value:
                     # Calculate discount
-                    if voucher.loai_giam == 'percent':
-                        discount_amount = (total * voucher.giatri_giam) / 100
-                        if voucher.giam_toi_da:
-                            discount_amount = min(discount_amount, voucher.giam_toi_da)
+                    if voucher.discount_type == 'percent':
+                        discount_amount = (total * float(voucher.discount_value)) / 100
+                        if voucher.max_discount:
+                            discount_amount = min(discount_amount, float(voucher.max_discount))
                     else:
-                        discount_amount = voucher.giatri_giam
+                        discount_amount = float(voucher.discount_value)
                     
                     voucher_id = voucher.id
-                    # Decrease voucher quantity
-                    voucher.so_luong -= 1
+                    # Increase used count
+                    voucher.used_count += 1
     
     final_total = max(0, total - discount_amount)
     
