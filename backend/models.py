@@ -114,7 +114,7 @@ class Order(db.Model):
         return {
             'id': self.id,
             'user_id': self.user_id,
-            'tongdon': float(self.tongdon) if self.tongdon else None,
+            'tongtien': float(self.tongtien) if self.tongtien else None,
             'trangthai': self.trangthai,
             'diachi_giaohang': self.diachi_giaohang,
             'hoten': self.hoten,
