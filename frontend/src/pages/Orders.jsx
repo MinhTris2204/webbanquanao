@@ -212,6 +212,31 @@ export default function Orders() {
                   </div>
                 </div>
 
+                {/* Voucher & Discount Info */}
+                {order.voucher && order.discount_amount > 0 && (
+                  <div className="mt-4 pt-4 border-t">
+                    <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <span className="text-2xl">🎟️</span>
+                          <div>
+                            <p className="font-bold text-green-700">Đã áp dụng mã giảm giá</p>
+                            <p className="text-sm text-green-600">
+                              Mã: <span className="font-bold">{order.voucher.code}</span>
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm text-green-600">Tiết kiệm</p>
+                          <p className="text-xl font-bold text-green-700">
+                            -{order.discount_amount?.toLocaleString('vi-VN')}₫
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Payment Method */}
                 <div className="mt-4 pt-4 border-t">
                   <p className="text-sm text-gray-600">
