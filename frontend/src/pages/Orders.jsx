@@ -178,26 +178,6 @@ export default function Orders() {
                   </p>
                 </div>
               </div>
-
-              {/* Order Timeline */}
-              <div className="bg-gray-50 px-6 py-4 border-t">
-                <div className="flex items-center justify-between text-sm">
-                  <div className={`flex items-center gap-2 ${order.trangthai === 'cho_xac_nhan' || order.trangthai === 'dang_giao' || order.trangthai === 'hoan_thanh' ? 'text-blue-600 font-semibold' : 'text-gray-400'}`}>
-                    <span className="text-xl">📝</span>
-                    <span>Đã đặt</span>
-                  </div>
-                  <div className="flex-1 h-1 bg-gray-300 mx-2"></div>
-                  <div className={`flex items-center gap-2 ${order.trangthai === 'dang_giao' || order.trangthai === 'hoan_thanh' ? 'text-blue-600 font-semibold' : 'text-gray-400'}`}>
-                    <span className="text-xl">🚚</span>
-                    <span>Đang giao</span>
-                  </div>
-                  <div className="flex-1 h-1 bg-gray-300 mx-2"></div>
-                  <div className={`flex items-center gap-2 ${order.trangthai === 'hoan_thanh' ? 'text-green-600 font-semibold' : 'text-gray-400'}`}>
-                    <span className="text-xl">✅</span>
-                    <span>Hoàn thành</span>
-                  </div>
-                </div>
-              </div>
             </div>
           ))}
         </div>

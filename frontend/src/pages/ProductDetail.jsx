@@ -69,11 +69,13 @@ export default function ProductDetail() {
     }
 
     try {
+      // Add to cart first
       await api.post('/api/cart/add', {
         product_id: product.products_id,
         quantity
       })
-      navigate('/cart')
+      // Go directly to checkout
+      navigate('/checkout')
     } catch (err) {
       setMessage({ text: '❌ Có lỗi xảy ra', type: 'error' })
     }
