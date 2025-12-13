@@ -24,13 +24,13 @@ def create_product():
     product = Product(
         ten_san_pham=data.get('ten_san_pham'),
         gia_ban=data.get('gia_ban'),
-        bai=data.get('bai'),
+        loai=data.get('loai'),
         mo_ta=data.get('mo_ta'),
         size=data.get('size'),
         chat_lieu=data.get('chat_lieu'),
-        gia_tien=data.get('gia_tien'),
+        gioi_tinh=data.get('gioi_tinh', 'Unisex'),
         hinh_anh=data.get('hinh_anh'),
-        trang_thai=data.get('trang_thai', 'available')
+        trang_thai=data.get('trang_thai', 'Con_hang')
     )
     
     db.session.add(product)
