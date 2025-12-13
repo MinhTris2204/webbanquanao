@@ -50,12 +50,12 @@ export default function Home() {
 
       <div className="mt-12 text-center">
         <p className="text-gray-600 mb-4">Bạn là quản trị viên?</p>
-        <Link
-          to="/admin/login"
+        <a
+          href="/admin.html"
           className="text-gray-700 hover:text-gray-900 underline"
         >
           Đăng nhập trang quản trị →
-        </Link>
+        </a>
       </div>
     </div>
   )

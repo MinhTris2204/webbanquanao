@@ -20,7 +20,7 @@ export default function AdminLogin() {
         return
       }
       
-      navigate('/admin')
+      navigate('/')
     } catch (err) {
       setError(err.response?.data?.error || 'Đăng nhập thất bại')
     }
@@ -79,9 +79,9 @@ export default function AdminLogin() {
         </form>
 
         <div className="mt-6 text-center">
-          <Link to="/login" className="text-gray-600 hover:text-gray-800 text-sm">
-            ← Về trang đăng nhập khách hàng
-          </Link>
+          <a href="/" className="text-gray-600 hover:text-gray-800 text-sm">
+            ← Về trang chủ khách hàng
+          </a>
         </div>
 
         <div className="mt-4 p-3 bg-gray-50 rounded text-sm text-gray-600">

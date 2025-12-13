@@ -1,5 +1,5 @@
-import { Link } from 'react-router-dom'
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import api from '../../utils/api'
 
 export default function AdminDashboard() {
@@ -100,7 +100,7 @@ export default function AdminDashboard() {
       <h2 className="text-2xl font-bold mb-4 text-gray-800">Quản lý nhanh</h2>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Link
-          to="/admin/products"
+          to="/products"
           className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition border-l-4 border-blue-500"
         >
           <h3 className="text-xl font-bold mb-2 text-gray-800">Quản lý sản phẩm</h3>
@@ -108,7 +108,7 @@ export default function AdminDashboard() {
         </Link>
 
         <Link
-          to="/admin/orders"
+          to="/orders"
           className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition border-l-4 border-green-500"
         >
           <h3 className="text-xl font-bold mb-2 text-gray-800">Quản lý đơn hàng</h3>
@@ -116,7 +116,7 @@ export default function AdminDashboard() {
         </Link>
 
         <Link
-          to="/admin/users"
+          to="/users"
           className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition border-l-4 border-purple-500"
         >
           <h3 className="text-xl font-bold mb-2 text-gray-800">Quản lý người dùng</h3>

@@ -20,9 +20,10 @@ docker-compose up --build
 ```
 
 3. Truy cập:
-- Frontend: http://localhost:5173
-- Backend API: http://localhost:5000
+- **Trang khách hàng**: http://localhost:5173
+- **Trang quản trị**: http://localhost:5173/admin.html
+- **Backend API**: http://localhost:5000
 
 ## Tài khoản mặc định
-- Admin: admin@example.com / admin123
-- Customer: customer@example.com / customer123
+- **Admin**: admin@example.com / admin123
+- **Customer**: Đăng ký tài khoản mới tại trang khách hàng
