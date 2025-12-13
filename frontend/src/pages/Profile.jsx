@@ -136,7 +136,7 @@ export default function Profile() {
         <div className="lg:col-span-1">
           <div className="bg-white rounded-xl shadow-lg p-6">
             <div className="text-center mb-6">
-              <div className="bg-gradient-to-br from-blue-500 to-purple-600 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="bg-gradient-to-br from-blue-500 to-cyan-600 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
                 <span className="text-3xl font-bold text-white">
                   {user?.hoten?.charAt(0).toUpperCase()}
                 </span>
