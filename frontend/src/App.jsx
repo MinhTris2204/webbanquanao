@@ -14,7 +14,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
   return (
-    <Router>
+    <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <Routes>
         {/* Customer Routes */}
         <Route element={<CustomerLayout />}>

@@ -20,7 +20,11 @@ export const AuthProvider = ({ children }) => {
     if (token) {
       api.get('/api/auth/me')
         .then(res => setUser(res.data))
-        .catch(() => localStorage.removeItem('token'))
+        .catch((error) => {
+          // Clear invalid token
+          localStorage.removeItem('token')
+          console.log('Token invalid or expired, cleared from storage')
+        })
         .finally(() => setLoading(false))
     } else {
       setLoading(false)
