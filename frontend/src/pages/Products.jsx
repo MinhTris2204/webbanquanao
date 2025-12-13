@@ -5,10 +5,12 @@ import api from '../utils/api'
 export default function Products() {
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
+  const [showFilters, setShowFilters] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState('')
   const [selectedGender, setSelectedGender] = useState('')
   const [selectedSize, setSelectedSize] = useState('')
   const [priceRange, setPriceRange] = useState({ min: '', max: '' })
+  const [priceDisplay, setPriceDisplay] = useState({ min: '', max: '' })
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalProducts, setTotalProducts] = useState(0)
@@ -53,11 +55,31 @@ export default function Products() {
     return matchCategory && matchGender && matchSize && matchPrice
   })
 
+  const formatPrice = (value) => {
+    const number = value.replace(/\D/g, '')
+    return number.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+  }
+
+  const handlePriceChange = (field, value) => {
+    const rawValue = value.replace(/\./g, '')
+    setPriceRange({ ...priceRange, [field]: rawValue })
+    setPriceDisplay({ ...priceDisplay, [field]: formatPrice(value) })
+  }
+
+  const handleQuickPrice = (min, max) => {
+    setPriceRange({ min, max })
+    setPriceDisplay({ 
+      min: min ? formatPrice(min) : '', 
+      max: max ? formatPrice(max) : '' 
+    })
+  }
+
   const handleResetFilters = () => {
     setSelectedCategory('')
     setSelectedGender('')
     setSelectedSize('')
     setPriceRange({ min: '', max: '' })
+    setPriceDisplay({ min: '', max: '' })
     setCurrentPage(1)
   }
 
@@ -76,19 +98,46 @@ export default function Products() {
     <div className="max-w-7xl mx-auto px-4 py-8">
       <h1 className="text-4xl font-bold mb-8 text-gray-800">🛍️ Sản phẩm</h1>
 
-      {/* Filters */}
-      <div className="mb-8 bg-white rounded-xl shadow-lg p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-gray-800">🔧 Bộ lọc</h2>
-          <button
-            onClick={handleResetFilters}
-            className="text-sm text-blue-600 hover:text-blue-700 font-semibold"
+      {/* Filter Toggle Button */}
+      <div className="mb-6">
+        <button
+          onClick={() => setShowFilters(!showFilters)}
+          className="w-full bg-white rounded-xl shadow-lg px-6 py-4 flex items-center justify-between hover:shadow-xl transition"
+        >
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">🔧</span>
+            <span className="text-xl font-bold text-gray-800">Bộ lọc</span>
+            {(selectedCategory || selectedGender || selectedSize || priceRange.min || priceRange.max) && (
+              <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
+                Đang lọc
+              </span>
+            )}
+          </div>
+          <svg 
+            className={`w-6 h-6 text-gray-600 transition-transform ${showFilters ? 'rotate-180' : ''}`}
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
           >
-            ↻ Đặt lại
-          </button>
-        </div>
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+      </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Filters */}
+      {showFilters && (
+        <div className="mb-8 bg-white rounded-xl shadow-lg p-6 animate-fadeIn">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-gray-800">Tùy chọn lọc</h2>
+            <button
+              onClick={handleResetFilters}
+              className="text-sm text-blue-600 hover:text-blue-700 font-semibold"
+            >
+              ↻ Đặt lại
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Category Filter */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">Loại sản phẩm</label>
@@ -146,7 +195,7 @@ export default function Products() {
             {/* Quick Price Buttons */}
             <div className="flex flex-wrap gap-2 mb-3">
               <button
-                onClick={() => setPriceRange({ min: '', max: '' })}
+                onClick={() => handleQuickPrice('', '')}
                 className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
                   !priceRange.min && !priceRange.max
                     ? 'bg-blue-600 text-white'
@@ -156,7 +205,7 @@ export default function Products() {
                 Tất cả
               </button>
               <button
-                onClick={() => setPriceRange({ min: '0', max: '200000' })}
+                onClick={() => handleQuickPrice('0', '200000')}
                 className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
                   priceRange.min === '0' && priceRange.max === '200000'
                     ? 'bg-blue-600 text-white'
@@ -166,7 +215,7 @@ export default function Products() {
                 Dưới 200k
               </button>
               <button
-                onClick={() => setPriceRange({ min: '200000', max: '500000' })}
+                onClick={() => handleQuickPrice('200000', '500000')}
                 className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
                   priceRange.min === '200000' && priceRange.max === '500000'
                     ? 'bg-blue-600 text-white'
@@ -176,7 +225,7 @@ export default function Products() {
                 200k - 500k
               </button>
               <button
-                onClick={() => setPriceRange({ min: '500000', max: '1000000' })}
+                onClick={() => handleQuickPrice('500000', '1000000')}
                 className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
                   priceRange.min === '500000' && priceRange.max === '1000000'
                     ? 'bg-blue-600 text-white'
@@ -186,7 +235,7 @@ export default function Products() {
                 500k - 1tr
               </button>
               <button
-                onClick={() => setPriceRange({ min: '1000000', max: '' })}
+                onClick={() => handleQuickPrice('1000000', '')}
                 className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
                   priceRange.min === '1000000' && !priceRange.max
                     ? 'bg-blue-600 text-white'
@@ -200,31 +249,32 @@ export default function Products() {
             {/* Custom Price Inputs */}
             <div className="flex gap-2">
               <input
-                type="number"
+                type="text"
                 placeholder="Từ"
-                value={priceRange.min}
-                onChange={(e) => setPriceRange({ ...priceRange, min: e.target.value })}
+                value={priceDisplay.min}
+                onChange={(e) => handlePriceChange('min', e.target.value)}
                 className="flex-1 px-3 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
               />
               <span className="flex items-center text-gray-500">-</span>
               <input
-                type="number"
+                type="text"
                 placeholder="Đến"
-                value={priceRange.max}
-                onChange={(e) => setPriceRange({ ...priceRange, max: e.target.value })}
+                value={priceDisplay.max}
+                onChange={(e) => handlePriceChange('max', e.target.value)}
                 className="flex-1 px-3 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
               />
             </div>
           </div>
         </div>
 
-        {/* Results Count */}
-        <div className="mt-4 pt-4 border-t border-gray-200">
-          <p className="text-sm text-gray-600">
-            Hiển thị <span className="font-bold text-blue-600">{filteredProducts.length}</span> / {totalProducts} sản phẩm
-          </p>
+          {/* Results Count */}
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <p className="text-sm text-gray-600">
+              Hiển thị <span className="font-bold text-blue-600">{filteredProducts.length}</span> / {totalProducts} sản phẩm
+            </p>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Products Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
