@@ -63,3 +63,25 @@ def get_current_user():
 def logout():
     # JWT logout is handled on client side by removing token
     return jsonify({'message': 'Đăng xuất thành công'}), 200
+
+@auth_bp.route('/profile', methods=['PUT'])
+@jwt_required()
+def update_profile():
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+    
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    data = request.get_json()
+    
+    if 'hoten' in data:
+        user.hoten = data['hoten']
+    if 'sdt' in data:
+        user.sdt = data['sdt']
+    if 'diachi' in data:
+        user.diachi = data['diachi']
+    
+    db.session.commit()
+    
+    return jsonify({'message': 'Cập nhật thành công', 'user': user.to_dict()}), 200
