@@ -4,11 +4,18 @@ import Footer from '../components/Footer'
 
 export default function CustomerLayout() {
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <CustomerNavbar />
-      <main className="flex-grow">
+    <div className="flex flex-col min-h-screen">
+      {/* Fixed Header */}
+      <header className="sticky top-0 z-50">
+        <CustomerNavbar />
+      </header>
+      
+      {/* Main Content - Takes remaining space */}
+      <main className="flex-1">
         <Outlet />
       </main>
+      
+      {/* Footer - Always at bottom */}
       <Footer />
     </div>
   )
