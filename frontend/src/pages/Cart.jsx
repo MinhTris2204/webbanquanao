@@ -1,10 +1,18 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import api from '../utils/api'
 
 export default function Cart() {
+  const { isAuthenticated } = useAuth()
   const [cart, setCart] = useState({ cart_items: [], total: 0 })
   const navigate = useNavigate()
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/login')
+    }
+  }, [isAuthenticated, navigate])
 
   useEffect(() => {
     fetchCart()

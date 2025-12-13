@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../utils/api'
 
 export default function Profile() {
-  const { user } = useAuth()
+  const { user, isAuthenticated } = useAuth()
+  const navigate = useNavigate()
   const [formData, setFormData] = useState({
     hoten: '',
     sdt: '',
@@ -13,14 +15,16 @@ export default function Profile() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    if (user) {
+    if (!isAuthenticated) {
+      navigate('/login')
+    } else if (user) {
       setFormData({
         hoten: user.hoten || '',
         sdt: user.sdt || '',
         diachi: user.diachi || ''
       })
     }
-  }, [user])
+  }, [user, isAuthenticated, navigate])
 
   const handleSubmit = async (e) => {
     e.preventDefault()

@@ -4,7 +4,7 @@ import api from '../utils/api'
 import { useAuth } from '../context/AuthContext'
 
 export default function Checkout() {
-  const { user } = useAuth()
+  const { user, isAuthenticated } = useAuth()
   const navigate = useNavigate()
   const [cart, setCart] = useState({ cart_items: [], total: 0 })
   const [formData, setFormData] = useState({
@@ -17,8 +17,12 @@ export default function Checkout() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    fetchCart()
-  }, [])
+    if (!isAuthenticated) {
+      navigate('/login')
+    } else {
+      fetchCart()
+    }
+  }, [isAuthenticated, navigate])
 
   const fetchCart = async () => {
     try {
