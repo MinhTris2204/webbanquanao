@@ -20,6 +20,15 @@ if __name__ == '__main__':
                 print(f"Database connection attempt {retry_count}/{max_retries} failed: {e}")
                 time.sleep(2)
         
+        # Enable pgvector extension
+        try:
+            with db.engine.connect() as conn:
+                conn.execute(db.text('CREATE EXTENSION IF NOT EXISTS vector'))
+                conn.commit()
+            print("pgvector extension enabled!")
+        except Exception as e:
+            print(f"Warning: Could not enable pgvector extension: {e}")
+        
         # Create tables
         db.create_all()
         print("Database tables created!")
