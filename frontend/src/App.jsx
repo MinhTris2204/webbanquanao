@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { CartProvider } from './context/CartContext'
 import CustomerLayout from './layouts/CustomerLayout'
 import Home from './pages/Home'
 import Login from './pages/Login'
@@ -14,8 +15,9 @@ import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
   return (
-    <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-      <Routes>
+    <CartProvider>
+      <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <Routes>
         {/* Customer Routes */}
         <Route element={<CustomerLayout />}>
           <Route path="/" element={<Home />} />
@@ -31,6 +33,7 @@ function App() {
         </Route>
       </Routes>
     </Router>
+    </CartProvider>
   )
 }
 

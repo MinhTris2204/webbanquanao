@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useCart } from '../context/CartContext'
 import api from '../utils/api'
 
 export default function Cart() {
   const { isAuthenticated } = useAuth()
+  const { fetchCartCount } = useCart()
   const [cart, setCart] = useState({ cart_items: [], total: 0 })
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
@@ -24,6 +26,7 @@ export default function Cart() {
     try {
       const res = await api.get('/api/cart')
       setCart(res.data)
+      fetchCartCount() // Update cart count
     } catch (err) {
       console.error(err)
     } finally {

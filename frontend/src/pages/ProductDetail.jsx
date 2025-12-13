@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../utils/api'
 import { useAuth } from '../context/AuthContext'
+import { useCart } from '../context/CartContext'
 
 export default function ProductDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { isAuthenticated } = useAuth()
+  const { fetchCartCount } = useCart()
   const [product, setProduct] = useState(null)
   const [quantity, setQuantity] = useState(1)
   const [selectedSize, setSelectedSize] = useState('')
@@ -51,6 +53,7 @@ export default function ProductDetail() {
         quantity,
         selected_size: selectedSize
       })
+      fetchCartCount() // Refresh cart count
       setMessage({ text: '✅ Đã thêm vào giỏ hàng!', type: 'success' })
       setTimeout(() => setMessage({ text: '', type: '' }), 3000)
     } catch (err) {
@@ -76,6 +79,7 @@ export default function ProductDetail() {
         quantity,
         selected_size: selectedSize
       })
+      fetchCartCount() // Refresh cart count
       // Go directly to checkout
       navigate('/checkout')
     } catch (err) {
