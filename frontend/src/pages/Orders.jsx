@@ -7,7 +7,8 @@ export default function Orders() {
   const { isAuthenticated } = useAuth()
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [showSuccess, setShowSuccess] = useState(false)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -17,6 +18,22 @@ export default function Orders() {
       fetchOrders()
     }
   }, [isAuthenticated, navigate])
+
+  useEffect(() => {
+    // Check for success message
+    if (searchParams.get('success') === 'true') {
+      setShowSuccess(true)
+      // Auto-dismiss after 5 seconds
+      const timer = setTimeout(() => {
+        setShowSuccess(false)
+        // Remove success param from URL
+        searchParams.delete('success')
+        setSearchParams(searchParams)
+      }, 5000)
+      
+      return () => clearTimeout(timer)
+    }
+  }, [searchParams, setSearchParams])
 
   const fetchOrders = async () => {
     setLoading(true)
@@ -74,13 +91,21 @@ export default function Orders() {
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       {/* Success Message */}
-      {searchParams.get('success') === 'true' && (
-        <div className="mb-6 bg-green-100 border-2 border-green-400 text-green-700 px-6 py-4 rounded-xl flex items-center gap-3">
-          <span className="text-2xl">✅</span>
-          <div>
-            <p className="font-bold">Đặt hàng thành công!</p>
-            <p className="text-sm">Đơn hàng của bạn đã được ghi nhận và đang chờ xác nhận.</p>
+      {showSuccess && (
+        <div className="mb-6 bg-green-100 border-2 border-green-400 text-green-700 px-6 py-4 rounded-xl flex items-center justify-between animate-fadeIn">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">✅</span>
+            <div>
+              <p className="font-bold">Đặt hàng thành công!</p>
+              <p className="text-sm">Đơn hàng của bạn đã được ghi nhận và đang chờ xác nhận.</p>
+            </div>
           </div>
+          <button
+            onClick={() => setShowSuccess(false)}
+            className="text-green-700 hover:text-green-900 font-bold text-xl"
+          >
+            ×
+          </button>
         </div>
       )}
 
