@@ -18,11 +18,19 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const token = localStorage.getItem('token')
     if (token) {
+      console.log('Checking auth with token:', token.substring(0, 20) + '...')
       api.get('/api/auth/me')
-        .then(res => setUser(res.data))
+        .then(res => {
+          console.log('Auth check successful:', res.data)
+          setUser(res.data)
+        })
         .catch((error) => {
-          // Clear invalid token silently
-          localStorage.removeItem('token')
+          console.log('Auth check failed:', error.response?.status, error.response?.data)
+          // Only clear token if it's actually invalid (401 or 422)
+          if (error.response && (error.response.status === 401 || error.response.status === 422)) {
+            console.log('Clearing invalid token')
+            localStorage.removeItem('token')
+          }
         })
         .finally(() => setLoading(false))
     } else {
