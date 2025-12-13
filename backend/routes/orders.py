@@ -32,24 +32,33 @@ def create_order():
     if not cart or not cart.cart_items:
         return jsonify({'error': 'Giỏ hàng trống'}), 400
     
+    # Calculate total first
     total = 0
+    for item in cart.cart_items:
+        product = item.product
+        unit_price = product.gia_ban
+        line_total = unit_price * item.quantity
+        total += line_total
+    
+    # Create order with total
     order = Order(
         user_id=user_id,
         hoten=data.get('hoten'),
         sdt=data.get('sdt'),
         diachi_giaohang=data.get('diachi_giaohang'),
         payment_method=data.get('payment_method', 'COD'),
-        trangthai='cho_xac_nhan'
+        trangthai='cho_xac_nhan',
+        tongtien=total
     )
     
     db.session.add(order)
     db.session.flush()
     
+    # Create order details
     for item in cart.cart_items:
         product = item.product
         unit_price = product.gia_ban
         line_total = unit_price * item.quantity
-        total += line_total
         
         order_detail = OrderDetail(
             order_id=order.id,
@@ -60,7 +69,6 @@ def create_order():
         )
         db.session.add(order_detail)
     
-    order.tongtien = total
     cart.status = 'completed'
     
     db.session.commit()
