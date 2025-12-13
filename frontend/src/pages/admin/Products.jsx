@@ -273,13 +273,23 @@ export default function AdminProducts() {
                 {/* Chất liệu */}
                 <div>
                   <label className="block text-gray-700 mb-2 font-semibold text-sm">Chất liệu</label>
-                  <input
-                    type="text"
-                    placeholder="VD: Cotton, Polyester..."
+                  <select
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                     value={formData.chat_lieu}
                     onChange={(e) => setFormData({ ...formData, chat_lieu: e.target.value })}
-                  />
+                  >
+                    <option value="">-- Chọn chất liệu --</option>
+                    <option value="Cotton">Cotton</option>
+                    <option value="Polyester">Polyester</option>
+                    <option value="Linen">Linen</option>
+                    <option value="Denim">Denim</option>
+                    <option value="Silk">Silk</option>
+                    <option value="Wool">Wool</option>
+                    <option value="Nylon">Nylon</option>
+                    <option value="Spandex">Spandex</option>
+                    <option value="Cotton blend">Cotton blend</option>
+                    <option value="Vải thun">Vải thun</option>
+                  </select>
                 </div>
 
                 {/* Trạng thái */}
