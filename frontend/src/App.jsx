@@ -9,6 +9,7 @@ import ProductDetail from './pages/ProductDetail'
 import Cart from './pages/Cart'
 import Checkout from './pages/Checkout'
 import Orders from './pages/Orders'
+import AdminLogin from './pages/admin/AdminLogin'
 import AdminDashboard from './pages/admin/Dashboard'
 import AdminProducts from './pages/admin/Products'
 import AdminOrders from './pages/admin/Orders'
@@ -30,6 +31,9 @@ function App() {
           <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
           <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
         </Route>
+
+        {/* Admin Login - Standalone */}
+        <Route path="/admin/login" element={<AdminLogin />} />
 
         {/* Admin Routes */}
         <Route element={<ProtectedRoute adminOnly><AdminLayout /></ProtectedRoute>}>
