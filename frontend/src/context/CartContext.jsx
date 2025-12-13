@@ -16,7 +16,8 @@ export function CartProvider({ children }) {
 
     try {
       const res = await api.get('/api/cart')
-      const count = res.data.cart_items?.reduce((sum, item) => sum + item.quantity, 0) || 0
+      // Count number of items (products), not total quantity
+      const count = res.data.cart_items?.length || 0
       setCartCount(count)
     } catch (err) {
       console.error('Error fetching cart count:', err)
