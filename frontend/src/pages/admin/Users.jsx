@@ -187,11 +187,7 @@ export default function AdminUsers() {
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       {/* Header */}
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">👥 Quản lý người dùng</h1>
-          <p className="text-gray-600">Quản lý tài khoản và phân quyền người dùng</p>
-        </div>
+      <div className="mb-8 flex items-center justify-end">
         <button
           onClick={handleAdd}
           className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-blue-600 hover:to-blue-700 transition shadow-lg flex items-center gap-2"
