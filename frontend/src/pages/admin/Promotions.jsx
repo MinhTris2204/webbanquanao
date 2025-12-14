@@ -248,8 +248,7 @@ export default function Promotions() {
 
   return (
     <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Quản lý khuyến mãi</h1>
+      <div className="flex justify-end items-center mb-6">
         <div className="flex gap-2">
           <button
             onClick={() => { resetForm(); setShowModal(true); }}

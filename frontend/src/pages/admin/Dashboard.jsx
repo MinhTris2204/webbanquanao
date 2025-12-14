@@ -7,119 +7,400 @@ export default function AdminDashboard() {
     totalProducts: 0,
     totalOrders: 0,
     totalUsers: 0,
-    pendingOrders: 0
+    totalRevenue: 0,
+    pendingOrders: 0,
+    completedOrders: 0,
+    activePromotions: 0,
+    activeVouchers: 0
   })
+  const [recentOrders, setRecentOrders] = useState([])
+  const [topProducts, setTopProducts] = useState([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetchStats()
+    fetchDashboardData()
   }, [])
 
-  const fetchStats = async () => {
+  const fetchDashboardData = async () => {
     try {
-      const [products, orders, users] = await Promise.all([
-        api.get('/api/products'),
-        api.get('/api/admin/orders'),
-        api.get('/api/admin/users')
-      ])
+      setLoading(true)
+      
+      // Fetch products
+      const productsRes = await api.get('/api/products?per_page=1000')
+      const productsData = productsRes.data.products || []
+      
+      // Fetch orders
+      const ordersRes = await api.get('/api/admin/orders')
+      const ordersData = ordersRes.data.orders || []
+      
+      // Fetch users
+      const usersRes = await api.get('/api/admin/users?per_page=1000')
+      const usersData = usersRes.data.users || []
+      
+      // Fetch promotions stats
+      let activePromotions = 0
+      try {
+        const promotionsRes = await api.get('/api/promotions/stats')
+        activePromotions = promotionsRes.data.active_count || 0
+      } catch (err) {
+        console.log('Promotions stats not available')
+      }
+      
+      // Fetch vouchers
+      let activeVouchers = 0
+      try {
+        const vouchersRes = await api.get('/api/vouchers/admin')
+        const vouchersData = vouchersRes.data || []
+        activeVouchers = vouchersData.filter(v => v.is_active).length
+      } catch (err) {
+        console.log('Vouchers not available:', err)
+      }
+      
+      // Calculate revenue
+      const totalRevenue = ordersData
+        .filter(o => o.trangthai === 'hoan_thanh')
+        .reduce((sum, o) => sum + parseFloat(o.tongtien || 0), 0)
       
       setStats({
-        totalProducts: products.data.total || products.data.products?.length || 0,
-        totalOrders: orders.data.total || orders.data.orders?.length || 0,
-        totalUsers: users.data.length || 0,
-        pendingOrders: orders.data.orders?.filter(o => o.trangthai === 'pending').length || 0
+        totalProducts: productsData.length,
+        totalOrders: ordersData.length,
+        totalUsers: usersData.length,
+        totalRevenue: totalRevenue,
+        pendingOrders: ordersData.filter(o => o.trangthai === 'cho_xac_nhan').length,
+        completedOrders: ordersData.filter(o => o.trangthai === 'hoan_thanh').length,
+        activePromotions: activePromotions,
+        activeVouchers: activeVouchers
       })
+      
+      // Recent orders (5 latest)
+      setRecentOrders(ordersData.slice(0, 5))
+      
+      // Top products (5 first)
+      setTopProducts(productsData.slice(0, 5))
+      
     } catch (err) {
-      console.error(err)
+      console.error('Error fetching dashboard data:', err)
+    } finally {
+      setLoading(false)
     }
   }
 
+  const getStatusBadge = (status) => {
+    const statusMap = {
+      'cho_xac_nhan': { label: 'Chờ xác nhận', color: 'bg-yellow-100 text-yellow-800' },
+      'dang_giao': { label: 'Đang giao', color: 'bg-blue-100 text-blue-800' },
+      'hoan_thanh': { label: 'Hoàn thành', color: 'bg-green-100 text-green-800' },
+      'huy': { label: 'Đã hủy', color: 'bg-red-100 text-red-800' }
+    }
+    const statusInfo = statusMap[status] || { label: status, color: 'bg-gray-100 text-gray-800' }
+    return (
+      <span className={`px-2 py-1 text-xs rounded-full font-semibold ${statusInfo.color}`}>
+        {statusInfo.label}
+      </span>
+    )
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Đang tải dữ liệu...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
+    <div className="space-y-6">
+      {/* Welcome Section */}
+      <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl shadow-lg p-6 text-white">
+        <h2 className="text-2xl font-bold mb-2">Chào mừng trở lại! 👋</h2>
+        <p className="text-blue-100">Đây là tổng quan về cửa hàng của bạn</p>
+      </div>
+
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white p-6 rounded-lg shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-500 text-sm">Tổng sản phẩm</p>
-              <p className="text-3xl font-bold text-blue-600">{stats.totalProducts}</p>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Revenue Card */}
+        <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white">
+          <div className="flex items-center justify-between mb-4">
+            <div className="bg-white bg-opacity-20 p-3 rounded-lg">
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
             </div>
-            <div className="bg-blue-100 p-3 rounded-full">
-              <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="text-right">
+              <p className="text-sm opacity-90">Doanh thu</p>
+              <p className="text-2xl font-bold">{stats.totalRevenue.toLocaleString()}₫</p>
+            </div>
+          </div>
+          <div className="flex items-center text-sm opacity-90">
+            <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clipRule="evenodd" />
+            </svg>
+            Từ đơn hoàn thành
+          </div>
+        </div>
+
+        {/* Orders Card */}
+        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white">
+          <div className="flex items-center justify-between mb-4">
+            <div className="bg-white bg-opacity-20 p-3 rounded-lg">
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+              </svg>
+            </div>
+            <div className="text-right">
+              <p className="text-sm opacity-90">Đơn hàng</p>
+              <p className="text-2xl font-bold">{stats.totalOrders}</p>
+            </div>
+          </div>
+          <div className="flex items-center justify-between text-sm">
+            <span className="opacity-90">Chờ xử lý:</span>
+            <span className="font-semibold">{stats.pendingOrders}</span>
+          </div>
+        </div>
+
+        {/* Products Card */}
+        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
+          <div className="flex items-center justify-between mb-4">
+            <div className="bg-white bg-opacity-20 p-3 rounded-lg">
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
               </svg>
             </div>
+            <div className="text-right">
+              <p className="text-sm opacity-90">Sản phẩm</p>
+              <p className="text-2xl font-bold">{stats.totalProducts}</p>
+            </div>
+          </div>
+          <div className="flex items-center justify-between text-sm">
+            <span className="opacity-90">Khuyến mãi:</span>
+            <span className="font-semibold">{stats.activePromotions}</span>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-500 text-sm">Tổng đơn hàng</p>
-              <p className="text-3xl font-bold text-green-600">{stats.totalOrders}</p>
-            </div>
-            <div className="bg-green-100 p-3 rounded-full">
-              <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-500 text-sm">Người dùng</p>
-              <p className="text-3xl font-bold text-purple-600">{stats.totalUsers}</p>
-            </div>
-            <div className="bg-purple-100 p-3 rounded-full">
-              <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        {/* Users Card */}
+        <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg p-6 text-white">
+          <div className="flex items-center justify-between mb-4">
+            <div className="bg-white bg-opacity-20 p-3 rounded-lg">
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
               </svg>
             </div>
+            <div className="text-right">
+              <p className="text-sm opacity-90">Người dùng</p>
+              <p className="text-2xl font-bold">{stats.totalUsers}</p>
+            </div>
+          </div>
+          <div className="flex items-center justify-between text-sm">
+            <span className="opacity-90">Voucher:</span>
+            <span className="font-semibold">{stats.activeVouchers}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Charts and Tables Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Recent Orders */}
+        <div className="bg-white rounded-xl shadow-lg p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-bold text-gray-800">📋 Đơn hàng gần đây</h3>
+            <Link to="/orders" className="text-blue-600 hover:text-blue-700 text-sm font-semibold">
+              Xem tất cả →
+            </Link>
+          </div>
+          <div className="space-y-3">
+            {recentOrders.length === 0 ? (
+              <p className="text-gray-500 text-center py-8">Chưa có đơn hàng nào</p>
+            ) : (
+              recentOrders.map((order) => (
+                <div key={order.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                  <div className="flex-1">
+                    <p className="font-semibold text-gray-800">#{order.id} - {order.hoten}</p>
+                    <p className="text-sm text-gray-500">{new Date(order.created_at).toLocaleDateString('vi-VN')}</p>
+                  </div>
+                  <div className="text-right mr-4">
+                    <p className="font-bold text-gray-800">{parseFloat(order.tongtien).toLocaleString()}₫</p>
+                  </div>
+                  <div>
+                    {getStatusBadge(order.trangthai)}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-500 text-sm">Đơn chờ xử lý</p>
-              <p className="text-3xl font-bold text-orange-600">{stats.pendingOrders}</p>
-            </div>
-            <div className="bg-orange-100 p-3 rounded-full">
-              <svg className="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
+        {/* Top Products */}
+        <div className="bg-white rounded-xl shadow-lg p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-bold text-gray-800">🏆 Sản phẩm nổi bật</h3>
+            <Link to="/products" className="text-blue-600 hover:text-blue-700 text-sm font-semibold">
+              Xem tất cả →
+            </Link>
+          </div>
+          <div className="space-y-3">
+            {topProducts.length === 0 ? (
+              <p className="text-gray-500 text-center py-8">Chưa có sản phẩm nào</p>
+            ) : (
+              topProducts.map((product) => (
+                <div key={product.products_id} className="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                  <img 
+                    src={product.hinh_anh || 'https://via.placeholder.com/60'} 
+                    alt={product.ten_san_pham}
+                    className="w-12 h-12 object-cover rounded-lg mr-3"
+                  />
+                  <div className="flex-1">
+                    <p className="font-semibold text-gray-800 line-clamp-1">{product.ten_san_pham}</p>
+                    <p className="text-sm text-gray-500">{product.loai}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-blue-600">{parseFloat(product.gia_ban).toLocaleString()}₫</p>
+                    {product.promotion && (
+                      <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded-full">Sale</span>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>
 
       {/* Quick Actions */}
-      <h2 className="text-2xl font-bold mb-4 text-gray-800">Quản lý nhanh</h2>
+      <div className="bg-white rounded-xl shadow-lg p-6">
+        <h3 className="text-xl font-bold text-gray-800 mb-4">⚡ Quản lý nhanh</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Link
+            to="/products"
+            className="group p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:shadow-md transition"
+          >
+            <div className="flex items-center mb-2">
+              <div className="bg-blue-100 p-2 rounded-lg mr-3 group-hover:bg-blue-500 transition">
+                <svg className="w-6 h-6 text-blue-600 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+              </div>
+              <h4 className="font-bold text-gray-800">Sản phẩm</h4>
+            </div>
+            <p className="text-sm text-gray-600">Quản lý kho hàng</p>
+          </Link>
+
+          <Link
+            to="/orders"
+            className="group p-4 border-2 border-gray-200 rounded-lg hover:border-green-500 hover:shadow-md transition"
+          >
+            <div className="flex items-center mb-2">
+              <div className="bg-green-100 p-2 rounded-lg mr-3 group-hover:bg-green-500 transition">
+                <svg className="w-6 h-6 text-green-600 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+              </div>
+              <h4 className="font-bold text-gray-800">Đơn hàng</h4>
+            </div>
+            <p className="text-sm text-gray-600">Xử lý đơn hàng</p>
+          </Link>
+
+          <Link
+            to="/promotions"
+            className="group p-4 border-2 border-gray-200 rounded-lg hover:border-red-500 hover:shadow-md transition"
+          >
+            <div className="flex items-center mb-2">
+              <div className="bg-red-100 p-2 rounded-lg mr-3 group-hover:bg-red-500 transition">
+                <svg className="w-6 h-6 text-red-600 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+                </svg>
+              </div>
+              <h4 className="font-bold text-gray-800">Khuyến mãi</h4>
+            </div>
+            <p className="text-sm text-gray-600">Tạo chương trình sale</p>
+          </Link>
+
+          <Link
+            to="/vouchers"
+            className="group p-4 border-2 border-gray-200 rounded-lg hover:border-purple-500 hover:shadow-md transition"
+          >
+            <div className="flex items-center mb-2">
+              <div className="bg-purple-100 p-2 rounded-lg mr-3 group-hover:bg-purple-500 transition">
+                <svg className="w-6 h-6 text-purple-600 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+                </svg>
+              </div>
+              <h4 className="font-bold text-gray-800">Voucher</h4>
+            </div>
+            <p className="text-sm text-gray-600">Quản lý mã giảm giá</p>
+          </Link>
+        </div>
+      </div>
+
+      {/* System Status */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Link
-          to="/products"
-          className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition border-l-4 border-blue-500"
-        >
-          <h3 className="text-xl font-bold mb-2 text-gray-800">Quản lý sản phẩm</h3>
-          <p className="text-gray-600">Thêm, sửa, xóa sản phẩm trong cửa hàng</p>
-        </Link>
+        <div className="bg-white rounded-xl shadow-lg p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="font-bold text-gray-800">Trạng thái đơn hàng</h4>
+            <span className="text-2xl">📊</span>
+          </div>
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Chờ xác nhận</span>
+              <span className="font-bold text-yellow-600">{stats.pendingOrders}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Hoàn thành</span>
+              <span className="font-bold text-green-600">{stats.completedOrders}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Tổng cộng</span>
+              <span className="font-bold text-blue-600">{stats.totalOrders}</span>
+            </div>
+          </div>
+        </div>
 
-        <Link
-          to="/orders"
-          className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition border-l-4 border-green-500"
-        >
-          <h3 className="text-xl font-bold mb-2 text-gray-800">Quản lý đơn hàng</h3>
-          <p className="text-gray-600">Xem và cập nhật trạng thái đơn hàng</p>
-        </Link>
+        <div className="bg-white rounded-xl shadow-lg p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="font-bold text-gray-800">Marketing</h4>
+            <span className="text-2xl">🎯</span>
+          </div>
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Khuyến mãi active</span>
+              <span className="font-bold text-red-600">{stats.activePromotions}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Voucher active</span>
+              <span className="font-bold text-purple-600">{stats.activeVouchers}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Tổng cộng</span>
+              <span className="font-bold text-blue-600">{stats.activePromotions + stats.activeVouchers}</span>
+            </div>
+          </div>
+        </div>
 
-        <Link
-          to="/users"
-          className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition border-l-4 border-purple-500"
-        >
-          <h3 className="text-xl font-bold mb-2 text-gray-800">Quản lý người dùng</h3>
-          <p className="text-gray-600">Xem danh sách người dùng và phân quyền</p>
-        </Link>
+        <div className="bg-white rounded-xl shadow-lg p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="font-bold text-gray-800">Hệ thống</h4>
+            <span className="text-2xl">⚙️</span>
+          </div>
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Trạng thái</span>
+              <span className="flex items-center text-green-600 font-semibold">
+                <span className="w-2 h-2 bg-green-600 rounded-full mr-2"></span>
+                Online
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Cập nhật</span>
+              <span className="text-sm font-semibold text-gray-800">Hôm nay</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Version</span>
+              <span className="text-sm font-semibold text-gray-800">1.0.0</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )

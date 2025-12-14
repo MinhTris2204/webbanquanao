@@ -12,6 +12,8 @@ export default function AdminLayout() {
         return '📦 Quản lý sản phẩm'
       case '/orders':
         return '📋 Quản lý đơn hàng'
+      case '/promotions':
+        return '🎁 Quản lý khuyến mãi'
       case '/vouchers':
         return '🎫 Quản lý voucher'
       case '/users':
