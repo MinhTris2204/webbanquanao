@@ -11,9 +11,7 @@ export default function AdminLayout() {
       <div className="flex-1 ml-64">
         {/* Top Bar */}
         <header className="bg-white shadow-sm h-16 flex items-center px-6">
-          <h1 className="text-xl font-semibold text-gray-800">
-            Quản trị hệ thống
-          </h1>
+          <div className="flex-1"></div>
         </header>
         
         {/* Page Content */}
