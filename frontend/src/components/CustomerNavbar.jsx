@@ -12,17 +12,24 @@ export default function CustomerNavbar() {
   const [showLoginPrompt, setShowLoginPrompt] = useState(false)
   const [promptMessage, setPromptMessage] = useState('')
   const [showProductMenu, setShowProductMenu] = useState(false)
-  const [categories, setCategories] = useState([])
   const productMenuRef = useRef(null)
 
-  // Fetch product categories
+  // Default categories - fallback if API doesn't return data
+  const defaultCategories = ['Áo', 'Quần', 'Váy', 'Đầm', 'Áo khoác', 'Phụ kiện']
+  const [categories, setCategories] = useState(defaultCategories)
+
+  // Fetch product categories from API
   useEffect(() => {
     const fetchCategories = async () => {
       try {
         const res = await api.get('/api/products/categories')
-        setCategories(res.data.categories)
+        // Use API data if available, otherwise keep default categories
+        if (res.data.categories && res.data.categories.length > 0) {
+          setCategories(res.data.categories)
+        }
       } catch (err) {
         console.error('Error fetching categories:', err)
+        // Keep default categories on error
       }
     }
     fetchCategories()
