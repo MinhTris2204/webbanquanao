@@ -114,11 +114,7 @@ export default function AdminStoreInfo() {
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-800">Quản lý thông tin cửa hàng</h2>
-          <p className="text-gray-600 mt-1">Quản lý chính sách, giới thiệu và thông tin liên hệ</p>
-        </div>
+      <div className="flex justify-end items-center mb-6">
         <button
           onClick={openCreateModal}
           className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition shadow-lg"

@@ -16,6 +16,8 @@ export default function AdminLayout() {
         return '🎫 Quản lý voucher'
       case '/users':
         return '👥 Quản lý người dùng'
+      case '/store-info':
+        return 'ℹ️ Quản lý thông tin cửa hàng'
       default:
         return '📊 Dashboard'
     }
