@@ -23,6 +23,14 @@ def get_products():
         'current_page': page
     }), 200
 
+@products_bp.route('/categories', methods=['GET'])
+def get_categories():
+    # Get distinct product categories
+    categories = db.session.query(Product.loai).distinct().all()
+    category_list = [cat[0] for cat in categories if cat[0]]
+    
+    return jsonify({'categories': category_list}), 200
+
 @products_bp.route('/autocomplete', methods=['GET'])
 def autocomplete():
     query = request.args.get('q', '').strip()

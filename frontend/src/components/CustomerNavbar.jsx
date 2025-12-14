@@ -1,8 +1,9 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
 import LoginPrompt from './LoginPrompt'
+import api from '../utils/api'
 
 export default function CustomerNavbar() {
   const { user, logout, isAuthenticated } = useAuth()
@@ -10,6 +11,33 @@ export default function CustomerNavbar() {
   const navigate = useNavigate()
   const [showLoginPrompt, setShowLoginPrompt] = useState(false)
   const [promptMessage, setPromptMessage] = useState('')
+  const [showProductMenu, setShowProductMenu] = useState(false)
+  const [categories, setCategories] = useState([])
+  const productMenuRef = useRef(null)
+
+  // Fetch product categories
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await api.get('/api/products/categories')
+        setCategories(res.data.categories)
+      } catch (err) {
+        console.error('Error fetching categories:', err)
+      }
+    }
+    fetchCategories()
+  }, [])
+
+  // Handle click outside for product menu
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (productMenuRef.current && !productMenuRef.current.contains(e.target)) {
+        setShowProductMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   const handleProtectedClick = (e, path, message) => {
     if (!isAuthenticated) {
@@ -40,12 +68,43 @@ export default function CustomerNavbar() {
               Trang chủ
             </Link>
             
-            <Link to="/products" className="text-gray-700 hover:text-blue-600 flex items-center">
-              <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-              </svg>
-              Sản phẩm
-            </Link>
+            <div className="relative" ref={productMenuRef}>
+              <button
+                onClick={() => setShowProductMenu(!showProductMenu)}
+                className="text-gray-700 hover:text-blue-600 flex items-center"
+              >
+                <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+                Sản phẩm
+                <svg className={`w-4 h-4 ml-1 transition-transform ${showProductMenu ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {showProductMenu && (
+                <div className="absolute top-full left-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                  <Link
+                    to="/products"
+                    onClick={() => setShowProductMenu(false)}
+                    className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition"
+                  >
+                    Tất cả sản phẩm
+                  </Link>
+                  <div className="border-t border-gray-200 my-2"></div>
+                  {categories.map((category) => (
+                    <Link
+                      key={category}
+                      to={`/products?category=${encodeURIComponent(category)}`}
+                      onClick={() => setShowProductMenu(false)}
+                      className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition"
+                    >
+                      {category}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
 
             <Link to="/search" className="text-gray-700 hover:text-blue-600 flex items-center">
               <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
