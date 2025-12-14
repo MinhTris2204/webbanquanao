@@ -92,5 +92,90 @@ def update_order_status(order_id):
 @admin_bp.route('/users', methods=['GET'])
 @admin_required
 def get_all_users():
-    users = User.query.all()
-    return jsonify([user.to_dict() for user in users]), 200
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 10, type=int)
+    search = request.args.get('search', '')
+    role_filter = request.args.get('role', '')
+    
+    query = User.query
+    
+    # Search filter
+    if search:
+        query = query.filter(
+            db.or_(
+                User.taikhoan.ilike(f'%{search}%'),
+                User.hoten.ilike(f'%{search}%'),
+                User.email.ilike(f'%{search}%')
+            )
+        )
+    
+    # Role filter
+    if role_filter:
+        query = query.filter(User.role == role_filter)
+    
+    pagination = query.order_by(User.created_at.desc()).paginate(
+        page=page, per_page=per_page, error_out=False
+    )
+    
+    return jsonify({
+        'users': [user.to_dict() for user in pagination.items],
+        'total': pagination.total,
+        'pages': pagination.pages,
+        'current_page': page
+    }), 200
+
+@admin_bp.route('/users/<int:user_id>', methods=['GET'])
+@admin_required
+def get_user(user_id):
+    user = User.query.get_or_404(user_id)
+    return jsonify(user.to_dict()), 200
+
+@admin_bp.route('/users/<int:user_id>', methods=['PUT'])
+@admin_required
+def update_user(user_id):
+    user = User.query.get_or_404(user_id)
+    data = request.get_json()
+    
+    # Update allowed fields
+    if 'hoten' in data:
+        user.hoten = data['hoten']
+    if 'email' in data:
+        user.email = data['email']
+    if 'sdt' in data:
+        user.sdt = data['sdt']
+    if 'diachi' in data:
+        user.diachi = data['diachi']
+    if 'role' in data:
+        user.role = data['role']
+    
+    db.session.commit()
+    
+    return jsonify({'message': 'Cập nhật người dùng thành công', 'user': user.to_dict()}), 200
+
+@admin_bp.route('/users/<int:user_id>', methods=['DELETE'])
+@admin_required
+def delete_user(user_id):
+    current_user_id = int(get_jwt_identity())
+    
+    # Prevent deleting yourself
+    if user_id == current_user_id:
+        return jsonify({'error': 'Không thể xóa tài khoản của chính mình'}), 400
+    
+    user = User.query.get_or_404(user_id)
+    db.session.delete(user)
+    db.session.commit()
+    
+    return jsonify({'message': 'Xóa người dùng thành công'}), 200
+
+@admin_bp.route('/stats/users', methods=['GET'])
+@admin_required
+def get_user_stats():
+    total_users = User.query.count()
+    admin_count = User.query.filter_by(role='admin').count()
+    customer_count = User.query.filter_by(role='customer').count()
+    
+    return jsonify({
+        'total': total_users,
+        'admins': admin_count,
+        'customers': customer_count
+    }), 200
