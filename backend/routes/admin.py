@@ -66,8 +66,26 @@ def delete_product(product_id):
 def get_all_orders():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 20, type=int)
+    status_filter = request.args.get('status', '')
+    search = request.args.get('search', '')
     
-    pagination = Order.query.order_by(Order.created_at.desc()).paginate(
+    query = Order.query
+    
+    # Status filter
+    if status_filter:
+        query = query.filter(Order.trangthai == status_filter)
+    
+    # Search filter (search by customer name, phone, or order ID)
+    if search:
+        query = query.filter(
+            db.or_(
+                Order.hoten.ilike(f'%{search}%'),
+                Order.sdt.ilike(f'%{search}%'),
+                db.cast(Order.id, db.String).ilike(f'%{search}%')
+            )
+        )
+    
+    pagination = query.order_by(Order.created_at.desc()).paginate(
         page=page, per_page=per_page, error_out=False
     )
     
