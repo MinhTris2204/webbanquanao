@@ -4,15 +4,25 @@ import api from '../../utils/api'
 export default function AdminUsers() {
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
-  const [stats, setStats] = useState({ total: 0, admins: 0, customers: 0 })
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalUsers, setTotalUsers] = useState(0)
   const [searchTerm, setSearchTerm] = useState('')
   const [roleFilter, setRoleFilter] = useState('')
+  const [showAddModal, setShowAddModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [showPasswordModal, setShowPasswordModal] = useState(false)
   const [selectedUser, setSelectedUser] = useState(null)
+  const [addForm, setAddForm] = useState({
+    taikhoan: '',
+    matkhau: '',
+    hoten: '',
+    email: '',
+    sdt: '',
+    diachi: '',
+    role: 'customer'
+  })
   const [editForm, setEditForm] = useState({
     hoten: '',
     email: '',
@@ -20,10 +30,13 @@ export default function AdminUsers() {
     diachi: '',
     role: 'customer'
   })
+  const [passwordForm, setPasswordForm] = useState({
+    matkhau: '',
+    confirmMatkhau: ''
+  })
 
   useEffect(() => {
     fetchUsers()
-    fetchStats()
   }, [currentPage, searchTerm, roleFilter])
 
   const fetchUsers = async () => {
@@ -48,12 +61,33 @@ export default function AdminUsers() {
     }
   }
 
-  const fetchStats = async () => {
+  const handleAdd = () => {
+    setAddForm({
+      taikhoan: '',
+      matkhau: '',
+      hoten: '',
+      email: '',
+      sdt: '',
+      diachi: '',
+      role: 'customer'
+    })
+    setShowAddModal(true)
+  }
+
+  const handleCreate = async (e) => {
+    e.preventDefault()
+    if (addForm.matkhau.length < 6) {
+      alert('Mật khẩu phải có ít nhất 6 ký tự')
+      return
+    }
     try {
-      const res = await api.get('/api/admin/stats/users')
-      setStats(res.data)
+      await api.post('/api/admin/users', addForm)
+      alert('Tạo người dùng thành công!')
+      setShowAddModal(false)
+      fetchUsers()
     } catch (err) {
       console.error(err)
+      alert(err.response?.data?.error || 'Lỗi khi tạo người dùng')
     }
   }
 
@@ -76,10 +110,37 @@ export default function AdminUsers() {
       alert('Cập nhật người dùng thành công!')
       setShowEditModal(false)
       fetchUsers()
-      fetchStats()
     } catch (err) {
       console.error(err)
       alert('Lỗi khi cập nhật người dùng')
+    }
+  }
+
+  const handleChangePassword = (user) => {
+    setSelectedUser(user)
+    setPasswordForm({ matkhau: '', confirmMatkhau: '' })
+    setShowPasswordModal(true)
+  }
+
+  const handleUpdatePassword = async (e) => {
+    e.preventDefault()
+    if (passwordForm.matkhau !== passwordForm.confirmMatkhau) {
+      alert('Mật khẩu xác nhận không khớp')
+      return
+    }
+    if (passwordForm.matkhau.length < 6) {
+      alert('Mật khẩu phải có ít nhất 6 ký tự')
+      return
+    }
+    try {
+      await api.put(`/api/admin/users/${selectedUser.user_id}/password`, {
+        matkhau: passwordForm.matkhau
+      })
+      alert('Đổi mật khẩu thành công!')
+      setShowPasswordModal(false)
+    } catch (err) {
+      console.error(err)
+      alert(err.response?.data?.error || 'Lỗi khi đổi mật khẩu')
     }
   }
 
@@ -94,7 +155,6 @@ export default function AdminUsers() {
       alert('Xóa người dùng thành công!')
       setShowDeleteModal(false)
       fetchUsers()
-      fetchStats()
     } catch (err) {
       console.error(err)
       alert(err.response?.data?.error || 'Lỗi khi xóa người dùng')
@@ -125,54 +185,20 @@ export default function AdminUsers() {
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-800 mb-2">👥 Quản lý người dùng</h1>
-        <p className="text-gray-600">Quản lý tài khoản và phân quyền người dùng</p>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-blue-100 text-sm font-medium">Tổng người dùng</p>
-              <p className="text-3xl font-bold mt-2">{stats.total}</p>
-            </div>
-            <div className="bg-white bg-opacity-20 rounded-full p-4">
-              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-            </div>
-          </div>
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-4xl font-bold text-gray-800 mb-2">👥 Quản lý người dùng</h1>
+          <p className="text-gray-600">Quản lý tài khoản và phân quyền người dùng</p>
         </div>
-
-        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-purple-100 text-sm font-medium">Quản trị viên</p>
-              <p className="text-3xl font-bold mt-2">{stats.admins}</p>
-            </div>
-            <div className="bg-white bg-opacity-20 rounded-full p-4">
-              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-green-100 text-sm font-medium">Khách hàng</p>
-              <p className="text-3xl font-bold mt-2">{stats.customers}</p>
-            </div>
-            <div className="bg-white bg-opacity-20 rounded-full p-4">
-              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-            </div>
-          </div>
-        </div>
+        <button
+          onClick={handleAdd}
+          className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-blue-600 hover:to-blue-700 transition shadow-lg flex items-center gap-2"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          Thêm người dùng
+        </button>
       </div>
 
       {/* Filters */}
@@ -291,6 +317,15 @@ export default function AdminUsers() {
                     >
                       <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => handleChangePassword(user)}
+                      className="text-green-600 hover:text-green-900 mr-3 transition"
+                      title="Đổi mật khẩu"
+                    >
+                      <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
                       </svg>
                     </button>
                     <button
@@ -466,6 +501,190 @@ export default function AdminUsers() {
                 <button
                   type="button"
                   onClick={() => setShowEditModal(false)}
+                  className="flex-1 bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-300 transition"
+                >
+                  Hủy
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add User Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="bg-gradient-to-r from-green-500 to-green-600 px-6 py-4 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-white">➕ Thêm người dùng mới</h3>
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="text-white hover:text-gray-200 transition"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <form onSubmit={handleCreate} className="p-6">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Tài khoản *</label>
+                  <input
+                    type="text"
+                    value={addForm.taikhoan}
+                    onChange={(e) => setAddForm({ ...addForm, taikhoan: e.target.value })}
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Mật khẩu * (tối thiểu 6 ký tự)</label>
+                  <input
+                    type="password"
+                    value={addForm.matkhau}
+                    onChange={(e) => setAddForm({ ...addForm, matkhau: e.target.value })}
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    required
+                    minLength={6}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Họ tên *</label>
+                  <input
+                    type="text"
+                    value={addForm.hoten}
+                    onChange={(e) => setAddForm({ ...addForm, hoten: e.target.value })}
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Email *</label>
+                  <input
+                    type="email"
+                    value={addForm.email}
+                    onChange={(e) => setAddForm({ ...addForm, email: e.target.value })}
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Số điện thoại</label>
+                  <input
+                    type="text"
+                    value={addForm.sdt}
+                    onChange={(e) => setAddForm({ ...addForm, sdt: e.target.value })}
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Địa chỉ</label>
+                  <textarea
+                    value={addForm.diachi}
+                    onChange={(e) => setAddForm({ ...addForm, diachi: e.target.value })}
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    rows="3"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Vai trò *</label>
+                  <select
+                    value={addForm.role}
+                    onChange={(e) => setAddForm({ ...addForm, role: e.target.value })}
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    required
+                  >
+                    <option value="customer">Khách hàng</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  type="submit"
+                  className="flex-1 bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition shadow-lg"
+                >
+                  ➕ Tạo người dùng
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="flex-1 bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-300 transition"
+                >
+                  Hủy
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Change Password Modal */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+            <div className="bg-gradient-to-r from-green-500 to-green-600 px-6 py-4 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-white">🔑 Đổi mật khẩu</h3>
+              <button
+                onClick={() => setShowPasswordModal(false)}
+                className="text-white hover:text-gray-200 transition"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <form onSubmit={handleUpdatePassword} className="p-6">
+              <p className="text-gray-700 mb-4">
+                Đổi mật khẩu cho: <span className="font-bold">{selectedUser?.hoten}</span>
+              </p>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Mật khẩu mới * (tối thiểu 6 ký tự)</label>
+                  <input
+                    type="password"
+                    value={passwordForm.matkhau}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, matkhau: e.target.value })}
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    required
+                    minLength={6}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Xác nhận mật khẩu *</label>
+                  <input
+                    type="password"
+                    value={passwordForm.confirmMatkhau}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, confirmMatkhau: e.target.value })}
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    required
+                    minLength={6}
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  type="submit"
+                  className="flex-1 bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition shadow-lg"
+                >
+                  🔑 Đổi mật khẩu
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowPasswordModal(false)}
                   className="flex-1 bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-300 transition"
                 >
                   Hủy

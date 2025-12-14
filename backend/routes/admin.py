@@ -167,15 +167,44 @@ def delete_user(user_id):
     
     return jsonify({'message': 'Xóa người dùng thành công'}), 200
 
-@admin_bp.route('/stats/users', methods=['GET'])
+@admin_bp.route('/users', methods=['POST'])
 @admin_required
-def get_user_stats():
-    total_users = User.query.count()
-    admin_count = User.query.filter_by(role='admin').count()
-    customer_count = User.query.filter_by(role='customer').count()
+def create_user():
+    data = request.get_json()
     
-    return jsonify({
-        'total': total_users,
-        'admins': admin_count,
-        'customers': customer_count
-    }), 200
+    # Check if username or email already exists
+    if User.query.filter_by(taikhoan=data.get('taikhoan')).first():
+        return jsonify({'error': 'Tài khoản đã tồn tại'}), 400
+    
+    if User.query.filter_by(email=data.get('email')).first():
+        return jsonify({'error': 'Email đã tồn tại'}), 400
+    
+    user = User(
+        taikhoan=data.get('taikhoan'),
+        hoten=data.get('hoten'),
+        email=data.get('email'),
+        sdt=data.get('sdt'),
+        diachi=data.get('diachi'),
+        role=data.get('role', 'customer')
+    )
+    user.set_password(data.get('matkhau'))
+    
+    db.session.add(user)
+    db.session.commit()
+    
+    return jsonify({'message': 'Tạo người dùng thành công', 'user': user.to_dict()}), 201
+
+@admin_bp.route('/users/<int:user_id>/password', methods=['PUT'])
+@admin_required
+def change_user_password(user_id):
+    user = User.query.get_or_404(user_id)
+    data = request.get_json()
+    
+    new_password = data.get('matkhau')
+    if not new_password or len(new_password) < 6:
+        return jsonify({'error': 'Mật khẩu phải có ít nhất 6 ký tự'}), 400
+    
+    user.set_password(new_password)
+    db.session.commit()
+    
+    return jsonify({'message': 'Đổi mật khẩu thành công'}), 200
