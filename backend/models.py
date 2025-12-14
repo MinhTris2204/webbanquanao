@@ -167,9 +167,13 @@ class OrderDetail(db.Model):
     line_total = db.Column(db.Numeric(12, 2), nullable=False)
     selected_size = db.Column(db.String(10))
     created_at = db.Column(db.TIMESTAMP, default=datetime.utcnow)
+    # Promotion fields - store promotion info at time of purchase
+    original_price = db.Column(db.Numeric(12, 2))  # Original price before discount
+    discount_percent = db.Column(db.Numeric(5, 2))  # Discount percentage
+    was_on_promotion = db.Column(db.Boolean, default=False)  # Was purchased during promotion
     
     def to_dict(self):
-        return {
+        result = {
             'id': self.id,
             'order_id': self.order_id,
             'product_id': self.product_id,
@@ -177,8 +181,18 @@ class OrderDetail(db.Model):
             'quantity': self.quantity,
             'line_total': float(self.line_total) if self.line_total else None,
             'selected_size': self.selected_size,
-            'product': self.product.to_dict() if self.product else None
+            'product': self.product.to_dict(include_promotion=False) if self.product else None  # Don't include current promotion
         }
+        
+        # Add promotion info if item was purchased during promotion
+        if self.was_on_promotion and self.original_price and self.discount_percent:
+            result['promotion_at_purchase'] = {
+                'original_price': float(self.original_price),
+                'discount_percent': float(self.discount_percent),
+                'was_on_promotion': True
+            }
+        
+        return result
 
 class Voucher(db.Model):
     __tablename__ = 'vouchers'

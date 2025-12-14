@@ -98,12 +98,19 @@ def create_order():
     for item in cart.cart_items:
         product = item.product
         product_dict = product.to_dict()
+        original_price = float(product.gia_ban)
         
-        # Use promotional price if available, otherwise use regular price
-        if product_dict.get('promotion') and product_dict['promotion'].get('promotional_price'):
+        # Check if product has active promotion
+        has_promotion = product_dict.get('promotion') and product_dict['promotion'].get('promotional_price')
+        
+        if has_promotion:
             unit_price = product_dict['promotion']['promotional_price']
+            discount_percent = ((original_price - unit_price) / original_price) * 100
+            was_on_promotion = True
         else:
-            unit_price = float(product.gia_ban)
+            unit_price = original_price
+            discount_percent = None
+            was_on_promotion = False
         
         line_total = unit_price * item.quantity
         
@@ -112,6 +119,9 @@ def create_order():
             product_id=item.products_id,
             unit_price=unit_price,
             quantity=item.quantity,
+            original_price=original_price if was_on_promotion else None,
+            discount_percent=discount_percent,
+            was_on_promotion=was_on_promotion,
             line_total=line_total,
             selected_size=item.selected_size
         )

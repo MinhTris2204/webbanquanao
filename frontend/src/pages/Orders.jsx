@@ -199,19 +199,19 @@ export default function Orders() {
                             <p className="text-xs text-blue-600 font-semibold">Size: {detail.selected_size}</p>
                           )}
                           
-                          {/* Show promotion info if product has promotion */}
-                          {detail.product?.promotion ? (
+                          {/* Show promotion info if item was purchased during promotion */}
+                          {detail.promotion_at_purchase ? (
                             <div className="mt-1">
                               <div className="flex items-center gap-2 mb-1">
                                 <span className="text-xs bg-red-500 text-white px-2 py-0.5 rounded-full font-bold">
-                                  -{Math.round(((detail.product.gia_ban - detail.product.promotion.promotional_price) / detail.product.gia_ban) * 100)}% OFF
+                                  -{Math.round(detail.promotion_at_purchase.discount_percent)}% OFF
                                 </span>
                               </div>
                               <p className="text-sm font-bold text-red-600">
                                 {detail.unit_price?.toLocaleString('vi-VN')}₫ x {detail.quantity}
                               </p>
                               <p className="text-xs text-gray-500 line-through">
-                                Giá gốc: {detail.product.gia_ban?.toLocaleString('vi-VN')}₫
+                                Giá gốc: {detail.promotion_at_purchase.original_price?.toLocaleString('vi-VN')}₫
                               </p>
                             </div>
                           ) : (
