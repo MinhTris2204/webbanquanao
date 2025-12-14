@@ -103,6 +103,13 @@ export default function CustomerNavbar() {
                   >
                     Tất cả sản phẩm
                   </Link>
+                  <Link
+                    to="/products?on_sale=true"
+                    onClick={() => setShowProductMenu(false)}
+                    className="block px-4 py-2 text-red-600 hover:bg-red-50 hover:text-red-700 transition font-semibold"
+                  >
+                    🔥 Sản phẩm Sale
+                  </Link>
                   <div className="border-t border-gray-200 my-2"></div>
                   {categories.map((category) => (
                     <Link

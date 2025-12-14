@@ -35,6 +35,7 @@ def create_app():
     from routes.admin import admin_bp
     from routes.vouchers import vouchers_bp
     from routes.store_info import store_info_bp
+    from routes.promotions import promotions_bp
     
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(products_bp, url_prefix='/api/products')
@@ -43,6 +44,7 @@ def create_app():
     app.register_blueprint(admin_bp, url_prefix='/api/admin')
     app.register_blueprint(vouchers_bp, url_prefix='/api/vouchers')
     app.register_blueprint(store_info_bp, url_prefix='/api/store-info')
+    app.register_blueprint(promotions_bp, url_prefix='/api/promotions')
     
     @app.route('/api/health')
     def health():

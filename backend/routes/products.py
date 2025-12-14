@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
-from models import db, Product
+from models import db, Product, Promotion
+from datetime import datetime
 
 products_bp = Blueprint('products', __name__)
 
@@ -8,11 +9,21 @@ def get_products():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 12, type=int)
     search = request.args.get('search', '')
+    on_sale = request.args.get('on_sale', '')  # Filter for products with active promotions
     
     query = Product.query
     
     if search:
         query = query.filter(Product.ten_san_pham.ilike(f'%{search}%'))
+    
+    # Filter for products on sale
+    if on_sale == 'true':
+        now = datetime.utcnow()
+        query = query.join(Promotion).filter(
+            Promotion.is_active == True,
+            Promotion.start_date <= now,
+            Promotion.end_date >= now
+        )
     
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
     
@@ -54,6 +65,57 @@ def autocomplete():
     } for p in products]
     
     return jsonify({'suggestions': suggestions}), 200
+
+@products_bp.route('/best-sellers', methods=['GET'])
+def get_best_sellers():
+    """Get best selling products (simulated by getting random products)"""
+    limit = request.args.get('limit', 8, type=int)
+    
+    # Get products ordered by ID descending (newest first) as a simple simulation
+    # In a real app, you would track sales and order by sales count
+    products = Product.query.filter_by(trang_thai='Con_hang').order_by(Product.products_id.desc()).limit(limit).all()
+    
+    return jsonify({
+        'products': [p.to_dict() for p in products]
+    }), 200
+
+@products_bp.route('/on-sale', methods=['GET'])
+def get_sale_products():
+    """Get all products with active promotions"""
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 12, type=int)
+    category = request.args.get('category', '')
+    sort_by = request.args.get('sort_by', 'discount')  # discount, price, name
+    
+    now = datetime.utcnow()
+    
+    query = Product.query.join(Promotion).filter(
+        Promotion.is_active == True,
+        Promotion.start_date <= now,
+        Promotion.end_date >= now,
+        Product.trang_thai == 'Con_hang'
+    )
+    
+    if category:
+        query = query.filter(Product.loai == category)
+    
+    # Sorting
+    if sort_by == 'discount':
+        # Sort by discount percentage (highest first)
+        query = query.order_by(Promotion.discount_value.desc())
+    elif sort_by == 'price':
+        query = query.order_by(Product.gia_ban.asc())
+    elif sort_by == 'name':
+        query = query.order_by(Product.ten_san_pham.asc())
+    
+    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+    
+    return jsonify({
+        'products': [p.to_dict() for p in pagination.items],
+        'total': pagination.total,
+        'pages': pagination.pages,
+        'current_page': page
+    }), 200
 
 @products_bp.route('/<int:product_id>', methods=['GET'])
 def get_product(product_id):

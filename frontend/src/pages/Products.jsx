@@ -10,6 +10,7 @@ export default function Products() {
   const [selectedCategory, setSelectedCategory] = useState('')
   const [selectedGender, setSelectedGender] = useState('')
   const [selectedSize, setSelectedSize] = useState('')
+  const [onSaleOnly, setOnSaleOnly] = useState(false)
   const [priceRange, setPriceRange] = useState({ min: '', max: '' })
   const [priceDisplay, setPriceDisplay] = useState({ min: '', max: '' })
   const [currentPage, setCurrentPage] = useState(1)
@@ -17,15 +18,23 @@ export default function Products() {
   const [totalProducts, setTotalProducts] = useState(0)
   const itemsPerPage = 12
 
-  // Set category from URL params
+  // Set category and sale filter from URL params
   useEffect(() => {
     const categoryParam = searchParams.get('category')
+    const onSaleParam = searchParams.get('on_sale')
+    
     if (categoryParam) {
       setSelectedCategory(categoryParam)
       setShowFilters(true)
     } else {
-      // Reset category when no category param in URL
       setSelectedCategory('')
+    }
+    
+    if (onSaleParam === 'true') {
+      setOnSaleOnly(true)
+      setShowFilters(true)
+    } else {
+      setOnSaleOnly(false)
     }
   }, [searchParams])
 
@@ -59,13 +68,16 @@ export default function Products() {
     // Filter by size
     const matchSize = !selectedSize || (product.size && product.size.includes(selectedSize))
     
+    // Filter by sale
+    const matchSale = !onSaleOnly || (product.promotion && product.promotion.promotional_price)
+    
     // Filter by price range
     const price = parseFloat(product.gia_ban)
     const minPrice = priceRange.min ? parseFloat(priceRange.min) : 0
     const maxPrice = priceRange.max ? parseFloat(priceRange.max) : Infinity
     const matchPrice = price >= minPrice && price <= maxPrice
     
-    return matchCategory && matchGender && matchSize && matchPrice
+    return matchCategory && matchGender && matchSize && matchSale && matchPrice
   })
 
   const formatPrice = (value) => {
@@ -91,6 +103,7 @@ export default function Products() {
     setSelectedCategory('')
     setSelectedGender('')
     setSelectedSize('')
+    setOnSaleOnly(false)
     setPriceRange({ min: '', max: '' })
     setPriceDisplay({ min: '', max: '' })
     setCurrentPage(1)
@@ -120,7 +133,7 @@ export default function Products() {
           <div className="flex items-center gap-3">
             <span className="text-2xl">🔧</span>
             <span className="text-xl font-bold text-gray-800">Bộ lọc</span>
-            {(selectedCategory || selectedGender || selectedSize || priceRange.min || priceRange.max) && (
+            {(selectedCategory || selectedGender || selectedSize || onSaleOnly || priceRange.min || priceRange.max) && (
               <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
                 Đang lọc
               </span>
@@ -199,6 +212,19 @@ export default function Products() {
               <option value="XL">XL</option>
               <option value="XXL">XXL</option>
             </select>
+          </div>
+
+          {/* Sale Filter */}
+          <div className="flex items-center">
+            <label className="flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={onSaleOnly}
+                onChange={(e) => setOnSaleOnly(e.target.checked)}
+                className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500 mr-3"
+              />
+              <span className="text-sm font-semibold text-red-600">🔥 Chỉ sản phẩm Sale</span>
+            </label>
           </div>
 
           {/* Price Range Filter */}
@@ -303,6 +329,11 @@ export default function Products() {
                 alt={product.ten_san_pham}
                 className="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-300"
               />
+              {product.promotion && (
+                <div className="absolute top-3 left-3 bg-red-600 text-white px-3 py-1 rounded-full text-xs font-bold z-10">
+                  -{Math.round(((product.gia_ban - product.promotion.promotional_price) / product.gia_ban) * 100)}%
+                </div>
+              )}
               {product.trang_thai === 'Het_hang' && (
                 <div className="absolute top-0 left-0 right-0 bottom-0 bg-black bg-opacity-50 flex items-center justify-center">
                   <span className="bg-red-500 text-white px-4 py-2 rounded-lg font-bold">Hết hàng</span>
@@ -330,9 +361,20 @@ export default function Products() {
                 <p className="text-xs text-gray-500 mb-2">Size: {product.size}</p>
               )}
               <div className="flex items-center justify-between">
-                <p className="text-blue-600 font-bold text-xl">
-                  {product.gia_ban?.toLocaleString('vi-VN')}₫
-                </p>
+                {product.promotion ? (
+                  <div className="space-y-1">
+                    <p className="text-red-600 font-bold text-xl">
+                      {product.promotion.promotional_price?.toLocaleString('vi-VN')}₫
+                    </p>
+                    <p className="text-gray-500 text-sm line-through">
+                      {product.gia_ban?.toLocaleString('vi-VN')}₫
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-blue-600 font-bold text-xl">
+                    {product.gia_ban?.toLocaleString('vi-VN')}₫
+                  </p>
+                )}
                 <button className="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm font-semibold hover:bg-blue-600 transition">
                   Xem
                 </button>

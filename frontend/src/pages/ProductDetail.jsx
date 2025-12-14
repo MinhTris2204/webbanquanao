@@ -152,9 +152,28 @@ export default function ProductDetail() {
               </span>
             </div>
             <h1 className="text-4xl font-bold mb-4 text-gray-800">{product.ten_san_pham}</h1>
-            <p className="text-4xl text-blue-600 font-bold mb-6">
-              {product.gia_ban?.toLocaleString('vi-VN')}₫
-            </p>
+            {product.promotion ? (
+              <div className="space-y-2 mb-6">
+                <div className="flex items-center gap-3">
+                  <p className="text-4xl text-red-600 font-bold">
+                    {product.promotion.promotional_price?.toLocaleString('vi-VN')}₫
+                  </p>
+                  <span className="bg-red-600 text-white px-3 py-1 rounded-full text-sm font-bold">
+                    -{Math.round(((product.gia_ban - product.promotion.promotional_price) / product.gia_ban) * 100)}%
+                  </span>
+                </div>
+                <p className="text-xl text-gray-500 line-through">
+                  {product.gia_ban?.toLocaleString('vi-VN')}₫
+                </p>
+                <p className="text-sm text-green-600 font-semibold">
+                  🎉 Tiết kiệm {(product.gia_ban - product.promotion.promotional_price)?.toLocaleString('vi-VN')}₫
+                </p>
+              </div>
+            ) : (
+              <p className="text-4xl text-blue-600 font-bold mb-6">
+                {product.gia_ban?.toLocaleString('vi-VN')}₫
+              </p>
+            )}
           </div>
 
           {/* Product Details */}

@@ -58,8 +58,8 @@ class Product(db.Model):
     cart_items = db.relationship('CartItem', backref='product', lazy=True)
     order_details = db.relationship('OrderDetail', backref='product', lazy=True)
     
-    def to_dict(self):
-        return {
+    def to_dict(self, include_promotion=True):
+        result = {
             'products_id': self.products_id,
             'ten_san_pham': self.ten_san_pham,
             'gia_ban': float(self.gia_ban) if self.gia_ban else None,
@@ -72,6 +72,30 @@ class Product(db.Model):
             'trang_thai': self.trang_thai,
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
+        
+        if include_promotion:
+            active_promotion = self.get_active_promotion()
+            if active_promotion:
+                result['promotion'] = {
+                    'id': active_promotion.id,
+                    'discount_type': active_promotion.discount_type,
+                    'discount_value': float(active_promotion.discount_value),
+                    'promotional_price': active_promotion.calculate_promotional_price(self.gia_ban)
+                }
+            else:
+                result['promotion'] = None
+        
+        return result
+    
+    def get_active_promotion(self):
+        """Get currently active promotion for this product"""
+        now = datetime.utcnow()
+        return Promotion.query.filter(
+            Promotion.product_id == self.products_id,
+            Promotion.is_active == True,
+            Promotion.start_date <= now,
+            Promotion.end_date >= now
+        ).first()
 
 class Cart(db.Model):
     __tablename__ = 'carts'
@@ -233,3 +257,50 @@ class StoreInfo(db.Model):
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
+
+class Promotion(db.Model):
+    __tablename__ = 'promotions'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.products_id'), nullable=False)
+    discount_type = db.Column(db.Enum('percent', 'fixed', name='promotion_discount_type_enum'), nullable=False)
+    discount_value = db.Column(db.Numeric(12, 2), nullable=False)
+    start_date = db.Column(db.TIMESTAMP, nullable=False)
+    end_date = db.Column(db.TIMESTAMP, nullable=False)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.TIMESTAMP, default=datetime.utcnow)
+    updated_at = db.Column(db.TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    product = db.relationship('Product', backref='promotions', lazy=True)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'product_id': self.product_id,
+            'product': self.product.to_dict() if self.product else None,
+            'discount_type': self.discount_type,
+            'discount_value': float(self.discount_value) if self.discount_value else None,
+            'start_date': self.start_date.isoformat() if self.start_date else None,
+            'end_date': self.end_date.isoformat() if self.end_date else None,
+            'is_active': self.is_active,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }
+    
+    def is_currently_active(self):
+        """Check if promotion is active based on current time"""
+        now = datetime.utcnow()
+        return self.is_active and self.start_date <= now <= self.end_date
+    
+    def calculate_promotional_price(self, original_price):
+        """Calculate the promotional price"""
+        if not self.is_currently_active():
+            return float(original_price)
+        
+        if self.discount_type == 'percent':
+            discount_amount = float(original_price) * (float(self.discount_value) / 100)
+            promotional_price = float(original_price) - discount_amount
+        else:  # fixed
+            promotional_price = float(original_price) - float(self.discount_value)
+        
+        return max(promotional_price, 0)
