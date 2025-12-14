@@ -10,11 +10,13 @@ export default function AdminDashboard() {
     totalRevenue: 0,
     pendingOrders: 0,
     completedOrders: 0,
+    shippingOrders: 0,
+    cancelledOrders: 0,
     activePromotions: 0,
     activeVouchers: 0
   })
   const [recentOrders, setRecentOrders] = useState([])
-  const [topProducts, setTopProducts] = useState([])
+  const [ordersByStatus, setOrdersByStatus] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -25,19 +27,15 @@ export default function AdminDashboard() {
     try {
       setLoading(true)
       
-      // Fetch products
       const productsRes = await api.get('/api/products?per_page=1000')
       const productsData = productsRes.data.products || []
       
-      // Fetch orders
-      const ordersRes = await api.get('/api/admin/orders')
+      const ordersRes = await api.get('/api/admin/orders?per_page=1000')
       const ordersData = ordersRes.data.orders || []
       
-      // Fetch users
       const usersRes = await api.get('/api/admin/users?per_page=1000')
       const usersData = usersRes.data.users || []
       
-      // Fetch promotions stats
       let activePromotions = 0
       try {
         const promotionsRes = await api.get('/api/promotions/stats')
@@ -46,7 +44,6 @@ export default function AdminDashboard() {
         console.log('Promotions stats not available')
       }
       
-      // Fetch vouchers
       let activeVouchers = 0
       try {
         const vouchersRes = await api.get('/api/vouchers/admin')
@@ -56,27 +53,36 @@ export default function AdminDashboard() {
         console.log('Vouchers not available:', err)
       }
       
-      // Calculate revenue
       const totalRevenue = ordersData
         .filter(o => o.trangthai === 'hoan_thanh')
         .reduce((sum, o) => sum + parseFloat(o.tongtien || 0), 0)
+      
+      const pendingOrders = ordersData.filter(o => o.trangthai === 'cho_xac_nhan').length
+      const shippingOrders = ordersData.filter(o => o.trangthai === 'dang_giao').length
+      const completedOrders = ordersData.filter(o => o.trangthai === 'hoan_thanh').length
+      const cancelledOrders = ordersData.filter(o => o.trangthai === 'huy').length
       
       setStats({
         totalProducts: productsData.length,
         totalOrders: ordersData.length,
         totalUsers: usersData.length,
         totalRevenue: totalRevenue,
-        pendingOrders: ordersData.filter(o => o.trangthai === 'cho_xac_nhan').length,
-        completedOrders: ordersData.filter(o => o.trangthai === 'hoan_thanh').length,
-        activePromotions: activePromotions,
-        activeVouchers: activeVouchers
+        pendingOrders,
+        completedOrders,
+        shippingOrders,
+        cancelledOrders,
+        activePromotions,
+        activeVouchers
       })
       
-      // Recent orders (5 latest)
-      setRecentOrders(ordersData.slice(0, 5))
+      setOrdersByStatus([
+        { label: 'Chờ xác nhận', value: pendingOrders, color: 'bg-yellow-500' },
+        { label: 'Đang giao', value: shippingOrders, color: 'bg-blue-500' },
+        { label: 'Hoàn thành', value: completedOrders, color: 'bg-green-500' },
+        { label: 'Đã hủy', value: cancelledOrders, color: 'bg-red-500' }
+      ])
       
-      // Top products (5 first)
-      setTopProducts(productsData.slice(0, 5))
+      setRecentOrders(ordersData.slice(0, 5))
       
     } catch (err) {
       console.error('Error fetching dashboard data:', err)
@@ -111,17 +117,12 @@ export default function AdminDashboard() {
     )
   }
 
+  const maxOrderValue = Math.max(...ordersByStatus.map(s => s.value), 1)
+
   return (
     <div className="space-y-6">
-      {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl shadow-lg p-6 text-white">
-        <h2 className="text-2xl font-bold mb-2">Chào mừng trở lại! 👋</h2>
-        <p className="text-blue-100">Đây là tổng quan về cửa hàng của bạn</p>
-      </div>
-
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Revenue Card */}
         <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white">
           <div className="flex items-center justify-between mb-4">
             <div className="bg-white bg-opacity-20 p-3 rounded-lg">
@@ -138,11 +139,10 @@ export default function AdminDashboard() {
             <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clipRule="evenodd" />
             </svg>
-            Từ đơn hoàn thành
+            Từ {stats.completedOrders} đơn hoàn thành
           </div>
         </div>
 
-        {/* Orders Card */}
         <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white">
           <div className="flex items-center justify-between mb-4">
             <div className="bg-white bg-opacity-20 p-3 rounded-lg">
@@ -161,7 +161,6 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Products Card */}
         <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
           <div className="flex items-center justify-between mb-4">
             <div className="bg-white bg-opacity-20 p-3 rounded-lg">
@@ -180,7 +179,6 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Users Card */}
         <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg p-6 text-white">
           <div className="flex items-center justify-between mb-4">
             <div className="bg-white bg-opacity-20 p-3 rounded-lg">
@@ -200,8 +198,47 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Charts and Tables Row */}
+      {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Order Status Chart */}
+        <div className="bg-white rounded-xl shadow-lg p-6">
+          <h3 className="text-xl font-bold text-gray-800 mb-6">📊 Thống kê đơn hàng theo trạng thái</h3>
+          <div className="space-y-4">
+            {ordersByStatus.map((item, index) => (
+              <div key={index}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-semibold text-gray-700">{item.label}</span>
+                  <span className="text-sm font-bold text-gray-900">{item.value} đơn</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                  <div
+                    className={`h-full ${item.color} rounded-full transition-all duration-500 ease-out`}
+                    style={{ width: `${(item.value / maxOrderValue) * 100}%` }}
+                  ></div>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          {/* Summary */}
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="text-center p-3 bg-green-50 rounded-lg">
+                <p className="text-sm text-gray-600">Tỷ lệ hoàn thành</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {stats.totalOrders > 0 ? Math.round((stats.completedOrders / stats.totalOrders) * 100) : 0}%
+                </p>
+              </div>
+              <div className="text-center p-3 bg-red-50 rounded-lg">
+                <p className="text-sm text-gray-600">Tỷ lệ hủy</p>
+                <p className="text-2xl font-bold text-red-600">
+                  {stats.totalOrders > 0 ? Math.round((stats.cancelledOrders / stats.totalOrders) * 100) : 0}%
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Recent Orders */}
         <div className="bg-white rounded-xl shadow-lg p-6">
           <div className="flex items-center justify-between mb-4">
@@ -231,39 +268,59 @@ export default function AdminDashboard() {
             )}
           </div>
         </div>
+      </div>
 
-        {/* Top Products */}
+      {/* Marketing Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white rounded-xl shadow-lg p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-bold text-gray-800">🏆 Sản phẩm nổi bật</h3>
-            <Link to="/products" className="text-blue-600 hover:text-blue-700 text-sm font-semibold">
-              Xem tất cả →
-            </Link>
+            <h4 className="font-bold text-gray-800">📈 Trạng thái đơn hàng</h4>
+            <span className="text-2xl">📊</span>
           </div>
           <div className="space-y-3">
-            {topProducts.length === 0 ? (
-              <p className="text-gray-500 text-center py-8">Chưa có sản phẩm nào</p>
-            ) : (
-              topProducts.map((product) => (
-                <div key={product.products_id} className="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                  <img 
-                    src={product.hinh_anh || 'https://via.placeholder.com/60'} 
-                    alt={product.ten_san_pham}
-                    className="w-12 h-12 object-cover rounded-lg mr-3"
-                  />
-                  <div className="flex-1">
-                    <p className="font-semibold text-gray-800 line-clamp-1">{product.ten_san_pham}</p>
-                    <p className="text-sm text-gray-500">{product.loai}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold text-blue-600">{parseFloat(product.gia_ban).toLocaleString()}₫</p>
-                    {product.promotion && (
-                      <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded-full">Sale</span>
-                    )}
-                  </div>
-                </div>
-              ))
-            )}
+            <div className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
+              <span className="text-sm font-semibold text-gray-700">Chờ xác nhận</span>
+              <span className="text-xl font-bold text-yellow-600">{stats.pendingOrders}</span>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+              <span className="text-sm font-semibold text-gray-700">Đang giao</span>
+              <span className="text-xl font-bold text-blue-600">{stats.shippingOrders}</span>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+              <span className="text-sm font-semibold text-gray-700">Hoàn thành</span>
+              <span className="text-xl font-bold text-green-600">{stats.completedOrders}</span>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-red-50 rounded-lg">
+              <span className="text-sm font-semibold text-gray-700">Đã hủy</span>
+              <span className="text-xl font-bold text-red-600">{stats.cancelledOrders}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-lg p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="font-bold text-gray-800">🎯 Marketing</h4>
+            <span className="text-2xl">🎁</span>
+          </div>
+          <div className="space-y-3">
+            <div className="flex justify-between items-center p-3 bg-red-50 rounded-lg">
+              <span className="text-sm font-semibold text-gray-700">Khuyến mãi active</span>
+              <span className="text-xl font-bold text-red-600">{stats.activePromotions}</span>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
+              <span className="text-sm font-semibold text-gray-700">Voucher active</span>
+              <span className="text-xl font-bold text-purple-600">{stats.activeVouchers}</span>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+              <span className="text-sm font-semibold text-gray-700">Tổng cộng</span>
+              <span className="text-xl font-bold text-blue-600">{stats.activePromotions + stats.activeVouchers}</span>
+            </div>
+            <Link 
+              to="/promotions"
+              className="block text-center p-3 bg-gradient-to-r from-red-500 to-purple-500 text-white rounded-lg hover:from-red-600 hover:to-purple-600 transition font-semibold"
+            >
+              Quản lý Marketing →
+            </Link>
           </div>
         </div>
       </div>
@@ -284,7 +341,7 @@ export default function AdminDashboard() {
               </div>
               <h4 className="font-bold text-gray-800">Sản phẩm</h4>
             </div>
-            <p className="text-sm text-gray-600">Quản lý kho hàng</p>
+            <p className="spxt-sm text-gray-600">Quản lý kho hàng</p>
           </Link>
 
           <Link
@@ -331,75 +388,6 @@ export default function AdminDashboard() {
             </div>
             <p className="text-sm text-gray-600">Quản lý mã giảm giá</p>
           </Link>
-        </div>
-      </div>
-
-      {/* System Status */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h4 className="font-bold text-gray-800">Trạng thái đơn hàng</h4>
-            <span className="text-2xl">📊</span>
-          </div>
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Chờ xác nhận</span>
-              <span className="font-bold text-yellow-600">{stats.pendingOrders}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Hoàn thành</span>
-              <span className="font-bold text-green-600">{stats.completedOrders}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Tổng cộng</span>
-              <span className="font-bold text-blue-600">{stats.totalOrders}</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h4 className="font-bold text-gray-800">Marketing</h4>
-            <span className="text-2xl">🎯</span>
-          </div>
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Khuyến mãi active</span>
-              <span className="font-bold text-red-600">{stats.activePromotions}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Voucher active</span>
-              <span className="font-bold text-purple-600">{stats.activeVouchers}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Tổng cộng</span>
-              <span className="font-bold text-blue-600">{stats.activePromotions + stats.activeVouchers}</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h4 className="font-bold text-gray-800">Hệ thống</h4>
-            <span className="text-2xl">⚙️</span>
-          </div>
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Trạng thái</span>
-              <span className="flex items-center text-green-600 font-semibold">
-                <span className="w-2 h-2 bg-green-600 rounded-full mr-2"></span>
-                Online
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Cập nhật</span>
-              <span className="text-sm font-semibold text-gray-800">Hôm nay</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Version</span>
-              <span className="text-sm font-semibold text-gray-800">1.0.0</span>
-            </div>
-          </div>
         </div>
       </div>
     </div>
