@@ -23,6 +23,30 @@ def get_products():
         'current_page': page
     }), 200
 
+@products_bp.route('/autocomplete', methods=['GET'])
+def autocomplete():
+    query = request.args.get('q', '').strip()
+    
+    # Validate query length
+    if len(query) < 2:
+        return jsonify({'suggestions': []}), 200
+    
+    # Search for products with case-insensitive matching
+    products = Product.query.filter(
+        Product.ten_san_pham.ilike(f'%{query}%'),
+        Product.trang_thai == 'Con_hang'
+    ).limit(8).all()
+    
+    # Format suggestions
+    suggestions = [{
+        'products_id': p.products_id,
+        'ten_san_pham': p.ten_san_pham,
+        'gia_ban': float(p.gia_ban) if p.gia_ban else 0,
+        'hinh_anh': p.hinh_anh
+    } for p in products]
+    
+    return jsonify({'suggestions': suggestions}), 200
+
 @products_bp.route('/<int:product_id>', methods=['GET'])
 def get_product(product_id):
     product = Product.query.get_or_404(product_id)
