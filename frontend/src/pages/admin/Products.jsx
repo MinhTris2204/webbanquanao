@@ -153,8 +153,7 @@ export default function AdminProducts() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">Quản lý sản phẩm</h1>
+      <div className="flex justify-end items-center mb-6">
         <button
           onClick={() => {
             setShowForm(true)
