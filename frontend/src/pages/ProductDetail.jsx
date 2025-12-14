@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import api from '../utils/api'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
+import ProductReviews from '../components/ProductReviews'
 
 // Countdown Timer Component
 function CountdownTimer({ endDate }) {
@@ -359,6 +360,9 @@ export default function ProductDetail() {
           </div>
         </div>
       </div>
+
+      {/* Product Reviews */}
+      <ProductReviews productId={product.products_id} />
     </div>
   )
 }

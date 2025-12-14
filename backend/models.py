@@ -322,3 +322,33 @@ class Promotion(db.Model):
             promotional_price = float(original_price) - float(self.discount_value)
         
         return max(promotional_price, 0)
+
+
+class Review(db.Model):
+    __tablename__ = 'reviews'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.products_id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
+    order_id = db.Column(db.Integer, db.ForeignKey('orders.id'), nullable=False)
+    rating = db.Column(db.Integer, nullable=False)  # 1-5 stars
+    comment = db.Column(db.Text)
+    created_at = db.Column(db.TIMESTAMP, default=datetime.utcnow)
+    updated_at = db.Column(db.TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    product = db.relationship('Product', backref='reviews', lazy=True)
+    user = db.relationship('User', backref='reviews', lazy=True)
+    order = db.relationship('Order', backref='reviews', lazy=True)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'product_id': self.product_id,
+            'user_id': self.user_id,
+            'order_id': self.order_id,
+            'rating': self.rating,
+            'comment': self.comment,
+            'user_name': self.user.hoten if self.user else 'Anonymous',
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }
