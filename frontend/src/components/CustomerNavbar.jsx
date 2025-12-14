@@ -12,7 +12,9 @@ export default function CustomerNavbar() {
   const [showLoginPrompt, setShowLoginPrompt] = useState(false)
   const [promptMessage, setPromptMessage] = useState('')
   const [showProductMenu, setShowProductMenu] = useState(false)
+  const [showInfoMenu, setShowInfoMenu] = useState(false)
   const productMenuRef = useRef(null)
+  const infoMenuRef = useRef(null)
 
   // Default categories - fallback if API doesn't return data
   const defaultCategories = ['Áo', 'Quần', 'Váy', 'Đầm', 'Áo khoác', 'Phụ kiện']
@@ -35,11 +37,14 @@ export default function CustomerNavbar() {
     fetchCategories()
   }, [])
 
-  // Handle click outside for product menu
+  // Handle click outside for menus
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (productMenuRef.current && !productMenuRef.current.contains(e.target)) {
         setShowProductMenu(false)
+      }
+      if (infoMenuRef.current && !infoMenuRef.current.contains(e.target)) {
+        setShowInfoMenu(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -146,6 +151,89 @@ export default function CustomerNavbar() {
               </svg>
               Đơn hàng
             </a>
+
+            <div className="relative" ref={infoMenuRef}>
+              <button
+                onClick={() => setShowInfoMenu(!showInfoMenu)}
+                className="text-gray-700 hover:text-blue-600 flex items-center"
+              >
+                <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Thông tin
+                <svg className={`w-4 h-4 ml-1 transition-transform ${showInfoMenu ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {showInfoMenu && (
+                <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                  <Link
+                    to="/info/about_us"
+                    onClick={() => setShowInfoMenu(false)}
+                    className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition"
+                  >
+                    📖 Giới thiệu về cửa hàng
+                  </Link>
+                  <Link
+                    to="/info/privacy_policy"
+                    onClick={() => setShowInfoMenu(false)}
+                    className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition"
+                  >
+                    🔒 Chính sách bảo mật
+                  </Link>
+                  <Link
+                    to="/info/terms_conditions"
+                    onClick={() => setShowInfoMenu(false)}
+                    className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition"
+                  >
+                    📜 Điều khoản và điều kiện
+                  </Link>
+                  <Link
+                    to="/info/shipping_policy"
+                    onClick={() => setShowInfoMenu(false)}
+                    className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition"
+                  >
+                    🚚 Chính sách vận chuyển
+                  </Link>
+                  <Link
+                    to="/info/return_policy"
+                    onClick={() => setShowInfoMenu(false)}
+                    className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition"
+                  >
+                    ↩️ Chính sách đổi trả
+                  </Link>
+                  <Link
+                    to="/info/contact_info"
+                    onClick={() => setShowInfoMenu(false)}
+                    className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition"
+                  >
+                    📞 Thông tin liên hệ
+                  </Link>
+                  <Link
+                    to="/info/payment_methods"
+                    onClick={() => setShowInfoMenu(false)}
+                    className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition"
+                  >
+                    💳 Phương thức thanh toán
+                  </Link>
+                  <Link
+                    to="/info/warranty_policy"
+                    onClick={() => setShowInfoMenu(false)}
+                    className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition"
+                  >
+                    🛡️ Chính sách bảo hành
+                  </Link>
+                  <Link
+                    to="/info/faq"
+                    onClick={() => setShowInfoMenu(false)}
+                    className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition"
+                  >
+                    ❓ Câu hỏi thường gặp
+                  </Link>
+                </div>
+              )}
+            </div>
 
             {isAuthenticated ? (
               <>

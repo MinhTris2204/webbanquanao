@@ -210,3 +210,26 @@ class Voucher(db.Model):
         else:  # fixed
             discount = float(self.discount_value)
         return min(discount, order_total)
+
+class StoreInfo(db.Model):
+    __tablename__ = 'store_info'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    key = db.Column(db.String(100), unique=True, nullable=False)  # about_us, privacy_policy, terms, contact, etc.
+    title = db.Column(db.String(200), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    content_embedding = db.Column(Vector(384))  # pgvector for semantic search
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.TIMESTAMP, default=datetime.utcnow)
+    updated_at = db.Column(db.TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'key': self.key,
+            'title': self.title,
+            'content': self.content,
+            'is_active': self.is_active,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }

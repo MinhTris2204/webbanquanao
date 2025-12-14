@@ -12,6 +12,7 @@ import Cart from './pages/Cart'
 import Checkout from './pages/Checkout'
 import Orders from './pages/Orders'
 import Profile from './pages/Profile'
+import StoreInfoPage from './pages/StoreInfoPage'
 import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
@@ -32,6 +33,7 @@ function App() {
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/orders" element={<Orders />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/info/:key" element={<StoreInfoPage />} />
         </Route>
       </Routes>
     </Router>

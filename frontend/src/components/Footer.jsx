@@ -41,22 +41,32 @@ export default function Footer() {
             <ul className="space-y-2">
               <li>
                 <Link to="/" className="text-gray-400 hover:text-white transition">
-                  Trang chủ
+                  🏠 Trang chủ
                 </Link>
               </li>
               <li>
                 <Link to="/products" className="text-gray-400 hover:text-white transition">
-                  Sản phẩm
+                  🛍️ Sản phẩm
                 </Link>
               </li>
               <li>
                 <Link to="/search" className="text-gray-400 hover:text-white transition">
-                  Tìm kiếm
+                  🔍 Tìm kiếm
+                </Link>
+              </li>
+              <li>
+                <Link to="/cart" className="text-gray-400 hover:text-white transition">
+                  🛒 Giỏ hàng
                 </Link>
               </li>
               <li>
                 <Link to="/orders" className="text-gray-400 hover:text-white transition">
-                  Đơn hàng
+                  📦 Đơn hàng của tôi
+                </Link>
+              </li>
+              <li>
+                <Link to="/profile" className="text-gray-400 hover:text-white transition">
+                  👤 Tài khoản
                 </Link>
               </li>
             </ul>
@@ -67,24 +77,49 @@ export default function Footer() {
             <h3 className="text-lg font-bold mb-4">Hỗ trợ khách hàng</h3>
             <ul className="space-y-2">
               <li>
-                <a href="#" className="text-gray-400 hover:text-white transition">
-                  Chính sách đổi trả
-                </a>
+                <Link to="/info/about_us" className="text-gray-400 hover:text-white transition">
+                  📖 Giới thiệu
+                </Link>
               </li>
               <li>
-                <a href="#" className="text-gray-400 hover:text-white transition">
-                  Chính sách bảo mật
-                </a>
+                <Link to="/info/privacy_policy" className="text-gray-400 hover:text-white transition">
+                  🔒 Bảo mật
+                </Link>
               </li>
               <li>
-                <a href="#" className="text-gray-400 hover:text-white transition">
-                  Điều khoản sử dụng
-                </a>
+                <Link to="/info/terms_conditions" className="text-gray-400 hover:text-white transition">
+                  📜 Điều khoản
+                </Link>
               </li>
               <li>
-                <a href="#" className="text-gray-400 hover:text-white transition">
-                  Hướng dẫn mua hàng
-                </a>
+                <Link to="/info/shipping_policy" className="text-gray-400 hover:text-white transition">
+                  🚚 Vận chuyển
+                </Link>
+              </li>
+              <li>
+                <Link to="/info/return_policy" className="text-gray-400 hover:text-white transition">
+                  ↩️ Đổi trả
+                </Link>
+              </li>
+              <li>
+                <Link to="/info/contact_info" className="text-gray-400 hover:text-white transition">
+                  📞 Liên hệ
+                </Link>
+              </li>
+              <li>
+                <Link to="/info/payment_methods" className="text-gray-400 hover:text-white transition">
+                  💳 Thanh toán
+                </Link>
+              </li>
+              <li>
+                <Link to="/info/warranty_policy" className="text-gray-400 hover:text-white transition">
+                  🛡️ Bảo hành
+                </Link>
+              </li>
+              <li>
+                <Link to="/info/faq" className="text-gray-400 hover:text-white transition">
+                  ❓ FAQ
+                </Link>
               </li>
             </ul>
           </div>
