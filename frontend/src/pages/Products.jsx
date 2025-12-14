@@ -23,6 +23,9 @@ export default function Products() {
     if (categoryParam) {
       setSelectedCategory(categoryParam)
       setShowFilters(true)
+    } else {
+      // Reset category when no category param in URL
+      setSelectedCategory('')
     }
   }, [searchParams])
 
