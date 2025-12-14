@@ -107,6 +107,37 @@ def update_order_status(order_id):
     
     return jsonify({'message': 'Cập nhật trạng thái đơn hàng thành công', 'order': order.to_dict()}), 200
 
+@admin_bp.route('/orders/<int:order_id>', methods=['PUT'])
+@admin_required
+def update_order(order_id):
+    order = Order.query.get_or_404(order_id)
+    data = request.get_json()
+    
+    # Update allowed fields
+    if 'hoten' in data:
+        order.hoten = data['hoten']
+    if 'sdt' in data:
+        order.sdt = data['sdt']
+    if 'diachi_giaohang' in data:
+        order.diachi_giaohang = data['diachi_giaohang']
+    if 'payment_method' in data:
+        order.payment_method = data['payment_method']
+    if 'trangthai' in data:
+        order.trangthai = data['trangthai']
+    
+    db.session.commit()
+    
+    return jsonify({'message': 'Cập nhật đơn hàng thành công', 'order': order.to_dict()}), 200
+
+@admin_bp.route('/orders/<int:order_id>', methods=['DELETE'])
+@admin_required
+def delete_order(order_id):
+    order = Order.query.get_or_404(order_id)
+    db.session.delete(order)
+    db.session.commit()
+    
+    return jsonify({'message': 'Xóa đơn hàng thành công'}), 200
+
 @admin_bp.route('/users', methods=['GET'])
 @admin_required
 def get_all_users():

@@ -13,6 +13,14 @@ export default function AdminOrders() {
   const [searchTerm, setSearchTerm] = useState('')
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState(null)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editForm, setEditForm] = useState({
+    hoten: '',
+    sdt: '',
+    diachi_giaohang: '',
+    payment_method: '',
+    trangthai: ''
+  })
 
   useEffect(() => {
     fetchOrders()
@@ -54,6 +62,44 @@ export default function AdminOrders() {
   const viewDetail = (order) => {
     setSelectedOrder(order)
     setShowDetailModal(true)
+  }
+
+  const openEditModal = (order) => {
+    setSelectedOrder(order)
+    setEditForm({
+      hoten: order.hoten,
+      sdt: order.sdt,
+      diachi_giaohang: order.diachi_giaohang,
+      payment_method: order.payment_method,
+      trangthai: order.trangthai
+    })
+    setShowEditModal(true)
+  }
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault()
+    try {
+      await api.put(`/api/admin/orders/${selectedOrder.id}`, editForm)
+      toast.success('Cập nhật đơn hàng thành công!')
+      setShowEditModal(false)
+      fetchOrders()
+    } catch (err) {
+      console.error(err)
+      toast.error('Lỗi khi cập nhật đơn hàng')
+    }
+  }
+
+  const deleteOrder = async (orderId) => {
+    if (!window.confirm('Bạn có chắc chắn muốn xóa đơn hàng này?')) return
+    
+    try {
+      await api.delete(`/api/admin/orders/${orderId}`)
+      toast.success('Xóa đơn hàng thành công!')
+      fetchOrders()
+    } catch (err) {
+      console.error(err)
+      toast.error('Lỗi khi xóa đơn hàng')
+    }
   }
 
   const getStatusBadge = (status) => {
@@ -228,6 +274,24 @@ export default function AdminOrders() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                       </svg>
                     </button>
+                    <button
+                      onClick={() => openEditModal(order)}
+                      className="text-green-600 hover:text-green-900 mr-3 transition"
+                      title="Sửa đơn hàng"
+                    >
+                      <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => deleteOrder(order.id)}
+                      className="text-red-600 hover:text-red-900 transition"
+                      title="Xóa đơn hàng"
+                    >
+                      <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -304,6 +368,107 @@ export default function AdminOrders() {
             >
               Sau →
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {showEditModal && selectedOrder && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full">
+            <div className="bg-gradient-to-r from-green-500 to-green-600 px-6 py-4 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-white">✏️ Sửa đơn hàng #{selectedOrder.id}</h3>
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="text-white hover:text-gray-200 transition"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <form onSubmit={handleEditSubmit} className="p-6">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Họ tên</label>
+                  <input
+                    type="text"
+                    value={editForm.hoten}
+                    onChange={(e) => setEditForm({ ...editForm, hoten: e.target.value })}
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Số điện thoại</label>
+                  <input
+                    type="text"
+                    value={editForm.sdt}
+                    onChange={(e) => setEditForm({ ...editForm, sdt: e.target.value })}
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Địa chỉ giao hàng</label>
+                  <textarea
+                    value={editForm.diachi_giaohang}
+                    onChange={(e) => setEditForm({ ...editForm, diachi_giaohang: e.target.value })}
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    rows="3"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Phương thức thanh toán</label>
+                  <select
+                    value={editForm.payment_method}
+                    onChange={(e) => setEditForm({ ...editForm, payment_method: e.target.value })}
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    required
+                  >
+                    <option value="COD">COD (Thanh toán khi nhận hàng)</option>
+                    <option value="Bank Transfer">Chuyển khoản ngân hàng</option>
+                    <option value="Credit Card">Thẻ tín dụng</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Trạng thái</label>
+                  <select
+                    value={editForm.trangthai}
+                    onChange={(e) => setEditForm({ ...editForm, trangthai: e.target.value })}
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    required
+                  >
+                    <option value="cho_xac_nhan">Chờ xác nhận</option>
+                    <option value="dang_giao">Đang giao</option>
+                    <option value="hoan_thanh">Hoàn thành</option>
+                    <option value="huy">Đã hủy</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  type="submit"
+                  className="flex-1 bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition"
+                >
+                  💾 Lưu thay đổi
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowEditModal(false)}
+                  className="flex-1 bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-300 transition"
+                >
+                  Hủy
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
