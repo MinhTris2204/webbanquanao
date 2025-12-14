@@ -10,6 +10,7 @@ import AdminUsers from './pages/admin/Users'
 import AdminVouchers from './pages/admin/Vouchers'
 import AdminStoreInfo from './pages/admin/StoreInfo'
 import AdminPromotions from './pages/admin/Promotions'
+import AdminReviews from './pages/admin/Reviews'
 
 function AdminApp() {
   const { isAuthenticated, isAdmin, loading } = useAuth()
@@ -35,6 +36,7 @@ function AdminApp() {
             <Route path="/orders" element={<AdminOrders />} />
             <Route path="/vouchers" element={<AdminVouchers />} />
             <Route path="/promotions" element={<AdminPromotions />} />
+            <Route path="/reviews" element={<AdminReviews />} />
             <Route path="/users" element={<AdminUsers />} />
             <Route path="/store-info" element={<AdminStoreInfo />} />
           </Route>

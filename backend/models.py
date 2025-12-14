@@ -339,9 +339,10 @@ class Review(db.Model):
     product = db.relationship('Product', backref='reviews', lazy=True)
     user = db.relationship('User', backref='reviews', lazy=True)
     order = db.relationship('Order', backref='reviews', lazy=True)
+    reply = db.relationship('ReviewReply', backref='review', uselist=False, lazy=True, cascade='all, delete-orphan')
     
     def to_dict(self):
-        return {
+        result = {
             'id': self.id,
             'product_id': self.product_id,
             'user_id': self.user_id,
@@ -349,6 +350,49 @@ class Review(db.Model):
             'rating': self.rating,
             'comment': self.comment,
             'user_name': self.user.hoten if self.user else 'Anonymous',
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }
+        
+        if self.reply:
+            result['reply'] = self.reply.to_dict()
+        
+        if self.product:
+            result['product'] = {
+                'products_id': self.product.products_id,
+                'ten_san_pham': self.product.ten_san_pham,
+                'gia_ban': float(self.product.gia_ban) if self.product.gia_ban else None,
+                'loai': self.product.loai,
+                'hinh_anh': self.product.hinh_anh
+            }
+            
+            # Calculate product rating stats
+            product_reviews = Review.query.filter_by(product_id=self.product_id).all()
+            if product_reviews:
+                total_rating = sum(r.rating for r in product_reviews)
+                avg_rating = total_rating / len(product_reviews)
+                result['product']['rating'] = {
+                    'average_rating': round(avg_rating, 1),
+                    'total_reviews': len(product_reviews)
+                }
+        
+        return result
+
+
+class ReviewReply(db.Model):
+    __tablename__ = 'review_replies'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    review_id = db.Column(db.Integer, db.ForeignKey('reviews.id'), nullable=False, unique=True)
+    reply = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.TIMESTAMP, default=datetime.utcnow)
+    updated_at = db.Column(db.TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'review_id': self.review_id,
+            'reply': self.reply,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }

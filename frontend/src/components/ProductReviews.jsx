@@ -281,7 +281,26 @@ export default function ProductReviews({ productId }) {
                 </div>
               </div>
               {review.comment && (
-                <p className="text-gray-700 leading-relaxed">{review.comment}</p>
+                <p className="text-gray-700 leading-relaxed mb-3">{review.comment}</p>
+              )}
+              
+              {/* Admin Reply */}
+              {review.reply && (
+                <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-green-500 rounded-lg p-4 mt-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="bg-green-600 text-white px-3 py-1 rounded-full text-xs font-bold">
+                      💬 PHẢN HỒI TỪ SHOP
+                    </div>
+                    <span className="text-xs text-gray-500">
+                      {new Date(review.reply.created_at).toLocaleDateString('vi-VN', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric'
+                      })}
+                    </span>
+                  </div>
+                  <p className="text-gray-800 leading-relaxed font-medium">{review.reply.reply}</p>
+                </div>
               )}
             </div>
           ))
