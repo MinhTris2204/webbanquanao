@@ -58,7 +58,7 @@ class Product(db.Model):
     cart_items = db.relationship('CartItem', backref='product', lazy=True)
     order_details = db.relationship('OrderDetail', backref='product', lazy=True)
     
-    def to_dict(self, include_promotion=True):
+    def to_dict(self, include_promotion=True, include_rating=True):
         result = {
             'products_id': self.products_id,
             'ten_san_pham': self.ten_san_pham,
@@ -87,7 +87,40 @@ class Product(db.Model):
             else:
                 result['promotion'] = None
         
+        if include_rating:
+            rating_info = self.get_rating_info()
+            if rating_info:
+                result['rating'] = rating_info
+        
         return result
+    
+    def get_rating_info(self):
+        """Get average rating and review count for this product"""
+        from sqlalchemy import func
+        # Check if Review model exists to avoid circular import
+        try:
+            # Query reviews for this product
+            result = db.session.execute(
+                db.text("""
+                    SELECT 
+                        AVG(rating) as average_rating,
+                        COUNT(id) as review_count
+                    FROM reviews
+                    WHERE product_id = :product_id
+                """),
+                {'product_id': self.products_id}
+            ).first()
+            
+            if result and result.review_count > 0:
+                return {
+                    'average_rating': round(float(result.average_rating), 1),
+                    'review_count': result.review_count
+                }
+        except Exception as e:
+            # If reviews table doesn't exist or any error, return None
+            pass
+        
+        return None
     
     def get_active_promotion(self):
         """Get currently active promotion for this product"""
@@ -395,4 +428,30 @@ class ReviewReply(db.Model):
             'reply': self.reply,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }
+
+
+class ProductView(db.Model):
+    __tablename__ = 'product_views'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=True)  # Nullable for guest users
+    product_id = db.Column(db.Integer, db.ForeignKey('products.products_id'), nullable=False)
+    session_id = db.Column(db.String(100))  # For tracking guest users
+    view_count = db.Column(db.Integer, default=1)
+    last_viewed_at = db.Column(db.TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.TIMESTAMP, default=datetime.utcnow)
+    
+    product = db.relationship('Product', backref='views', lazy=True)
+    user = db.relationship('User', backref='product_views', lazy=True)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'product_id': self.product_id,
+            'session_id': self.session_id,
+            'view_count': self.view_count,
+            'last_viewed_at': self.last_viewed_at.isoformat() if self.last_viewed_at else None,
+            'created_at': self.created_at.isoformat() if self.created_at else None
         }

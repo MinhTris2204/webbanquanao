@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../utils/api'
+import RecommendedProducts from '../components/RecommendedProducts'
 
 export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0)
@@ -221,6 +222,31 @@ export default function Home() {
                   <h3 className="font-semibold text-gray-800 mb-2 line-clamp-2">
                     {product.ten_san_pham}
                   </h3>
+                  
+                  {/* Rating */}
+                  {product.rating && (
+                    <div className="flex items-center gap-1 mb-2">
+                      <div className="flex items-center">
+                        {[...Array(5)].map((_, i) => (
+                          <svg
+                            key={i}
+                            className={`w-3 h-3 ${
+                              i < Math.floor(product.rating.average_rating)
+                                ? 'text-yellow-400 fill-current'
+                                : 'text-gray-300 fill-current'
+                            }`}
+                            viewBox="0 0 20 20"
+                          >
+                            <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+                          </svg>
+                        ))}
+                      </div>
+                      <span className="text-xs text-gray-600">
+                        {product.rating.average_rating}
+                      </span>
+                    </div>
+                  )}
+                  
                   {product.promotion ? (
                     <div className="space-y-1">
                       <p className="text-red-600 font-bold text-lg">
@@ -293,6 +319,31 @@ export default function Home() {
                     <h3 className="font-semibold text-gray-800 mb-2 line-clamp-2">
                       {product.ten_san_pham}
                     </h3>
+                    
+                    {/* Rating */}
+                    {product.rating && (
+                      <div className="flex items-center gap-1 mb-2">
+                        <div className="flex items-center">
+                          {[...Array(5)].map((_, i) => (
+                            <svg
+                              key={i}
+                              className={`w-3 h-3 ${
+                                i < Math.floor(product.rating.average_rating)
+                                  ? 'text-yellow-400 fill-current'
+                                  : 'text-gray-300 fill-current'
+                              }`}
+                              viewBox="0 0 20 20"
+                            >
+                              <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+                            </svg>
+                          ))}
+                        </div>
+                        <span className="text-xs text-gray-600">
+                          {product.rating.average_rating}
+                        </span>
+                      </div>
+                    )}
+                    
                     <div className="space-y-1">
                       <p className="text-red-600 font-bold text-lg">
                         {product.promotion.promotional_price?.toLocaleString('vi-VN')} đ
@@ -310,6 +361,11 @@ export default function Home() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Recommended Products */}
+      <div className="max-w-7xl mx-auto px-4 py-16">
+        <RecommendedProducts title="🎯 Gợi ý dành cho bạn" limit={8} type="for-you" />
       </div>
 
       {/* Promotional Banner */}

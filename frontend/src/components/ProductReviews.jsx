@@ -28,11 +28,14 @@ export default function ProductReviews({ productId }) {
   const fetchReviews = async () => {
     try {
       const res = await api.get(`/api/reviews/product/${productId}`)
-      setReviews(res.data.reviews)
-      setAverageRating(res.data.average_rating)
-      setTotalReviews(res.data.total)
+      setReviews(res.data.reviews || [])
+      setAverageRating(res.data.average_rating || 0)
+      setTotalReviews(res.data.total || 0)
     } catch (err) {
       console.error('Error fetching reviews:', err)
+      setReviews([])
+      setAverageRating(0)
+      setTotalReviews(0)
     }
   }
 

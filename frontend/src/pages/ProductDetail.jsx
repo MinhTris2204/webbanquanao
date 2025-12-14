@@ -4,6 +4,7 @@ import api from '../utils/api'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
 import ProductReviews from '../components/ProductReviews'
+import RecommendedProducts from '../components/RecommendedProducts'
 
 // Countdown Timer Component
 function CountdownTimer({ endDate }) {
@@ -76,6 +77,7 @@ export default function ProductDetail() {
 
   useEffect(() => {
     fetchProduct()
+    trackProductView()
   }, [id])
 
   const fetchProduct = async () => {
@@ -92,6 +94,17 @@ export default function ProductDetail() {
       setMessage({ text: 'Không tìm thấy sản phẩm', type: 'error' })
     } finally {
       setLoading(false)
+    }
+  }
+
+  const trackProductView = async () => {
+    try {
+      await api.post('/api/recommendations/track-view', {
+        product_id: parseInt(id)
+      })
+    } catch (err) {
+      // Silently fail - tracking is not critical
+      console.error('Failed to track view:', err)
     }
   }
 
@@ -363,6 +376,35 @@ export default function ProductDetail() {
 
       {/* Product Reviews */}
       <ProductReviews productId={product.products_id} />
+
+      {/* Recommended For You */}
+      <div className="mt-16">
+        <RecommendedProducts 
+          title="🎯 Gợi ý dành cho bạn" 
+          limit={8} 
+          type="for-you"
+        />
+      </div>
+
+      {/* Frequently Bought Together */}
+      <div className="mt-16">
+        <RecommendedProducts 
+          title="🛒 Thường được mua cùng nhau" 
+          limit={4} 
+          type="frequently-bought" 
+          productId={product.products_id}
+        />
+      </div>
+
+      {/* Similar Products */}
+      <div className="mt-16">
+        <RecommendedProducts 
+          title="🔍 Sản phẩm tương tự" 
+          limit={8} 
+          type="similar" 
+          productId={product.products_id}
+        />
+      </div>
     </div>
   )
 }

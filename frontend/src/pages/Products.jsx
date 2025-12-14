@@ -357,6 +357,31 @@ export default function Products() {
               <h3 className="font-bold text-lg mb-2 text-gray-800 line-clamp-2 group-hover:text-blue-600 transition">
                 {product.ten_san_pham}
               </h3>
+              
+              {/* Rating */}
+              {product.rating && (
+                <div className="flex items-center gap-1 mb-2">
+                  <div className="flex items-center">
+                    {[...Array(5)].map((_, i) => (
+                      <svg
+                        key={i}
+                        className={`w-4 h-4 ${
+                          i < Math.floor(product.rating.average_rating)
+                            ? 'text-yellow-400 fill-current'
+                            : 'text-gray-300 fill-current'
+                        }`}
+                        viewBox="0 0 20 20"
+                      >
+                        <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+                      </svg>
+                    ))}
+                  </div>
+                  <span className="text-sm text-gray-600">
+                    {product.rating.average_rating} ({product.rating.review_count})
+                  </span>
+                </div>
+              )}
+              
               {product.size && (
                 <p className="text-xs text-gray-500 mb-2">Size: {product.size}</p>
               )}
