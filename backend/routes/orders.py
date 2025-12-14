@@ -33,11 +33,18 @@ def create_order():
     if not cart or not cart.cart_items:
         return jsonify({'error': 'Giỏ hàng trống'}), 400
     
-    # Calculate total first
+    # Calculate total first (with promotional prices if available)
     total = 0
     for item in cart.cart_items:
         product = item.product
-        unit_price = product.gia_ban
+        product_dict = product.to_dict()
+        
+        # Use promotional price if available, otherwise use regular price
+        if product_dict.get('promotion') and product_dict['promotion'].get('promotional_price'):
+            unit_price = product_dict['promotion']['promotional_price']
+        else:
+            unit_price = float(product.gia_ban)
+        
         line_total = unit_price * item.quantity
         total += line_total
     
@@ -87,10 +94,17 @@ def create_order():
     db.session.add(order)
     db.session.flush()
     
-    # Create order details
+    # Create order details (with promotional prices if available)
     for item in cart.cart_items:
         product = item.product
-        unit_price = product.gia_ban
+        product_dict = product.to_dict()
+        
+        # Use promotional price if available, otherwise use regular price
+        if product_dict.get('promotion') and product_dict['promotion'].get('promotional_price'):
+            unit_price = product_dict['promotion']['promotional_price']
+        else:
+            unit_price = float(product.gia_ban)
+        
         line_total = unit_price * item.quantity
         
         order_detail = OrderDetail(

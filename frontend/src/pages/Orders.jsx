@@ -198,9 +198,27 @@ export default function Orders() {
                           {detail.selected_size && (
                             <p className="text-xs text-blue-600 font-semibold">Size: {detail.selected_size}</p>
                           )}
-                          <p className="text-sm text-gray-600">
-                            {detail.unit_price?.toLocaleString('vi-VN')}₫ x {detail.quantity}
-                          </p>
+                          
+                          {/* Show promotion info if product has promotion */}
+                          {detail.product?.promotion ? (
+                            <div className="mt-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-xs bg-red-500 text-white px-2 py-0.5 rounded-full font-bold">
+                                  -{Math.round(((detail.product.gia_ban - detail.product.promotion.promotional_price) / detail.product.gia_ban) * 100)}% OFF
+                                </span>
+                              </div>
+                              <p className="text-sm font-bold text-red-600">
+                                {detail.unit_price?.toLocaleString('vi-VN')}₫ x {detail.quantity}
+                              </p>
+                              <p className="text-xs text-gray-500 line-through">
+                                Giá gốc: {detail.product.gia_ban?.toLocaleString('vi-VN')}₫
+                              </p>
+                            </div>
+                          ) : (
+                            <p className="text-sm text-gray-600">
+                              {detail.unit_price?.toLocaleString('vi-VN')}₫ x {detail.quantity}
+                            </p>
+                          )}
                         </div>
                         <div className="text-right">
                           <p className="font-bold text-blue-600">

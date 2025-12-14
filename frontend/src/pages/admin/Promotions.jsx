@@ -26,6 +26,10 @@ export default function Promotions() {
     is_active: true
   });
   
+  // Product search in modal
+  const [productSearch, setProductSearch] = useState('');
+  const [showProductDropdown, setShowProductDropdown] = useState(false);
+  
   // Bulk form data
   const [bulkFormData, setBulkFormData] = useState({
     product_ids: [],
@@ -153,6 +157,27 @@ export default function Promotions() {
       is_active: true
     });
     setEditingPromotion(null);
+    setProductSearch('');
+    setShowProductDropdown(false);
+  };
+  
+  const filteredProductsForModal = products.filter(product =>
+    product.ten_san_pham.toLowerCase().includes(productSearch.toLowerCase()) ||
+    product.products_id.toString().includes(productSearch)
+  );
+  
+  const selectedProduct = products.find(p => p.products_id === parseInt(formData.product_id));
+  
+  const calculatePreviewPrice = () => {
+    if (!selectedProduct || !formData.discount_value) return null;
+    const originalPrice = parseFloat(selectedProduct.gia_ban);
+    const discountValue = parseFloat(formData.discount_value);
+    
+    if (formData.discount_type === 'percent') {
+      return originalPrice - (originalPrice * discountValue / 100);
+    } else {
+      return originalPrice - discountValue;
+    }
   };
 
   const resetBulkForm = () => {
@@ -343,110 +368,225 @@ export default function Promotions() {
 
       {/* Create/Edit Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h2 className="text-xl font-bold mb-4">
-              {editingPromotion ? 'Sửa khuyến mãi' : 'Tạo khuyến mãi mới'}
-            </h2>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-4 rounded-t-2xl">
+              <h2 className="text-2xl font-bold flex items-center gap-2">
+                {editingPromotion ? '✏️ Sửa khuyến mãi' : '✨ Tạo khuyến mãi mới'}
+              </h2>
+              <p className="text-blue-100 text-sm mt-1">
+                {editingPromotion ? 'Cập nhật thông tin khuyến mãi' : 'Điền thông tin để tạo khuyến mãi cho sản phẩm'}
+              </p>
+            </div>
+            <div className="p-6">
             <form onSubmit={handleSubmit}>
-              <div className="space-y-4">
+              <div className="space-y-5">
+                {/* Product Selection with Search */}
                 <div>
-                  <label className="block text-sm font-medium mb-1">Sản phẩm</label>
-                  <select
-                    value={formData.product_id}
-                    onChange={(e) => setFormData({ ...formData, product_id: e.target.value })}
-                    className="w-full border rounded px-3 py-2"
-                    required
-                    disabled={editingPromotion}
-                  >
-                    <option value="">Chọn sản phẩm</option>
-                    {products.map(product => (
-                      <option key={product.products_id} value={product.products_id}>
-                        {product.ten_san_pham} - {product.gia_ban?.toLocaleString()}₫
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-1">Loại giảm giá</label>
-                  <select
-                    value={formData.discount_type}
-                    onChange={(e) => setFormData({ ...formData, discount_type: e.target.value })}
-                    className="w-full border rounded px-3 py-2"
-                    required
-                  >
-                    <option value="percent">Phần trăm (%)</option>
-                    <option value="fixed">Số tiền cố định (₫)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Giá trị giảm {formData.discount_type === 'percent' ? '(%)' : '(₫)'}
+                  <label className="block text-sm font-medium mb-2 text-gray-700">
+                    🏷️ Sản phẩm <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="number"
-                    value={formData.discount_value}
-                    onChange={(e) => setFormData({ ...formData, discount_value: e.target.value })}
-                    className="w-full border rounded px-3 py-2"
-                    required
-                    min="1"
-                    step={formData.discount_type === 'percent' ? '1' : '1000'}
-                  />
+                  {editingPromotion ? (
+                    <div className="w-full border rounded-lg px-4 py-3 bg-gray-50">
+                      <div className="font-medium">{selectedProduct?.ten_san_pham}</div>
+                      <div className="text-sm text-gray-500">
+                        Giá: {selectedProduct?.gia_ban?.toLocaleString()}₫
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="🔍 Tìm kiếm sản phẩm theo tên hoặc ID..."
+                        value={productSearch}
+                        onChange={(e) => {
+                          setProductSearch(e.target.value);
+                          setShowProductDropdown(true);
+                        }}
+                        onFocus={() => setShowProductDropdown(true)}
+                        className="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                      
+                      {/* Selected Product Display */}
+                      {selectedProduct && (
+                        <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
+                          <div>
+                            <div className="font-medium text-blue-900">{selectedProduct.ten_san_pham}</div>
+                            <div className="text-sm text-blue-700">
+                              ID: {selectedProduct.products_id} | Giá: {selectedProduct.gia_ban?.toLocaleString()}₫
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFormData({ ...formData, product_id: '' });
+                              setProductSearch('');
+                            }}
+                            className="text-red-600 hover:text-red-800"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      )}
+                      
+                      {/* Dropdown List */}
+                      {showProductDropdown && !selectedProduct && (
+                        <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                          {filteredProductsForModal.length === 0 ? (
+                            <div className="p-4 text-center text-gray-500">
+                              Không tìm thấy sản phẩm
+                            </div>
+                          ) : (
+                            filteredProductsForModal.map(product => (
+                              <button
+                                key={product.products_id}
+                                type="button"
+                                onClick={() => {
+                                  setFormData({ ...formData, product_id: product.products_id });
+                                  setShowProductDropdown(false);
+                                  setProductSearch('');
+                                }}
+                                className="w-full text-left px-4 py-3 hover:bg-blue-50 border-b last:border-b-0 transition"
+                              >
+                                <div className="font-medium">{product.ten_san_pham}</div>
+                                <div className="text-sm text-gray-500">
+                                  ID: {product.products_id} | Giá: {product.gia_ban?.toLocaleString()}₫
+                                </div>
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium mb-1">Ngày bắt đầu</label>
-                  <input
-                    type="datetime-local"
-                    value={formData.start_date}
-                    onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                    className="w-full border rounded px-3 py-2"
-                    required
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Lưu ý: Nhập theo giờ địa phương của bạn</p>
+                {/* Discount Type and Value */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-gray-700">
+                      💰 Loại giảm giá <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={formData.discount_type}
+                      onChange={(e) => setFormData({ ...formData, discount_type: e.target.value })}
+                      className="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      required
+                    >
+                      <option value="percent">📊 Phần trăm (%)</option>
+                      <option value="fixed">💵 Số tiền cố định (₫)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-gray-700">
+                      {formData.discount_type === 'percent' ? '📊 Giá trị (%)' : '💵 Giá trị (₫)'} <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.discount_value}
+                      onChange={(e) => setFormData({ ...formData, discount_value: e.target.value })}
+                      className="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      required
+                      min="1"
+                      max={formData.discount_type === 'percent' ? '99' : undefined}
+                      step={formData.discount_type === 'percent' ? '1' : '1000'}
+                      placeholder={formData.discount_type === 'percent' ? 'Ví dụ: 50' : 'Ví dụ: 100000'}
+                    />
+                  </div>
+                </div>
+                
+                {/* Price Preview */}
+                {selectedProduct && formData.discount_value && (
+                  <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-4">
+                    <div className="text-sm font-medium text-gray-700 mb-2">📊 Xem trước giá:</div>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-gray-500 text-sm line-through">
+                          Giá gốc: {selectedProduct.gia_ban?.toLocaleString()}₫
+                        </div>
+                        <div className="text-2xl font-bold text-green-600">
+                          Giá sale: {calculatePreviewPrice()?.toLocaleString()}₫
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm text-gray-600">Tiết kiệm</div>
+                        <div className="text-xl font-bold text-red-600">
+                          {(selectedProduct.gia_ban - calculatePreviewPrice())?.toLocaleString()}₫
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Date Range */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-gray-700">
+                      📅 Ngày bắt đầu <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={formData.start_date}
+                      onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                      className="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      required
+                    />
+                    <p className="text-xs text-gray-500 mt-1">⏰ Nhập theo giờ địa phương</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-gray-700">
+                      📅 Ngày kết thúc <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={formData.end_date}
+                      onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                      className="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      required
+                    />
+                    <p className="text-xs text-gray-500 mt-1">⏰ Nhập theo giờ địa phương</p>
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium mb-1">Ngày kết thúc</label>
-                  <input
-                    type="datetime-local"
-                    value={formData.end_date}
-                    onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                    className="w-full border rounded px-3 py-2"
-                    required
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Lưu ý: Nhập theo giờ địa phương của bạn</p>
-                </div>
-
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={formData.is_active}
-                    onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                    className="mr-2"
-                  />
-                  <label className="text-sm">Kích hoạt ngay</label>
+                {/* Active Toggle */}
+                <div className="bg-gray-50 border rounded-lg p-4">
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.is_active}
+                      onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                      className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                    />
+                    <span className="ml-3 text-sm font-medium text-gray-700">
+                      ✅ Kích hoạt khuyến mãi ngay lập tức
+                    </span>
+                  </label>
+                  <p className="text-xs text-gray-500 mt-2 ml-8">
+                    Nếu bỏ chọn, khuyến mãi sẽ ở trạng thái tạm dừng
+                  </p>
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 mt-6">
+              <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
                 <button
                   type="button"
                   onClick={() => { setShowModal(false); resetForm(); }}
-                  className="px-4 py-2 border rounded hover:bg-gray-50"
+                  className="px-6 py-3 border-2 border-gray-300 rounded-lg hover:bg-gray-50 font-medium transition"
                 >
-                  Hủy
+                  ❌ Hủy
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  disabled={!formData.product_id}
+                  className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 font-medium shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition"
                 >
-                  {editingPromotion ? 'Cập nhật' : 'Tạo'}
+                  {editingPromotion ? '✏️ Cập nhật' : '✨ Tạo khuyến mãi'}
                 </button>
               </div>
             </form>
+            </div>
           </div>
         </div>
       )}

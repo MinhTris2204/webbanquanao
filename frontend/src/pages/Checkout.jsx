@@ -254,9 +254,27 @@ export default function Checkout() {
                         {item.product.ten_san_pham}
                       </p>
                       <p className="text-sm text-gray-500">SL: {item.quantity}</p>
-                      <p className="text-sm font-bold text-blue-600">
-                        {item.item_total.toLocaleString('vi-VN')}₫
-                      </p>
+                      
+                      {/* Show promotion info if product has promotion */}
+                      {item.product.promotion ? (
+                        <div className="mt-1">
+                          <div className="flex items-center gap-1 mb-1">
+                            <span className="text-xs bg-red-500 text-white px-1.5 py-0.5 rounded font-bold">
+                              -{Math.round(((item.product.gia_ban - item.product.promotion.promotional_price) / item.product.gia_ban) * 100)}%
+                            </span>
+                          </div>
+                          <p className="text-sm font-bold text-red-600">
+                            {item.unit_price?.toLocaleString('vi-VN')}₫
+                          </p>
+                          <p className="text-xs text-gray-400 line-through">
+                            {item.product.gia_ban?.toLocaleString('vi-VN')}₫
+                          </p>
+                        </div>
+                      ) : (
+                        <p className="text-sm font-bold text-blue-600">
+                          {item.item_total.toLocaleString('vi-VN')}₫
+                        </p>
+                      )}
                     </div>
                   </div>
                 ))}

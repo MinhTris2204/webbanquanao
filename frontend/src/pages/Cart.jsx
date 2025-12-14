@@ -135,9 +135,26 @@ export default function Cart() {
                         </span>
                       )}
                     </div>
-                    <p className="text-2xl font-bold text-blue-600 mt-3">
-                      {item.product.gia_ban?.toLocaleString('vi-VN')}₫
-                    </p>
+                    {/* Price Display with Promotion */}
+                    {item.product.promotion ? (
+                      <div className="mt-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs bg-red-500 text-white px-2 py-1 rounded-full font-bold">
+                            -{Math.round(((item.product.gia_ban - item.product.promotion.promotional_price) / item.product.gia_ban) * 100)}%
+                          </span>
+                        </div>
+                        <p className="text-2xl font-bold text-red-600 mt-1">
+                          {item.unit_price?.toLocaleString('vi-VN')}₫
+                        </p>
+                        <p className="text-sm text-gray-500 line-through">
+                          {item.product.gia_ban?.toLocaleString('vi-VN')}₫
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-2xl font-bold text-blue-600 mt-3">
+                        {item.product.gia_ban?.toLocaleString('vi-VN')}₫
+                      </p>
+                    )}
                   </div>
 
                   {/* Quantity Controls */}

@@ -17,13 +17,23 @@ def get_cart():
     total = 0
     for item in cart.cart_items:
         product = item.product
-        item_total = float(product.gia_ban) * item.quantity
+        product_dict = product.to_dict()
+        
+        # Use promotional price if available, otherwise use regular price
+        if product_dict.get('promotion') and product_dict['promotion'].get('promotional_price'):
+            unit_price = product_dict['promotion']['promotional_price']
+        else:
+            unit_price = float(product.gia_ban)
+        
+        item_total = unit_price * item.quantity
         total += item_total
+        
         items.append({
             'cart_item_id': item.cart_item_id,
-            'product': product.to_dict(),
+            'product': product_dict,
             'quantity': item.quantity,
             'selected_size': item.selected_size,
+            'unit_price': unit_price,
             'item_total': item_total
         })
     
