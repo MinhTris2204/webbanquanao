@@ -134,6 +134,7 @@ class Order(db.Model):
     payment_token = db.Column(db.String(225))
     voucher_id = db.Column(db.Integer, db.ForeignKey('vouchers.id'))
     discount_amount = db.Column(db.Numeric(12, 2), default=0)
+    ghichu = db.Column(db.Text)
     created_at = db.Column(db.TIMESTAMP, default=datetime.utcnow)
     updated_at = db.Column(db.TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -152,6 +153,7 @@ class Order(db.Model):
             'payment_method': self.payment_method,
             'voucher_id': self.voucher_id,
             'discount_amount': float(self.discount_amount) if self.discount_amount else 0,
+            'ghichu': self.ghichu,
             'voucher': self.voucher.to_dict() if self.voucher else None,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,

@@ -498,6 +498,14 @@ export default function AdminOrders() {
                   <p><span className="font-semibold">Số điện thoại:</span> {selectedOrder.sdt}</p>
                   <p><span className="font-semibold">Địa chỉ giao hàng:</span> {selectedOrder.diachi_giaohang}</p>
                   <p><span className="font-semibold">Phương thức thanh toán:</span> {selectedOrder.payment_method}</p>
+                  {selectedOrder.ghichu && (
+                    <div className="pt-2 border-t border-gray-200">
+                      <p className="font-semibold mb-1">📝 Ghi chú từ khách hàng:</p>
+                      <p className="text-gray-700 bg-yellow-50 p-3 rounded border-l-4 border-yellow-400 italic">
+                        "{selectedOrder.ghichu}"
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
 

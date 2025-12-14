@@ -8,3 +8,12 @@ docker-compose up --build
 - Thời gian kết thúc phải sau thời gian bắt đầu
 - Bật is_active = true
 - Kiểm tra lại trang sản phẩm sau khi tạo
+
+=== CHẠY MIGRATION MỚI ===
+Sau khi pull code mới, chạy migration để thêm cột ghichu vào bảng orders:
+
+cd backend
+flask db upgrade
+
+Hoặc nếu dùng Docker:
+docker-compose exec backend flask db upgrade

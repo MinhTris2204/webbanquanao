@@ -88,7 +88,8 @@ def create_order():
         trangthai='cho_xac_nhan',
         tongtien=final_total,
         voucher_id=voucher_id,
-        discount_amount=discount_amount
+        discount_amount=discount_amount,
+        ghichu=data.get('ghichu')
     )
     
     db.session.add(order)
