@@ -1,5 +1,6 @@
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
+import { ToastProvider } from './components/Toast'
 import AdminLayout from './layouts/AdminLayout'
 import AdminLogin from './pages/admin/AdminLogin'
 import AdminDashboard from './pages/admin/Dashboard'
@@ -20,7 +21,8 @@ function AdminApp() {
   }
 
   return (
-    <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+    <ToastProvider>
+      <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <Routes>
         <Route path="/login" element={<AdminLogin />} />
         
@@ -39,6 +41,7 @@ function AdminApp() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
+    </ToastProvider>
   )
 }
 

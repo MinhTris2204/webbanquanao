@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
 import api from '../../utils/api'
+import { useToast } from '../../components/Toast'
 
 export default function AdminUsers() {
+  const toast = useToast()
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
@@ -55,7 +57,7 @@ export default function AdminUsers() {
       setTotalUsers(res.data.total)
     } catch (err) {
       console.error(err)
-      alert('Lỗi khi tải danh sách người dùng')
+      toast.error('Lỗi khi tải danh sách người dùng')
     } finally {
       setLoading(false)
     }
@@ -77,17 +79,17 @@ export default function AdminUsers() {
   const handleCreate = async (e) => {
     e.preventDefault()
     if (addForm.matkhau.length < 6) {
-      alert('Mật khẩu phải có ít nhất 6 ký tự')
+      toast.warning('Mật khẩu phải có ít nhất 6 ký tự')
       return
     }
     try {
       await api.post('/api/admin/users', addForm)
-      alert('Tạo người dùng thành công!')
+      toast.success('Tạo người dùng thành công!')
       setShowAddModal(false)
       fetchUsers()
     } catch (err) {
       console.error(err)
-      alert(err.response?.data?.error || 'Lỗi khi tạo người dùng')
+      toast.error(err.response?.data?.error || 'Lỗi khi tạo người dùng')
     }
   }
 
@@ -107,12 +109,12 @@ export default function AdminUsers() {
     e.preventDefault()
     try {
       await api.put(`/api/admin/users/${selectedUser.user_id}`, editForm)
-      alert('Cập nhật người dùng thành công!')
+      toast.success('Cập nhật người dùng thành công!')
       setShowEditModal(false)
       fetchUsers()
     } catch (err) {
       console.error(err)
-      alert('Lỗi khi cập nhật người dùng')
+      toast.error('Lỗi khi cập nhật người dùng')
     }
   }
 
@@ -125,22 +127,22 @@ export default function AdminUsers() {
   const handleUpdatePassword = async (e) => {
     e.preventDefault()
     if (passwordForm.matkhau !== passwordForm.confirmMatkhau) {
-      alert('Mật khẩu xác nhận không khớp')
+      toast.warning('Mật khẩu xác nhận không khớp')
       return
     }
     if (passwordForm.matkhau.length < 6) {
-      alert('Mật khẩu phải có ít nhất 6 ký tự')
+      toast.warning('Mật khẩu phải có ít nhất 6 ký tự')
       return
     }
     try {
       await api.put(`/api/admin/users/${selectedUser.user_id}/password`, {
         matkhau: passwordForm.matkhau
       })
-      alert('Đổi mật khẩu thành công!')
+      toast.success('Đổi mật khẩu thành công!')
       setShowPasswordModal(false)
     } catch (err) {
       console.error(err)
-      alert(err.response?.data?.error || 'Lỗi khi đổi mật khẩu')
+      toast.error(err.response?.data?.error || 'Lỗi khi đổi mật khẩu')
     }
   }
 
@@ -152,12 +154,12 @@ export default function AdminUsers() {
   const confirmDelete = async () => {
     try {
       await api.delete(`/api/admin/users/${selectedUser.user_id}`)
-      alert('Xóa người dùng thành công!')
+      toast.success('Xóa người dùng thành công!')
       setShowDeleteModal(false)
       fetchUsers()
     } catch (err) {
       console.error(err)
-      alert(err.response?.data?.error || 'Lỗi khi xóa người dùng')
+      toast.error(err.response?.data?.error || 'Lỗi khi xóa người dùng')
     }
   }
 
