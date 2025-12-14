@@ -1,0 +1,10 @@
+http://localhost:5173/admin.html 
+http://localhost:5173
+
+docker-compose up --build
+
+=== LƯU Ý KHI TẠO KHUYẾN MÃI ===
+- Thời gian bắt đầu phải là HIỆN TẠI hoặc trong quá khứ
+- Thời gian kết thúc phải sau thời gian bắt đầu
+- Bật is_active = true
+- Kiểm tra lại trang sản phẩm sau khi tạo

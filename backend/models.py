@@ -80,7 +80,9 @@ class Product(db.Model):
                     'id': active_promotion.id,
                     'discount_type': active_promotion.discount_type,
                     'discount_value': float(active_promotion.discount_value),
-                    'promotional_price': active_promotion.calculate_promotional_price(self.gia_ban)
+                    'promotional_price': active_promotion.calculate_promotional_price(self.gia_ban),
+                    'start_date': active_promotion.start_date.isoformat() if active_promotion.start_date else None,
+                    'end_date': active_promotion.end_date.isoformat() if active_promotion.end_date else None
                 }
             else:
                 result['promotion'] = None

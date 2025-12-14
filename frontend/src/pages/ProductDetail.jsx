@@ -4,6 +4,64 @@ import api from '../utils/api'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
 
+// Countdown Timer Component
+function CountdownTimer({ endDate }) {
+  const calculateTimeLeft = () => {
+    if (!endDate) return null
+    
+    const difference = new Date(endDate) - new Date()
+    
+    if (difference <= 0 || isNaN(difference)) {
+      return null
+    }
+
+    return {
+      days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+      hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
+      minutes: Math.floor((difference / 1000 / 60) % 60),
+      seconds: Math.floor((difference / 1000) % 60)
+    }
+  }
+
+  const [timeLeft, setTimeLeft] = useState(calculateTimeLeft())
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const newTimeLeft = calculateTimeLeft()
+      setTimeLeft(newTimeLeft)
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [endDate])
+
+  // Don't render anything if expired
+  if (!timeLeft) {
+    return null
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-sm font-semibold text-gray-700">⏰ Kết thúc sau:</span>
+      <div className="flex gap-1">
+        {timeLeft.days > 0 && (
+          <div className="bg-red-600 text-white px-2 py-1 rounded font-bold text-sm">
+            {timeLeft.days} ngày
+          </div>
+        )}
+        <div className="bg-red-600 text-white px-2 py-1 rounded font-bold text-sm">
+          {String(timeLeft.hours).padStart(2, '0')} giờ
+        </div>
+        <div className="bg-red-600 text-white px-2 py-1 rounded font-bold text-sm">
+          {String(timeLeft.minutes).padStart(2, '0')} phút
+        </div>
+        <div className="bg-red-600 text-white px-2 py-1 rounded font-bold text-sm animate-pulse">
+          {String(timeLeft.seconds).padStart(2, '0')} giây
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function ProductDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -153,19 +211,32 @@ export default function ProductDetail() {
             </div>
             <h1 className="text-4xl font-bold mb-4 text-gray-800">{product.ten_san_pham}</h1>
             {product.promotion ? (
-              <div className="space-y-2 mb-6">
+              <div className="space-y-3 mb-6">
+                {/* Countdown Timer */}
+                <div className="bg-gradient-to-r from-red-50 to-orange-50 border-2 border-red-200 rounded-xl p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-bold text-red-700 mb-1">🔥 FLASH SALE</p>
+                      <CountdownTimer endDate={product.promotion.end_date} />
+                    </div>
+                    <div className="text-right">
+                      <span className="bg-red-600 text-white px-4 py-2 rounded-full text-lg font-bold shadow-lg">
+                        -{Math.round(((product.gia_ban - product.promotion.promotional_price) / product.gia_ban) * 100)}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Price */}
                 <div className="flex items-center gap-3">
                   <p className="text-4xl text-red-600 font-bold">
                     {product.promotion.promotional_price?.toLocaleString('vi-VN')}₫
                   </p>
-                  <span className="bg-red-600 text-white px-3 py-1 rounded-full text-sm font-bold">
-                    -{Math.round(((product.gia_ban - product.promotion.promotional_price) / product.gia_ban) * 100)}%
-                  </span>
                 </div>
                 <p className="text-xl text-gray-500 line-through">
-                  {product.gia_ban?.toLocaleString('vi-VN')}₫
+                  Giá gốc: {product.gia_ban?.toLocaleString('vi-VN')}₫
                 </p>
-                <p className="text-sm text-green-600 font-semibold">
+                <p className="text-lg text-green-600 font-semibold">
                   🎉 Tiết kiệm {(product.gia_ban - product.promotion.promotional_price)?.toLocaleString('vi-VN')}₫
                 </p>
               </div>

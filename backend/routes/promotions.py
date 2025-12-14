@@ -104,10 +104,28 @@ def create_promotion():
     
     # Parse dates
     try:
-        start_date = datetime.fromisoformat(data['start_date'].replace('Z', '+00:00'))
-        end_date = datetime.fromisoformat(data['end_date'].replace('Z', '+00:00'))
-    except:
-        return jsonify({'error': 'Định dạng ngày không hợp lệ'}), 400
+        # Handle ISO format datetime strings from frontend
+        start_date_str = data['start_date']
+        end_date_str = data['end_date']
+        
+        # Remove 'Z' and milliseconds if present, then parse
+        if 'Z' in start_date_str:
+            start_date_str = start_date_str.replace('Z', '+00:00')
+        if 'Z' in end_date_str:
+            end_date_str = end_date_str.replace('Z', '+00:00')
+            
+        start_date = datetime.fromisoformat(start_date_str)
+        end_date = datetime.fromisoformat(end_date_str)
+        
+        # Convert to UTC if timezone-aware
+        if start_date.tzinfo is not None:
+            start_date = start_date.replace(tzinfo=None)
+        if end_date.tzinfo is not None:
+            end_date = end_date.replace(tzinfo=None)
+            
+    except Exception as e:
+        print(f"Date parsing error: {e}")
+        return jsonify({'error': f'Định dạng ngày không hợp lệ: {str(e)}'}), 400
     
     # Validate dates
     if end_date <= start_date:
@@ -168,15 +186,27 @@ def update_promotion(promotion_id):
     
     if 'start_date' in data:
         try:
-            start_date = datetime.fromisoformat(data['start_date'].replace('Z', '+00:00'))
-        except:
-            return jsonify({'error': 'Định dạng ngày bắt đầu không hợp lệ'}), 400
+            start_date_str = data['start_date']
+            if 'Z' in start_date_str:
+                start_date_str = start_date_str.replace('Z', '+00:00')
+            start_date = datetime.fromisoformat(start_date_str)
+            if start_date.tzinfo is not None:
+                start_date = start_date.replace(tzinfo=None)
+        except Exception as e:
+            print(f"Start date parsing error: {e}")
+            return jsonify({'error': f'Định dạng ngày bắt đầu không hợp lệ: {str(e)}'}), 400
     
     if 'end_date' in data:
         try:
-            end_date = datetime.fromisoformat(data['end_date'].replace('Z', '+00:00'))
-        except:
-            return jsonify({'error': 'Định dạng ngày kết thúc không hợp lệ'}), 400
+            end_date_str = data['end_date']
+            if 'Z' in end_date_str:
+                end_date_str = end_date_str.replace('Z', '+00:00')
+            end_date = datetime.fromisoformat(end_date_str)
+            if end_date.tzinfo is not None:
+                end_date = end_date.replace(tzinfo=None)
+        except Exception as e:
+            print(f"End date parsing error: {e}")
+            return jsonify({'error': f'Định dạng ngày kết thúc không hợp lệ: {str(e)}'}), 400
     
     if end_date <= start_date:
         return jsonify({'error': 'Ngày kết thúc phải sau ngày bắt đầu'}), 400
@@ -226,10 +256,28 @@ def bulk_create_promotions():
     discount_value = float(data['discount_value'])
     
     try:
-        start_date = datetime.fromisoformat(data['start_date'].replace('Z', '+00:00'))
-        end_date = datetime.fromisoformat(data['end_date'].replace('Z', '+00:00'))
-    except:
-        return jsonify({'error': 'Định dạng ngày không hợp lệ'}), 400
+        # Handle ISO format datetime strings from frontend
+        start_date_str = data['start_date']
+        end_date_str = data['end_date']
+        
+        # Remove 'Z' and milliseconds if present, then parse
+        if 'Z' in start_date_str:
+            start_date_str = start_date_str.replace('Z', '+00:00')
+        if 'Z' in end_date_str:
+            end_date_str = end_date_str.replace('Z', '+00:00')
+            
+        start_date = datetime.fromisoformat(start_date_str)
+        end_date = datetime.fromisoformat(end_date_str)
+        
+        # Convert to UTC if timezone-aware
+        if start_date.tzinfo is not None:
+            start_date = start_date.replace(tzinfo=None)
+        if end_date.tzinfo is not None:
+            end_date = end_date.replace(tzinfo=None)
+            
+    except Exception as e:
+        print(f"Date parsing error: {e}")
+        return jsonify({'error': f'Định dạng ngày không hợp lệ: {str(e)}'}), 400
     
     if end_date <= start_date:
         return jsonify({'error': 'Ngày kết thúc phải sau ngày bắt đầu'}), 400

@@ -86,11 +86,18 @@ export default function Promotions() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      // Convert local datetime to ISO string (UTC)
+      const submitData = {
+        ...formData,
+        start_date: new Date(formData.start_date).toISOString(),
+        end_date: new Date(formData.end_date).toISOString()
+      };
+      
       if (editingPromotion) {
-        await api.put(`/api/promotions/${editingPromotion.id}`, formData);
+        await api.put(`/api/promotions/${editingPromotion.id}`, submitData);
         alert('Cập nhật khuyến mãi thành công!');
       } else {
-        await api.post('/api/promotions/', formData);
+        await api.post('/api/promotions/', submitData);
         alert('Tạo khuyến mãi thành công!');
       }
       setShowModal(false);
@@ -110,7 +117,14 @@ export default function Promotions() {
     }
     
     try {
-      const response = await api.post('/api/promotions/bulk', bulkFormData);
+      // Convert local datetime to ISO string (UTC)
+      const submitData = {
+        ...bulkFormData,
+        start_date: new Date(bulkFormData.start_date).toISOString(),
+        end_date: new Date(bulkFormData.end_date).toISOString()
+      };
+      
+      const response = await api.post('/api/promotions/bulk', submitData);
       alert(response.data.message);
       setShowBulkModal(false);
       resetBulkForm();
@@ -136,12 +150,27 @@ export default function Promotions() {
 
   const handleEdit = (promotion) => {
     setEditingPromotion(promotion);
+    
+    // Convert UTC datetime to local datetime for editing
+    const startDate = new Date(promotion.start_date);
+    const endDate = new Date(promotion.end_date);
+    
+    // Format to datetime-local input format (YYYY-MM-DDTHH:mm)
+    const formatDateTimeLocal = (date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
+    };
+    
     setFormData({
       product_id: promotion.product_id,
       discount_type: promotion.discount_type,
       discount_value: promotion.discount_value,
-      start_date: promotion.start_date.slice(0, 16),
-      end_date: promotion.end_date.slice(0, 16),
+      start_date: formatDateTimeLocal(startDate),
+      end_date: formatDateTimeLocal(endDate),
       is_active: promotion.is_active
     });
     setShowModal(true);
