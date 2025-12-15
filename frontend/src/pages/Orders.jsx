@@ -63,7 +63,6 @@ export default function Orders() {
   const getStatusColor = (status) => {
     const colors = {
       'cho_xac_nhan': 'bg-yellow-100 text-yellow-800 border-yellow-300',
-      'dang_giao': 'bg-blue-100 text-blue-800 border-blue-300',
       'hoan_thanh': 'bg-green-100 text-green-800 border-green-300',
       'huy': 'bg-red-100 text-red-800 border-red-300'
     }
@@ -73,7 +72,6 @@ export default function Orders() {
   const getStatusText = (status) => {
     const texts = {
       'cho_xac_nhan': '⏳ Chờ xác nhận',
-      'dang_giao': '🚚 Đang giao',
       'hoan_thanh': '✅ Hoàn thành',
       'huy': '❌ Đã hủy'
     }
@@ -83,7 +81,6 @@ export default function Orders() {
   const getStatusIcon = (status) => {
     const icons = {
       'cho_xac_nhan': '⏳',
-      'dang_giao': '🚚',
       'hoan_thanh': '✅',
       'huy': '❌'
     }

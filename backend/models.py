@@ -159,7 +159,7 @@ class Order(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
     tongtien = db.Column(db.Numeric(12, 2), nullable=False)
-    trangthai = db.Column(db.Enum('cho_xac_nhan', 'dang_giao', 'hoan_thanh', 'huy', name='order_status_enum'), default='cho_xac_nhan')
+    trangthai = db.Column(db.Enum('cho_xac_nhan', 'hoan_thanh', 'huy', name='order_status_enum'), default='cho_xac_nhan')
     diachi_giaohang = db.Column(db.String(225), nullable=False)
     hoten = db.Column(db.String(100), nullable=False)
     sdt = db.Column(db.String(30), nullable=False)

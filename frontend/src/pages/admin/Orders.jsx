@@ -105,14 +105,12 @@ export default function AdminOrders() {
   const getStatusBadge = (status) => {
     const styles = {
       cho_xac_nhan: 'bg-yellow-100 text-yellow-800',
-      dang_giao: 'bg-blue-100 text-blue-800',
       hoan_thanh: 'bg-green-100 text-green-800',
       huy: 'bg-red-100 text-red-800'
     }
     
     const labels = {
       cho_xac_nhan: '⏳ Chờ xác nhận',
-      dang_giao: '🚚 Đang giao',
       hoan_thanh: '✅ Hoàn thành',
       huy: '❌ Đã hủy'
     }
@@ -187,16 +185,6 @@ export default function AdminOrders() {
               }`}
             >
               Chờ xác nhận
-            </button>
-            <button
-              onClick={() => handleStatusFilter('dang_giao')}
-              className={`px-4 py-2 rounded-lg font-semibold transition ${
-                statusFilter === 'dang_giao' 
-                  ? 'bg-blue-600 text-white shadow-lg' 
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              Đang giao
             </button>
             <button
               onClick={() => handleStatusFilter('hoan_thanh')}
@@ -446,7 +434,6 @@ export default function AdminOrders() {
                     required
                   >
                     <option value="cho_xac_nhan">Chờ xác nhận</option>
-                    <option value="dang_giao">Đang giao</option>
                     <option value="hoan_thanh">Hoàn thành</option>
                     <option value="huy">Đã hủy</option>
                   </select>
@@ -578,7 +565,6 @@ export default function AdminOrders() {
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="cho_xac_nhan">Chờ xác nhận</option>
-                  <option value="dang_giao">Đang giao</option>
                   <option value="hoan_thanh">Hoàn thành</option>
                   <option value="huy">Đã hủy</option>
                 </select>

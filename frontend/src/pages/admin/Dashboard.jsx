@@ -10,7 +10,6 @@ export default function AdminDashboard() {
     totalRevenue: 0,
     pendingOrders: 0,
     completedOrders: 0,
-    shippingOrders: 0,
     cancelledOrders: 0,
     activePromotions: 0,
     activeVouchers: 0
@@ -58,7 +57,6 @@ export default function AdminDashboard() {
         .reduce((sum, o) => sum + parseFloat(o.tongtien || 0), 0)
       
       const pendingOrders = ordersData.filter(o => o.trangthai === 'cho_xac_nhan').length
-      const shippingOrders = ordersData.filter(o => o.trangthai === 'dang_giao').length
       const completedOrders = ordersData.filter(o => o.trangthai === 'hoan_thanh').length
       const cancelledOrders = ordersData.filter(o => o.trangthai === 'huy').length
       
@@ -69,7 +67,6 @@ export default function AdminDashboard() {
         totalRevenue: totalRevenue,
         pendingOrders,
         completedOrders,
-        shippingOrders,
         cancelledOrders,
         activePromotions,
         activeVouchers
@@ -77,7 +74,6 @@ export default function AdminDashboard() {
       
       setOrdersByStatus([
         { label: 'Chờ xác nhận', value: pendingOrders, color: 'bg-yellow-500' },
-        { label: 'Đang giao', value: shippingOrders, color: 'bg-blue-500' },
         { label: 'Hoàn thành', value: completedOrders, color: 'bg-green-500' },
         { label: 'Đã hủy', value: cancelledOrders, color: 'bg-red-500' }
       ])
@@ -94,7 +90,6 @@ export default function AdminDashboard() {
   const getStatusBadge = (status) => {
     const statusMap = {
       'cho_xac_nhan': { label: 'Chờ xác nhận', color: 'bg-yellow-100 text-yellow-800' },
-      'dang_giao': { label: 'Đang giao', color: 'bg-blue-100 text-blue-800' },
       'hoan_thanh': { label: 'Hoàn thành', color: 'bg-green-100 text-green-800' },
       'huy': { label: 'Đã hủy', color: 'bg-red-100 text-red-800' }
     }
@@ -281,10 +276,6 @@ export default function AdminDashboard() {
             <div className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
               <span className="text-sm font-semibold text-gray-700">Chờ xác nhận</span>
               <span className="text-xl font-bold text-yellow-600">{stats.pendingOrders}</span>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
-              <span className="text-sm font-semibold text-gray-700">Đang giao</span>
-              <span className="text-xl font-bold text-blue-600">{stats.shippingOrders}</span>
             </div>
             <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
               <span className="text-sm font-semibold text-gray-700">Hoàn thành</span>
