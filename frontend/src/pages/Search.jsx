@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../utils/api'
 import AutocompleteDropdown from '../components/AutocompleteDropdown'
+import ProductRating from '../components/ProductRating'
 
 export default function Search() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -218,23 +219,79 @@ export default function Search() {
           </div>
 
           {products.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {products.map((product) => (
                 <Link
                   key={product.products_id}
                   to={`/products/${product.products_id}`}
-                  className="bg-white rounded-lg shadow hover:shadow-lg transition"
+                  className="group bg-white rounded-xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden"
                 >
-                  <img
-                    src={product.hinh_anh || 'https://via.placeholder.com/300'}
-                    alt={product.ten_san_pham}
-                    className="w-full h-48 object-cover rounded-t-lg"
-                  />
+                  <div className="relative overflow-hidden">
+                    <img
+                      src={product.hinh_anh || 'https://via.placeholder.com/300'}
+                      alt={product.ten_san_pham}
+                      className="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-300"
+                    />
+                    {product.promotion && (
+                      <div className="absolute top-3 left-3 bg-red-600 text-white px-3 py-1 rounded-full text-xs font-bold z-10">
+                        -{Math.round(((product.gia_ban - product.promotion.promotional_price) / product.gia_ban) * 100)}%
+                      </div>
+                    )}
+                    {product.trang_thai === 'Het_hang' && (
+                      <div className="absolute top-0 left-0 right-0 bottom-0 bg-black bg-opacity-50 flex items-center justify-center">
+                        <span className="bg-red-500 text-white px-4 py-2 rounded-lg font-bold">Hết hàng</span>
+                      </div>
+                    )}
+                    {product.trang_thai === 'Con_hang' && (
+                      <div className="absolute top-3 right-3 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold">
+                        Còn hàng
+                      </div>
+                    )}
+                  </div>
                   <div className="p-4">
-                    <h3 className="font-bold text-lg mb-2 line-clamp-2">{product.ten_san_pham}</h3>
-                    <p className="text-blue-600 font-bold">
-                      {product.gia_ban?.toLocaleString('vi-VN')} đ
-                    </p>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full font-semibold">
+                        {product.loai}
+                      </span>
+                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-semibold">
+                        {product.gioi_tinh}
+                      </span>
+                    </div>
+                    <h3 className="font-bold text-lg mb-2 text-gray-800 line-clamp-2 group-hover:text-blue-600 transition">
+                      {product.ten_san_pham}
+                    </h3>
+                    
+                    {/* Rating */}
+                    <div className="mb-2">
+                      <ProductRating 
+                        rating={product.rating?.average_rating || 0}
+                        reviewCount={product.rating?.review_count || 0}
+                        size="sm"
+                      />
+                    </div>
+                    
+                    {product.size && (
+                      <p className="text-xs text-gray-500 mb-2">Size: {product.size}</p>
+                    )}
+                    <div className="flex items-center justify-between">
+                      {product.promotion ? (
+                        <div className="space-y-1">
+                          <p className="text-red-600 font-bold text-xl">
+                            {product.promotion.promotional_price?.toLocaleString('vi-VN')}₫
+                          </p>
+                          <p className="text-gray-500 text-sm line-through">
+                            {product.gia_ban?.toLocaleString('vi-VN')}₫
+                          </p>
+                        </div>
+                      ) : (
+                        <p className="text-blue-600 font-bold text-xl">
+                          {product.gia_ban?.toLocaleString('vi-VN')}₫
+                        </p>
+                      )}
+                      <button className="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm font-semibold hover:bg-blue-600 transition">
+                        Xem
+                      </button>
+                    </div>
                   </div>
                 </Link>
               ))}

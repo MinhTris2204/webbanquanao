@@ -114,6 +114,11 @@ export default function ProductReviews({ productId }) {
     return hoursDiff < 24
   }
 
+  const canDeleteReview = (review) => {
+    // User can always delete their own review
+    return user && review.user_id === user.user_id
+  }
+
   const handleCancelEdit = () => {
     setShowReviewForm(false)
     setEditingReview(null)
@@ -263,22 +268,26 @@ export default function ProductReviews({ productId }) {
                 </div>
                 <div className="flex items-center gap-3">
                   {renderStars(review.rating)}
-                  {user && canEditReview(review) && (
+                  {user && (canEditReview(review) || canDeleteReview(review)) && (
                     <div className="flex gap-2">
-                      <button
-                        onClick={() => handleEdit(review)}
-                        className="text-blue-600 hover:text-blue-700 text-sm font-semibold"
-                        title="Chỉnh sửa (trong 24h)"
-                      >
-                        ✏️
-                      </button>
-                      <button
-                        onClick={() => handleDelete(review.id)}
-                        className="text-red-600 hover:text-red-700 text-sm font-semibold"
-                        title="Xóa"
-                      >
-                        🗑️
-                      </button>
+                      {canEditReview(review) && (
+                        <button
+                          onClick={() => handleEdit(review)}
+                          className="text-blue-600 hover:text-blue-700 text-sm font-semibold"
+                          title="Chỉnh sửa (trong 24h)"
+                        >
+                          ✏️
+                        </button>
+                      )}
+                      {canDeleteReview(review) && (
+                        <button
+                          onClick={() => handleDelete(review.id)}
+                          className="text-red-600 hover:text-red-700 text-sm font-semibold"
+                          title="Xóa"
+                        >
+                          🗑️
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
