@@ -114,10 +114,16 @@ def handle_send_message(data):
     from flask import request
     token = data.get('token')
     conversation_id = data.get('conversation_id')
-    content = data.get('content')
+    content = data.get('content', '')
+    message_type = data.get('message_type', 'text')
+    image_url = data.get('image_url')
     
-    if not content or not content.strip():
+    # Require content for text messages, image_url for image messages
+    if message_type == 'text' and (not content or not content.strip()):
         emit('error', {'error': 'Message content is required'})
+        return
+    if message_type == 'image' and not image_url:
+        emit('error', {'error': 'Image is required'})
         return
     
     user = get_user_from_token(token)
@@ -137,11 +143,16 @@ def handle_send_message(data):
     
     # Create message
     sender_type = 'admin' if user.role == 'admin' else 'customer'
+    message_type = data.get('message_type', 'text')
+    image_url = data.get('image_url')
+    
     message = ChatMessage(
         conversation_id=conversation_id,
         sender_id=user.user_id,
         sender_type=sender_type,
-        content=content.strip()
+        content=content.strip() if content else '',
+        message_type=message_type,
+        image_url=image_url
     )
     db.session.add(message)
     

@@ -86,12 +86,14 @@ export const SocketProvider = ({ children }) => {
     }
   }, [socket, isConnected])
 
-  const sendMessage = useCallback((conversationId, content) => {
+  const sendMessage = useCallback((conversationId, content, messageType = 'text', imageUrl = null) => {
     if (socket && isConnected) {
       const token = localStorage.getItem(tokenKey)
       socket.emit('send_message', {
         conversation_id: conversationId,
         content,
+        message_type: messageType,
+        image_url: imageUrl,
         token
       })
     }

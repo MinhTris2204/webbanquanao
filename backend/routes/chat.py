@@ -29,6 +29,15 @@ def get_my_conversation():
     if not user:
         return jsonify({'error': 'User not found'}), 404
     
+    # First check for closed conversation (to show history)
+    closed_conversation = ChatConversation.query.filter_by(
+        customer_id=user_id,
+        status='closed'
+    ).order_by(ChatConversation.updated_at.desc()).first()
+    
+    if closed_conversation:
+        return jsonify(closed_conversation.to_dict(include_messages=True))
+    
     # Find existing active conversation or create new one
     conversation = ChatConversation.query.filter_by(
         customer_id=user_id,
@@ -118,10 +127,50 @@ def close_conversation(conversation_id):
         return jsonify({'error': 'Unauthorized'}), 403
     
     conversation = ChatConversation.query.get_or_404(conversation_id)
+    customer_id = conversation.customer_id
+    
+    # Mark conversation as closed instead of deleting
     conversation.status = 'closed'
     db.session.commit()
     
-    return jsonify({'success': True, 'conversation': conversation.to_dict()})
+    # Notify customer via socket
+    from socket_events import socketio
+    socketio.emit('conversation_closed', {
+        'conversation_id': conversation_id,
+        'message': 'Cuộc trò chuyện đã được kết thúc bởi admin. Cảm ơn bạn đã liên hệ!'
+    }, room=f'user_{customer_id}')
+    
+    return jsonify({'success': True})
+
+
+@chat_bp.route('/start-new', methods=['POST'])
+@jwt_required()
+def start_new_conversation():
+    """Delete closed conversation and start new one - for customer"""
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+    
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    # Find all closed conversations for this user
+    closed_conversations = ChatConversation.query.filter_by(
+        customer_id=user_id,
+        status='closed'
+    ).all()
+    
+    # Delete messages first, then conversations (due to foreign key)
+    for conv in closed_conversations:
+        ChatMessage.query.filter_by(conversation_id=conv.id).delete()
+        db.session.delete(conv)
+    db.session.commit()
+    
+    # Create new conversation
+    conversation = ChatConversation(customer_id=user_id)
+    db.session.add(conversation)
+    db.session.commit()
+    
+    return jsonify(conversation.to_dict(include_messages=True))
 
 
 @chat_bp.route('/unread-count', methods=['GET'])

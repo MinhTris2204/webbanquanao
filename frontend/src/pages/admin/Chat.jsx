@@ -1,10 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
-import { useAuth } from '../../context/AuthContext'
 import { useSocket } from '../../context/SocketContext'
 import api from '../../utils/api'
 
 export default function AdminChat() {
-  const { user } = useAuth()
   const { socket, isConnected, joinConversation, leaveConversation, sendMessage, sendTyping, markAsRead } = useSocket()
   
   const [conversations, setConversations] = useState([])
@@ -13,74 +11,46 @@ export default function AdminChat() {
   const [newMessage, setNewMessage] = useState('')
   const [loading, setLoading] = useState(true)
   const [typing, setTyping] = useState(null)
+  const [uploadingImage, setUploadingImage] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
   
   const messagesEndRef = useRef(null)
   const typingTimeoutRef = useRef(null)
+  const fileInputRef = useRef(null)
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }
+  const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  useEffect(() => { scrollToBottom() }, [messages])
+  useEffect(() => { loadConversations() }, [])
 
-  useEffect(() => {
-    scrollToBottom()
-  }, [messages])
-
-  // Load conversations
-  useEffect(() => {
-    loadConversations()
-  }, [])
-
-  // Socket event listeners
   useEffect(() => {
     if (!socket) return
-
     const handleNewMessage = (message) => {
       if (message.conversation_id === selectedConversation?.id) {
-        setMessages(prev => {
-          // Avoid duplicates
-          if (prev.some(m => m.id === message.id)) return prev
-          return [...prev, message]
-        })
-        if (message.sender_type === 'customer') {
-          markAsRead(selectedConversation.id)
-        }
+        setMessages(prev => prev.some(m => m.id === message.id) ? prev : [...prev, message])
+        if (message.sender_type === 'customer') markAsRead(selectedConversation.id)
       }
-      // Update conversation list
       updateConversationInList(message.conversation_id)
     }
-
     const handleNewCustomerMessage = (data) => {
-      // Update or add conversation to list (for sidebar notification)
       setConversations(prev => {
         const exists = prev.find(c => c.id === data.conversation.id)
-        if (exists) {
-          return prev.map(c => c.id === data.conversation.id ? data.conversation : c)
-            .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))
-        }
+        if (exists) return prev.map(c => c.id === data.conversation.id ? data.conversation : c).sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))
         return [data.conversation, ...prev]
       })
     }
-
     const handleTyping = (data) => {
       if (data.conversation_id === selectedConversation?.id) {
         setTyping(data.is_typing ? data.user_name : null)
-        if (data.is_typing) {
-          setTimeout(() => setTyping(null), 3000)
-        }
+        if (data.is_typing) setTimeout(() => setTyping(null), 3000)
       }
     }
-
     const handleMessagesRead = (data) => {
-      if (data.conversation_id === selectedConversation?.id) {
-        setMessages(prev => prev.map(msg => ({ ...msg, is_read: true })))
-      }
+      if (data.conversation_id === selectedConversation?.id) setMessages(prev => prev.map(msg => ({ ...msg, is_read: true })))
     }
-
     socket.on('new_message', handleNewMessage)
     socket.on('new_customer_message', handleNewCustomerMessage)
     socket.on('user_typing', handleTyping)
     socket.on('messages_read', handleMessagesRead)
-
     return () => {
       socket.off('new_message', handleNewMessage)
       socket.off('new_customer_message', handleNewCustomerMessage)
@@ -89,7 +59,6 @@ export default function AdminChat() {
     }
   }, [socket, selectedConversation, markAsRead])
 
-  // Join/leave conversation room
   useEffect(() => {
     if (selectedConversation && isConnected) {
       joinConversation(selectedConversation.id)
@@ -111,10 +80,7 @@ export default function AdminChat() {
   const updateConversationInList = async (conversationId) => {
     try {
       const res = await api.get(`/api/chat/${conversationId}`)
-      setConversations(prev => 
-        prev.map(c => c.id === conversationId ? res.data : c)
-          .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))
-      )
+      setConversations(prev => prev.map(c => c.id === conversationId ? res.data : c).sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at)))
     } catch (error) {
       console.error('Error updating conversation:', error)
     }
@@ -126,10 +92,7 @@ export default function AdminChat() {
       const res = await api.get(`/api/chat/${conversation.id}`)
       setMessages(res.data.messages || [])
       markAsRead(conversation.id)
-      // Update unread count in list
-      setConversations(prev => 
-        prev.map(c => c.id === conversation.id ? { ...c, unread_count: 0 } : c)
-      )
+      setConversations(prev => prev.map(c => c.id === conversation.id ? { ...c, unread_count: 0 } : c))
     } catch (error) {
       console.error('Error loading messages:', error)
     }
@@ -138,101 +101,146 @@ export default function AdminChat() {
   const handleSendMessage = (e) => {
     e.preventDefault()
     if (!newMessage.trim() || !selectedConversation) return
-
-    sendMessage(selectedConversation.id, newMessage.trim())
+    sendMessage(selectedConversation.id, newMessage.trim(), 'text')
     setNewMessage('')
     sendTyping(selectedConversation.id, false)
   }
 
   const handleInputChange = (e) => {
     setNewMessage(e.target.value)
-    
     if (selectedConversation) {
       sendTyping(selectedConversation.id, true)
-      
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current)
-      }
-      typingTimeoutRef.current = setTimeout(() => {
-        sendTyping(selectedConversation.id, false)
-      }, 2000)
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
+      typingTimeoutRef.current = setTimeout(() => sendTyping(selectedConversation.id, false), 2000)
     }
   }
 
+  const handleImageSelect = (e) => {
+    const file = e.target.files?.[0]
+    if (!file || !selectedConversation) return
+    if (!file.type.startsWith('image/')) return alert('Vui lòng chọn file ảnh')
+    if (file.size > 5 * 1024 * 1024) return alert('Ảnh không được vượt quá 5MB')
+    setUploadingImage(true)
+    const reader = new FileReader()
+    reader.onload = () => { sendMessage(selectedConversation.id, '', 'image', reader.result); setUploadingImage(false) }
+    reader.onerror = () => { alert('Lỗi khi đọc file ảnh'); setUploadingImage(false) }
+    reader.readAsDataURL(file)
+    e.target.value = ''
+  }
+
   const closeConversation = async (conversationId) => {
+    if (!confirm('Bạn có chắc muốn kết thúc và xóa cuộc trò chuyện này? Khách hàng sẽ được thông báo.')) return
     try {
       await api.post(`/api/chat/${conversationId}/close`)
       setConversations(prev => prev.filter(c => c.id !== conversationId))
-      if (selectedConversation?.id === conversationId) {
-        setSelectedConversation(null)
-        setMessages([])
-      }
+      if (selectedConversation?.id === conversationId) { setSelectedConversation(null); setMessages([]) }
     } catch (error) {
       console.error('Error closing conversation:', error)
     }
   }
 
+  const formatTime = (dateStr) => new Date(dateStr).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+  const formatDate = (dateStr) => {
+    const date = new Date(dateStr)
+    const today = new Date()
+    if (date.toDateString() === today.toDateString()) return formatTime(dateStr)
+    return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })
+  }
+
   const totalUnread = conversations.reduce((sum, c) => sum + (c.unread_count || 0), 0)
+  const filteredConversations = conversations.filter(c => 
+    c.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.customer_email?.toLowerCase().includes(searchTerm.toLowerCase())
+  )
 
   return (
-    <div className="h-[calc(100vh-120px)] flex bg-white rounded-lg shadow overflow-hidden">
-      {/* Conversation List */}
-      <div className="w-80 border-r flex flex-col">
-        <div className="p-4 border-b bg-gray-50">
-          <h2 className="font-semibold text-lg">
-            Tin nhắn
+    <div className="h-[calc(100vh-100px)] flex bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
+      {/* Sidebar */}
+      <div className="w-96 border-r border-gray-200 flex flex-col bg-gray-50">
+        <div className="p-5 bg-white border-b border-gray-200">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+              </div>
+              <div>
+                <h2 className="font-bold text-gray-800">Tin nhắn</h2>
+                <div className="flex items-center space-x-1.5">
+                  <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></span>
+                  <span className="text-xs text-gray-500">{isConnected ? 'Đang hoạt động' : 'Mất kết nối'}</span>
+                </div>
+              </div>
+            </div>
             {totalUnread > 0 && (
-              <span className="ml-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">
-                {totalUnread}
-              </span>
+              <span className="bg-red-500 text-white text-xs font-bold px-2.5 py-1 rounded-full">{totalUnread}</span>
             )}
-          </h2>
-          <p className="text-sm text-gray-500">
-            {isConnected ? '🟢 Đã kết nối' : '🔴 Đang kết nối lại...'}
-          </p>
+          </div>
+          <div className="relative">
+            <svg className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Tìm kiếm cuộc trò chuyện..."
+              className="w-full pl-10 pr-4 py-2.5 bg-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all"
+            />
+          </div>
         </div>
         
         <div className="flex-1 overflow-y-auto">
           {loading ? (
             <div className="flex justify-center items-center h-32">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <div className="flex space-x-2">
+                <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
+                <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+              </div>
             </div>
-          ) : conversations.length === 0 ? (
-            <div className="text-center text-gray-500 mt-8 px-4">
-              <p>Chưa có cuộc hội thoại nào</p>
+          ) : filteredConversations.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-64 text-gray-400">
+              <svg className="w-16 h-16 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+              <p className="text-sm">Chưa có cuộc trò chuyện nào</p>
             </div>
           ) : (
-            conversations.map((conv) => (
+            filteredConversations.map((conv) => (
               <div
                 key={conv.id}
                 onClick={() => selectConversation(conv)}
-                className={`p-4 border-b cursor-pointer hover:bg-gray-50 transition-colors ${
-                  selectedConversation?.id === conv.id ? 'bg-blue-50 border-l-4 border-l-blue-600' : ''
+                className={`p-4 cursor-pointer transition-all hover:bg-white ${
+                  selectedConversation?.id === conv.id ? 'bg-white border-l-4 border-l-blue-600 shadow-sm' : 'border-l-4 border-l-transparent'
                 }`}
               >
-                <div className="flex justify-between items-start">
+                <div className="flex items-start space-x-3">
+                  <div className="relative">
+                    <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
+                      {conv.customer_name?.charAt(0).toUpperCase() || 'K'}
+                    </div>
+                    {conv.status === 'active' && (
+                      <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
+                    )}
+                  </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{conv.customer_name}</p>
-                    <p className="text-sm text-gray-500 truncate">{conv.customer_email}</p>
+                    <div className="flex items-center justify-between">
+                      <p className="font-semibold text-gray-800 truncate">{conv.customer_name}</p>
+                      <span className="text-xs text-gray-400">{conv.last_message ? formatDate(conv.last_message.created_at) : ''}</span>
+                    </div>
+                    <p className="text-xs text-gray-500 truncate">{conv.customer_email}</p>
                     {conv.last_message && (
                       <p className="text-sm text-gray-600 truncate mt-1">
-                        {conv.last_message.sender_type === 'admin' ? 'Bạn: ' : ''}
-                        {conv.last_message.content}
+                        {conv.last_message.sender_type === 'admin' && <span className="text-blue-600">Bạn: </span>}
+                        {conv.last_message.content || '📷 Hình ảnh'}
                       </p>
                     )}
                   </div>
-                  <div className="flex flex-col items-end ml-2">
-                    {conv.unread_count > 0 && (
-                      <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
-                        {conv.unread_count}
-                      </span>
-                    )}
-                    <span className={`text-xs mt-1 px-2 py-0.5 rounded ${
-                      conv.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
-                    }`}>
-                      {conv.status === 'active' ? 'Đang mở' : 'Đã đóng'}
-                    </span>
-                  </div>
+                  {conv.unread_count > 0 && (
+                    <span className="bg-blue-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">{conv.unread_count}</span>
+                  )}
                 </div>
               </div>
             ))
@@ -241,44 +249,54 @@ export default function AdminChat() {
       </div>
 
       {/* Chat Area */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col bg-gray-50">
         {selectedConversation ? (
           <>
-            {/* Chat Header */}
-            <div className="p-4 border-b bg-gray-50 flex justify-between items-center">
-              <div>
-                <h3 className="font-semibold">{selectedConversation.customer_name}</h3>
-                <p className="text-sm text-gray-500">{selectedConversation.customer_email}</p>
+            <div className="px-6 py-4 bg-white border-b border-gray-200 flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="w-11 h-11 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-lg">
+                  {selectedConversation.customer_name?.charAt(0).toUpperCase() || 'K'}
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-800">{selectedConversation.customer_name}</h3>
+                  <p className="text-sm text-gray-500">{selectedConversation.customer_email}</p>
+                </div>
               </div>
               <button
                 onClick={() => closeConversation(selectedConversation.id)}
-                className="text-red-600 hover:text-red-700 text-sm px-3 py-1 border border-red-300 rounded hover:bg-red-50"
+                className="flex items-center space-x-2 text-red-500 hover:text-red-600 hover:bg-red-50 px-4 py-2 rounded-lg transition-colors"
               >
-                Đóng hội thoại
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                <span className="text-sm font-medium">Đóng</span>
               </button>
             </div>
 
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
               {messages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`flex ${msg.sender_type === 'admin' ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div
-                    className={`max-w-[70%] rounded-lg px-4 py-2 ${
+                <div key={msg.id} className={`flex ${msg.sender_type === 'admin' ? 'justify-end' : 'justify-start'}`}>
+                  {msg.sender_type === 'customer' && (
+                    <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-semibold mr-2 flex-shrink-0">
+                      {selectedConversation.customer_name?.charAt(0).toUpperCase() || 'K'}
+                    </div>
+                  )}
+                  <div className="max-w-[65%]">
+                    <div className={`rounded-2xl px-4 py-3 ${
                       msg.sender_type === 'admin'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-white text-gray-800 border'
-                    }`}
-                  >
-                    <p className="text-sm">{msg.content}</p>
-                    <div className={`flex items-center justify-end space-x-1 mt-1`}>
-                      <span className={`text-xs ${msg.sender_type === 'admin' ? 'text-blue-100' : 'text-gray-400'}`}>
-                        {new Date(msg.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
-                      </span>
+                        ? 'bg-blue-600 text-white rounded-br-md'
+                        : 'bg-white text-gray-800 shadow-sm rounded-bl-md'
+                    }`}>
+                      {msg.message_type === 'image' && msg.image_url ? (
+                        <img src={msg.image_url} alt="Ảnh" className="max-w-full max-h-72 rounded-lg cursor-pointer hover:opacity-90 transition-opacity" onClick={() => window.open(msg.image_url, '_blank')} />
+                      ) : (
+                        <p className="text-sm leading-relaxed">{msg.content}</p>
+                      )}
+                    </div>
+                    <div className={`flex items-center space-x-1 mt-1 ${msg.sender_type === 'admin' ? 'justify-end' : ''}`}>
+                      <span className="text-[10px] text-gray-400">{formatTime(msg.created_at)}</span>
                       {msg.sender_type === 'admin' && (
-                        <span className={`text-xs ${msg.is_read ? 'text-blue-200' : 'text-blue-300'}`}>
+                        <span className={`text-[10px] ${msg.is_read ? 'text-blue-600' : 'text-gray-400'}`}>
                           {msg.is_read ? '✓✓' : '✓'}
                         </span>
                       )}
@@ -287,42 +305,63 @@ export default function AdminChat() {
                 </div>
               ))}
               {typing && (
-                <div className="flex justify-start">
-                  <div className="bg-gray-200 rounded-lg px-4 py-2">
-                    <p className="text-sm text-gray-600">{typing} đang nhập...</p>
+                <div className="flex items-center space-x-2">
+                  <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                    {selectedConversation.customer_name?.charAt(0).toUpperCase() || 'K'}
+                  </div>
+                  <div className="bg-white rounded-2xl px-4 py-3 shadow-sm">
+                    <div className="flex space-x-1">
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                    </div>
                   </div>
                 </div>
               )}
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Input */}
-            <form onSubmit={handleSendMessage} className="p-4 border-t bg-white">
-              <div className="flex space-x-2">
+            <form onSubmit={handleSendMessage} className="p-4 bg-white border-t border-gray-200">
+              <div className="flex items-center space-x-3 bg-gray-100 rounded-2xl px-4 py-3">
+                <input type="file" ref={fileInputRef} onChange={handleImageSelect} accept="image/*" className="hidden" />
+                <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploadingImage} className="text-gray-400 hover:text-blue-600 transition-colors disabled:opacity-50">
+                  {uploadingImage ? (
+                    <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  )}
+                </button>
                 <input
                   type="text"
                   value={newMessage}
                   onChange={handleInputChange}
                   placeholder="Nhập tin nhắn..."
-                  className="flex-1 border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 bg-transparent text-sm focus:outline-none placeholder-gray-400"
                 />
                 <button
                   type="submit"
                   disabled={!newMessage.trim()}
-                  className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white disabled:opacity-50 hover:bg-blue-700 transition-all"
                 >
-                  Gửi
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                  </svg>
                 </button>
               </div>
             </form>
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center text-gray-500">
+          <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
-              <svg className="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-              </svg>
-              <p>Chọn một cuộc hội thoại để bắt đầu</p>
+              <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg className="w-12 h-12 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-800 mb-2">Chọn cuộc trò chuyện</h3>
+              <p className="text-gray-500">Chọn một cuộc trò chuyện từ danh sách bên trái để bắt đầu</p>
             </div>
           </div>
         )}
