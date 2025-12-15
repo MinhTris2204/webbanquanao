@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { useSocket } from '../context/SocketContext'
 import api from '../utils/api'
 
-export default function AdminSidebar() {
+export default function AdminSidebar({ isOpen = true }) {
   const { user, logout } = useAuth()
   const location = useLocation()
   const { socket } = useSocket()
@@ -49,7 +49,7 @@ export default function AdminSidebar() {
   }
 
   return (
-    <div className="flex flex-col h-screen w-64 bg-gray-800 fixed left-0 top-0">
+    <div className={`flex flex-col h-screen w-64 bg-gray-800 fixed left-0 top-0 transition-transform duration-300 z-20 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
       {/* Logo */}
       <div className="flex items-center justify-center h-16 bg-gray-900">
         <Link to="/" className="text-2xl font-bold text-white flex items-center">
