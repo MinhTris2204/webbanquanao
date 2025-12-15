@@ -20,6 +20,8 @@ export default function AdminLayout() {
         return '👥 Quản lý người dùng'
       case '/store-info':
         return 'ℹ️ Quản lý thông tin cửa hàng'
+      case '/chat':
+        return '💬 Chat hỗ trợ khách hàng'
       default:
         return '📊 Dashboard'
     }

@@ -1,9 +1,48 @@
 import { Link, useLocation } from 'react-router-dom'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { useSocket } from '../context/SocketContext'
+import api from '../utils/api'
 
 export default function AdminSidebar() {
   const { user, logout } = useAuth()
   const location = useLocation()
+  const { socket } = useSocket()
+  const [unreadCount, setUnreadCount] = useState(0)
+
+  useEffect(() => {
+    loadUnreadCount()
+  }, [])
+
+  useEffect(() => {
+    if (!socket) return
+
+    const handleNewCustomerMessage = () => {
+      setUnreadCount(prev => prev + 1)
+    }
+
+    socket.on('new_customer_message', handleNewCustomerMessage)
+
+    return () => {
+      socket.off('new_customer_message', handleNewCustomerMessage)
+    }
+  }, [socket])
+
+  // Reset count when visiting chat page
+  useEffect(() => {
+    if (location.pathname === '/chat') {
+      setUnreadCount(0)
+    }
+  }, [location.pathname])
+
+  const loadUnreadCount = async () => {
+    try {
+      const res = await api.get('/api/chat/unread-count')
+      setUnreadCount(res.data.unread_count || 0)
+    } catch (error) {
+      console.error('Error loading unread count:', error)
+    }
+  }
 
   const isActive = (path) => {
     return location.pathname === path ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'
@@ -116,6 +155,21 @@ export default function AdminSidebar() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           Thông tin cửa hàng
+        </Link>
+
+        <Link
+          to="/chat"
+          className={`flex items-center px-6 py-3 ${isActive('/chat')} transition-colors`}
+        >
+          <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+          </svg>
+          Chat hỗ trợ
+          {unreadCount > 0 && (
+            <span className="ml-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+              {unreadCount}
+            </span>
+          )}
         </Link>
       </nav>
 

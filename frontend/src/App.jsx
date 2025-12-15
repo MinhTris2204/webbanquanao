@@ -1,7 +1,9 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { CartProvider } from './context/CartContext'
+import { SocketProvider } from './context/SocketContext'
 import { ToastProvider } from './components/Toast'
 import CookieConsent from './components/CookieConsent'
+import CustomerChat from './components/CustomerChat'
 import CustomerLayout from './layouts/CustomerLayout'
 import Home from './pages/Home'
 import Login from './pages/Login'
@@ -20,8 +22,10 @@ function App() {
   return (
     <ToastProvider>
       <CartProvider>
+        <SocketProvider>
         <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <CookieConsent />
+        <CustomerChat />
         <Routes>
         {/* Customer Routes */}
         <Route element={<CustomerLayout />}>
@@ -39,6 +43,7 @@ function App() {
         </Route>
       </Routes>
     </Router>
+        </SocketProvider>
       </CartProvider>
     </ToastProvider>
   )

@@ -1,4 +1,5 @@
 from app import create_app
+from socket_events import socketio
 from models import db
 import time
 import os
@@ -48,4 +49,5 @@ if __name__ == '__main__':
             db.session.commit()
             print("Default admin user created!")
     
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    # Run with SocketIO
+    socketio.run(app, host='0.0.0.0', port=5000, debug=True, allow_unsafe_werkzeug=True)

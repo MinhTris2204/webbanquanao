@@ -4,6 +4,7 @@ from flask_jwt_extended import JWTManager
 from flask_migrate import Migrate
 from config import Config
 from models import db
+from socket_events import socketio
 
 def create_app():
     app = Flask(__name__)
@@ -20,12 +21,21 @@ def create_app():
             "allow_headers": ["Content-Type", "Authorization"],
             "expose_headers": ["Content-Type", "Authorization"],
             "supports_credentials": True
+        },
+        r"/socket.io/*": {
+            "origins": "*",
+            "methods": ["GET", "POST", "OPTIONS"],
+            "allow_headers": ["Content-Type", "Authorization"],
+            "supports_credentials": True
         }
     })
     
     db.init_app(app)
     JWTManager(app)
     Migrate(app, db)
+    
+    # Initialize SocketIO
+    socketio.init_app(app)
     
     # Register blueprints
     from routes.auth import auth_bp
@@ -54,6 +64,10 @@ def create_app():
         app.register_blueprint(reviews_bp, url_prefix='/api/reviews')
     except ImportError:
         pass
+    
+    # Import chat blueprint
+    from routes.chat import chat_bp
+    app.register_blueprint(chat_bp, url_prefix='/api/chat')
     
     @app.route('/api/health')
     def health():

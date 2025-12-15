@@ -455,3 +455,75 @@ class ProductView(db.Model):
             'last_viewed_at': self.last_viewed_at.isoformat() if self.last_viewed_at else None,
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
+
+
+class ChatConversation(db.Model):
+    __tablename__ = 'chat_conversations'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    customer_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
+    status = db.Column(db.Enum('active', 'closed', name='conversation_status_enum'), default='active')
+    created_at = db.Column(db.TIMESTAMP, default=datetime.utcnow)
+    updated_at = db.Column(db.TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    customer = db.relationship('User', backref='conversations', lazy=True)
+    messages = db.relationship('ChatMessage', backref='conversation', lazy=True, cascade='all, delete-orphan', order_by='ChatMessage.created_at')
+    
+    def to_dict(self, include_messages=False):
+        result = {
+            'id': self.id,
+            'customer_id': self.customer_id,
+            'customer_name': self.customer.hoten if self.customer else 'Unknown',
+            'customer_email': self.customer.email if self.customer else None,
+            'status': self.status,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+            'unread_count': self.get_unread_count(),
+            'last_message': self.get_last_message()
+        }
+        if include_messages:
+            result['messages'] = [msg.to_dict() for msg in self.messages]
+        return result
+    
+    def get_unread_count(self):
+        return ChatMessage.query.filter_by(
+            conversation_id=self.id,
+            sender_type='customer',
+            is_read=False
+        ).count()
+    
+    def get_last_message(self):
+        last_msg = ChatMessage.query.filter_by(conversation_id=self.id).order_by(ChatMessage.created_at.desc()).first()
+        if last_msg:
+            return {
+                'content': last_msg.content[:50] + '...' if len(last_msg.content) > 50 else last_msg.content,
+                'sender_type': last_msg.sender_type,
+                'created_at': last_msg.created_at.isoformat() if last_msg.created_at else None
+            }
+        return None
+
+
+class ChatMessage(db.Model):
+    __tablename__ = 'chat_messages'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    conversation_id = db.Column(db.Integer, db.ForeignKey('chat_conversations.id'), nullable=False)
+    sender_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
+    sender_type = db.Column(db.Enum('customer', 'admin', name='sender_type_enum'), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    is_read = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.TIMESTAMP, default=datetime.utcnow)
+    
+    sender = db.relationship('User', backref='sent_messages', lazy=True)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'conversation_id': self.conversation_id,
+            'sender_id': self.sender_id,
+            'sender_type': self.sender_type,
+            'sender_name': self.sender.hoten if self.sender else 'Unknown',
+            'content': self.content,
+            'is_read': self.is_read,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }

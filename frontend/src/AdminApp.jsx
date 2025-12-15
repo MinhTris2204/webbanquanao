@@ -1,5 +1,6 @@
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
+import { SocketProvider } from './context/SocketContext'
 import { ToastProvider } from './components/Toast'
 import AdminLayout from './layouts/AdminLayout'
 import AdminLogin from './pages/admin/AdminLogin'
@@ -11,6 +12,7 @@ import AdminVouchers from './pages/admin/Vouchers'
 import AdminStoreInfo from './pages/admin/StoreInfo'
 import AdminPromotions from './pages/admin/Promotions'
 import AdminReviews from './pages/admin/Reviews'
+import AdminChat from './pages/admin/Chat'
 
 function AdminApp() {
   const { isAuthenticated, isAdmin, loading } = useAuth()
@@ -25,6 +27,7 @@ function AdminApp() {
 
   return (
     <ToastProvider>
+      <SocketProvider>
       <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <Routes>
         <Route path="/login" element={<AdminLogin />} />
@@ -39,6 +42,7 @@ function AdminApp() {
             <Route path="/reviews" element={<AdminReviews />} />
             <Route path="/users" element={<AdminUsers />} />
             <Route path="/store-info" element={<AdminStoreInfo />} />
+            <Route path="/chat" element={<AdminChat />} />
           </Route>
         ) : (
           <Route path="*" element={<Navigate to="/login" replace />} />
@@ -47,6 +51,7 @@ function AdminApp() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
+      </SocketProvider>
     </ToastProvider>
   )
 }
