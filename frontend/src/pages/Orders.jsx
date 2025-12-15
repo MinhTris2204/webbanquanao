@@ -187,14 +187,18 @@ export default function Orders() {
                   <p className="text-sm font-semibold text-gray-600 mb-3">📦 Sản phẩm</p>
                   <div className="space-y-3">
                     {order.order_details?.map((detail, index) => (
-                      <div key={index} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+                      <div 
+                        key={index} 
+                        className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition cursor-pointer"
+                        onClick={() => navigate(`/products/${detail.product?.products_id}`)}
+                      >
                         <img
                           src={detail.product?.hinh_anh || 'https://via.placeholder.com/80'}
                           alt={detail.product?.ten_san_pham}
                           className="w-20 h-20 object-cover rounded-lg"
                         />
                         <div className="flex-1">
-                          <p className="font-semibold text-gray-800">{detail.product?.ten_san_pham}</p>
+                          <p className="font-semibold text-gray-800 hover:text-blue-600 transition">{detail.product?.ten_san_pham}</p>
                           {detail.selected_size && (
                             <p className="text-xs text-blue-600 font-semibold">Size: {detail.selected_size}</p>
                           )}
