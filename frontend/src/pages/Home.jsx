@@ -27,7 +27,7 @@ export default function Home() {
       description: 'Áp dụng cho tất cả sản phẩm trong tuần này',
       cta: 'Xem ưu đãi',
       link: '/products',
-      bg: 'from-red-500 to-pink-600'
+      bg: 'from-green-500 to-emerald-600'
     },
     {
       title: 'Thời Trang Công Sở',
@@ -35,7 +35,7 @@ export default function Home() {
       description: 'Bộ sưu tập dành riêng cho dân văn phòng',
       cta: 'Khám phá',
       link: '/products?category=Áo',
-      bg: 'from-purple-500 to-indigo-600'
+      bg: 'from-cyan-500 to-blue-600'
     }
   ]
 
@@ -342,13 +342,13 @@ export default function Home() {
       </div>
 
       {/* Promotional Banner */}
-      <div className="bg-gradient-to-r from-orange-500 to-red-600 py-16">
+      <div className="bg-gradient-to-r from-teal-500 to-green-600 py-16">
         <div className="max-w-7xl mx-auto px-4 text-center text-white">
           <h2 className="text-4xl font-bold mb-4">🎉 Ưu đãi đặc biệt trong tuần!</h2>
           <p className="text-xl mb-6">Giảm giá lên đến 50% cho tất cả sản phẩm</p>
           <Link
             to="/products"
-            className="inline-block bg-white text-orange-600 px-8 py-4 rounded-lg text-lg font-bold hover:bg-gray-100 transition shadow-lg"
+            className="inline-block bg-white text-teal-600 px-8 py-4 rounded-lg text-lg font-bold hover:bg-gray-100 transition shadow-lg"
           >
             Mua sắm ngay
           </Link>
