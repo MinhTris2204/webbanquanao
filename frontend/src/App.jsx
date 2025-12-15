@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { CartProvider } from './context/CartContext'
 import { ToastProvider } from './components/Toast'
+import CookieConsent from './components/CookieConsent'
 import CustomerLayout from './layouts/CustomerLayout'
 import Home from './pages/Home'
 import Login from './pages/Login'
@@ -20,6 +21,7 @@ function App() {
     <ToastProvider>
       <CartProvider>
         <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <CookieConsent />
         <Routes>
         {/* Customer Routes */}
         <Route element={<CustomerLayout />}>
