@@ -150,9 +150,27 @@ export default function CustomerChat() {
 
   return (
     <div className="fixed bottom-6 right-6 z-50">
+      {/* Tooltip */}
+      {!isOpen && (
+        <div className="absolute bottom-16 right-0 mb-2 animate-bounce">
+          <div className="bg-white text-gray-800 text-sm px-4 py-2 rounded-lg shadow-lg border border-gray-200 whitespace-nowrap">
+            💬 Chat với chúng tôi!
+            <div className="absolute -bottom-2 right-6 w-3 h-3 bg-white border-r border-b border-gray-200 transform rotate-45"></div>
+          </div>
+        </div>
+      )}
+      
+      {/* Pulse ring effect */}
+      {!isOpen && (
+        <>
+          <span className="absolute inset-0 w-14 h-14 rounded-full bg-blue-400 animate-ping opacity-75"></span>
+          <span className="absolute inset-0 w-14 h-14 rounded-full bg-blue-500 animate-pulse opacity-50"></span>
+        </>
+      )}
+      
       <button
         onClick={toggleChat}
-        className={`group relative w-14 h-14 rounded-full shadow-lg transition-all duration-300 transform hover:scale-105 ${
+        className={`group relative w-14 h-14 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110 ${
           isOpen ? 'bg-gray-600' : 'bg-blue-600 hover:bg-blue-700'
         }`}
       >

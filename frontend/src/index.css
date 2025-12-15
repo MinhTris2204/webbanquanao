@@ -60,3 +60,16 @@ body {
 .animate-slide-up {
   animation: slideUp 0.4s ease-out;
 }
+
+@keyframes chatBounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-chat-bounce {
+  animation: chatBounce 1s ease-in-out infinite;
+}
