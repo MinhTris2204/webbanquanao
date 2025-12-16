@@ -3,17 +3,13 @@ http://localhost:5173
 
 docker-compose up --build
 
-=== LƯU Ý KHI TẠO KHUYẾN MÃI ===
-- Thời gian bắt đầu phải là HIỆN TẠI hoặc trong quá khứ
-- Thời gian kết thúc phải sau thời gian bắt đầu
-- Bật is_active = true
-- Kiểm tra lại trang sản phẩm sau khi tạo
 
-=== CHẠY MIGRATION MỚI ===
-Sau khi pull code mới, chạy migration để thêm cột ghichu vào bảng orders:
+Frontend (React/Vite): Tự động hot reload, không cần chạy lệnh gì
 
-cd backend
-flask db upgrade
+Backend (Python):
 
-Hoặc nếu dùng Docker:
-docker-compose exec backend flask db upgrade
+docker-compose restart backend
+Thêm package mới (requirements.txt hoặc package.json):
+
+docker-compose up --build
+Thêm migration database: docker-compose exec backend flask db upgrade
