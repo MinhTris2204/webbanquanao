@@ -5,6 +5,7 @@ from pgvector.sqlalchemy import Vector
 
 db = SQLAlchemy()
 
+# ==================== BẢNG NGƯỜI DÙNG ====================
 class User(db.Model):
     __tablename__ = 'users'
     
@@ -39,6 +40,7 @@ class User(db.Model):
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
 
+# ==================== BẢNG SẢN PHẨM ====================
 class Product(db.Model):
     __tablename__ = 'products'
     
@@ -132,6 +134,7 @@ class Product(db.Model):
             Promotion.end_date >= now
         ).first()
 
+# ==================== BẢNG GIỎ HÀNG ====================
 class Cart(db.Model):
     __tablename__ = 'carts'
     
@@ -143,6 +146,7 @@ class Cart(db.Model):
     
     cart_items = db.relationship('CartItem', backref='cart', lazy=True, cascade='all, delete-orphan')
 
+# ==================== BẢNG CHI TIẾT GIỎ HÀNG ====================
 class CartItem(db.Model):
     __tablename__ = 'cart_items'
     
@@ -153,6 +157,7 @@ class CartItem(db.Model):
     selected_size = db.Column(db.String(10))
     created_at = db.Column(db.TIMESTAMP, default=datetime.utcnow)
 
+# ==================== BẢNG ĐƠN HÀNG ====================
 class Order(db.Model):
     __tablename__ = 'orders'
     
@@ -193,6 +198,7 @@ class Order(db.Model):
             'order_details': [item.to_dict() for item in self.order_details]
         }
 
+# ==================== BẢNG CHI TIẾT ĐƠN HÀNG ====================
 class OrderDetail(db.Model):
     __tablename__ = 'order_details'
     
@@ -231,6 +237,7 @@ class OrderDetail(db.Model):
         
         return result
 
+# ==================== BẢNG MÃ GIẢM GIÁ ====================
 class Voucher(db.Model):
     __tablename__ = 'vouchers'
     
@@ -286,6 +293,7 @@ class Voucher(db.Model):
             discount = float(self.discount_value)
         return min(discount, order_total)
 
+# ==================== BẢNG THÔNG TIN CỬA HÀNG ====================
 class StoreInfo(db.Model):
     __tablename__ = 'store_info'
     
@@ -309,6 +317,7 @@ class StoreInfo(db.Model):
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
 
+# ==================== BẢNG KHUYẾN MÃI SẢN PHẨM ====================
 class Promotion(db.Model):
     __tablename__ = 'promotions'
     
@@ -357,6 +366,7 @@ class Promotion(db.Model):
         return max(promotional_price, 0)
 
 
+# ==================== BẢNG ĐÁNH GIÁ SẢN PHẨM ====================
 class Review(db.Model):
     __tablename__ = 'reviews'
     
@@ -412,6 +422,7 @@ class Review(db.Model):
         return result
 
 
+# ==================== BẢNG PHẢN HỒI ĐÁNH GIÁ ====================
 class ReviewReply(db.Model):
     __tablename__ = 'review_replies'
     
@@ -431,6 +442,7 @@ class ReviewReply(db.Model):
         }
 
 
+# ==================== BẢNG LƯỢT XEM SẢN PHẨM ====================
 class ProductView(db.Model):
     __tablename__ = 'product_views'
     
@@ -457,6 +469,7 @@ class ProductView(db.Model):
         }
 
 
+# ==================== BẢNG CUỘC HỘI THOẠI CHAT ====================
 class ChatConversation(db.Model):
     __tablename__ = 'chat_conversations'
     
@@ -503,6 +516,7 @@ class ChatConversation(db.Model):
         return None
 
 
+# ==================== BẢNG TIN NHẮN CHAT ====================
 class ChatMessage(db.Model):
     __tablename__ = 'chat_messages'
     

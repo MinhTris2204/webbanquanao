@@ -1,3 +1,11 @@
+"""
+==================== API GỢI Ý SẢN PHẨM ====================
+Gợi ý sản phẩm dựa trên:
+- Lịch sử xem của người dùng
+- Sản phẩm tương tự
+- Sản phẩm thường mua cùng
+- Sản phẩm trending
+"""
 from flask import Blueprint, jsonify, request
 from models import db, Product, ProductView, Order, OrderDetail, Cart, CartItem
 from flask_jwt_extended import jwt_required, get_jwt_identity, verify_jwt_in_request

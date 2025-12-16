@@ -1,3 +1,8 @@
+"""
+==================== API THÔNG TIN CỬA HÀNG ====================
+Quản lý nội dung: giới thiệu, liên hệ, chính sách...
+Hỗ trợ chatbot AI tìm kiếm thông tin
+"""
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from models import db, StoreInfo, User
