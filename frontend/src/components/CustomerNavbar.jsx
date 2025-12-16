@@ -238,6 +238,13 @@ export default function CustomerNavbar() {
                   >
                     ❓ Câu hỏi thường gặp
                   </Link>
+                  <Link
+                    to="/info/size_guide"
+                    onClick={() => setShowInfoMenu(false)}
+                    className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition"
+                  >
+                    📏 Hướng dẫn chọn size
+                  </Link>
                 </div>
               )}
             </div>

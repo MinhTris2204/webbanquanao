@@ -258,7 +258,7 @@ export default function Promotions() {
           </button>
           <button
             onClick={() => { resetBulkForm(); setShowBulkModal(true); }}
-            className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
+            className="bg-teal-600 text-white px-4 py-2 rounded hover:bg-teal-700"
           >
             Tạo hàng loạt
           </button>
@@ -710,7 +710,7 @@ export default function Promotions() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
+                  className="px-4 py-2 bg-teal-600 text-white rounded hover:bg-teal-700"
                 >
                   Tạo hàng loạt
                 </button>

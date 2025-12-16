@@ -69,6 +69,10 @@ def create_app():
     from routes.chat import chat_bp
     app.register_blueprint(chat_bp, url_prefix='/api/chat')
     
+    # Import chatbot blueprint
+    from routes.chatbot import chatbot_bp
+    app.register_blueprint(chatbot_bp, url_prefix='/api/chatbot')
+    
     @app.route('/api/health')
     def health():
         return {'status': 'ok'}

@@ -23,7 +23,9 @@ export default function AdminProducts() {
     trang_thai: 'Con_hang'
   })
 
-  const availableSizes = ['S', 'M', 'L', 'XL', 'XXL']
+  const letterSizes = ['S', 'M', 'L', 'XL', 'XXL']
+  const numberSizes = ['26', '27', '28', '29', '30', '31', '32', '33', '34', '36']
+  const specialSizes = ['Free size']
 
   useEffect(() => {
     fetchProducts()
@@ -54,10 +56,10 @@ export default function AdminProducts() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
-      // Convert selected sizes array to string
+      // Convert selected sizes array to string (use comma without space for consistency)
       const dataToSubmit = {
         ...formData,
-        size: selectedSizes.join(', ')
+        size: selectedSizes.join(',')
       }
       
       if (editingProduct) {
@@ -87,8 +89,8 @@ export default function AdminProducts() {
       hinh_anh: product.hinh_anh || '',
       trang_thai: product.trang_thai || 'Con_hang'
     })
-    // Parse sizes from string to array
-    const sizes = product.size ? product.size.split(', ') : []
+    // Parse sizes from string to array (handle both ", " and "," separators)
+    const sizes = product.size ? product.size.split(/,\s*/).map(s => s.trim()).filter(s => s) : []
     setSelectedSizes(sizes)
     setImagePreview(product.hinh_anh || '')
     setShowForm(true)
@@ -285,23 +287,62 @@ export default function AdminProducts() {
                 </div>
 
                 {/* Size */}
-                <div>
+                <div className="md:col-span-2">
                   <label className="block text-gray-700 mb-2 font-semibold text-sm">Size (có thể chọn nhiều)</label>
-                  <div className="flex flex-wrap gap-3 p-4 border border-gray-300 rounded-lg bg-gray-50">
-                    {availableSizes.map(size => (
-                      <label 
-                        key={size}
-                        className="flex items-center cursor-pointer"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedSizes.includes(size)}
-                          onChange={() => handleSizeToggle(size)}
-                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
-                        />
-                        <span className="ml-2 text-sm font-medium text-gray-700">{size}</span>
-                      </label>
-                    ))}
+                  <div className="p-4 border border-gray-300 rounded-lg bg-gray-50 space-y-4">
+                    {/* Size chữ - cho Áo, Váy, Đầm, Áo khoác */}
+                    <div>
+                      <p className="text-xs text-gray-500 mb-2 font-medium">Size chữ (Áo, Váy, Đầm, Áo khoác):</p>
+                      <div className="flex flex-wrap gap-3">
+                        {letterSizes.map(size => (
+                          <label key={size} className="flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={selectedSizes.includes(size)}
+                              onChange={() => handleSizeToggle(size)}
+                              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                            />
+                            <span className="ml-2 text-sm font-medium text-gray-700">{size}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    {/* Size số - cho Quần */}
+                    <div>
+                      <p className="text-xs text-gray-500 mb-2 font-medium">Size số (Quần):</p>
+                      <div className="flex flex-wrap gap-3">
+                        {numberSizes.map(size => (
+                          <label key={size} className="flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={selectedSizes.includes(size)}
+                              onChange={() => handleSizeToggle(size)}
+                              className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500 cursor-pointer"
+                            />
+                            <span className="ml-2 text-sm font-medium text-gray-700">{size}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    {/* Free size - cho Phụ kiện */}
+                    <div>
+                      <p className="text-xs text-gray-500 mb-2 font-medium">Khác (Phụ kiện):</p>
+                      <div className="flex flex-wrap gap-3">
+                        {specialSizes.map(size => (
+                          <label key={size} className="flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={selectedSizes.includes(size)}
+                              onChange={() => handleSizeToggle(size)}
+                              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                            />
+                            <span className="ml-2 text-sm font-medium text-gray-700">{size}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                   {selectedSizes.length > 0 && (
                     <p className="text-xs text-blue-600 mt-2">
@@ -461,7 +502,7 @@ export default function AdminProducts() {
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-teal-100 text-teal-800">
                       {product.loai}
                     </span>
                   </td>
@@ -476,7 +517,7 @@ export default function AdminProducts() {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
                       product.gioi_tinh === 'Nam' ? 'bg-blue-100 text-blue-800' :
-                      product.gioi_tinh === 'Nữ' ? 'bg-pink-100 text-pink-800' :
+                      product.gioi_tinh === 'Nữ' ? 'bg-rose-100 text-rose-800' :
                       'bg-gray-100 text-gray-800'
                     }`}>
                       {product.gioi_tinh === 'Nam' ? '👨 Nam' :

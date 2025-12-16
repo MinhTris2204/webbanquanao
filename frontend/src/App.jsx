@@ -3,7 +3,7 @@ import { CartProvider } from './context/CartContext'
 import { SocketProvider } from './context/SocketContext'
 import { ToastProvider } from './components/Toast'
 import CookieConsent from './components/CookieConsent'
-import CustomerChat from './components/CustomerChat'
+import ChatWidget from './components/ChatWidget'
 import CustomerLayout from './layouts/CustomerLayout'
 import Home from './pages/Home'
 import Login from './pages/Login'
@@ -25,7 +25,7 @@ function App() {
         <SocketProvider>
         <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <CookieConsent />
-        <CustomerChat />
+        <ChatWidget />
         <Routes>
         {/* Customer Routes */}
         <Route element={<CustomerLayout />}>

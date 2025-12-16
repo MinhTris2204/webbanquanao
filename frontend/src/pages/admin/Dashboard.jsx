@@ -156,7 +156,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
+        <div className="bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl shadow-lg p-6 text-white">
           <div className="flex items-center justify-between mb-4">
             <div className="bg-white bg-opacity-20 p-3 rounded-lg">
               <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -298,9 +298,9 @@ export default function AdminDashboard() {
               <span className="text-sm font-semibold text-gray-700">Khuyến mãi active</span>
               <span className="text-xl font-bold text-red-600">{stats.activePromotions}</span>
             </div>
-            <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
+            <div className="flex justify-between items-center p-3 bg-teal-50 rounded-lg">
               <span className="text-sm font-semibold text-gray-700">Voucher active</span>
-              <span className="text-xl font-bold text-purple-600">{stats.activeVouchers}</span>
+              <span className="text-xl font-bold text-teal-600">{stats.activeVouchers}</span>
             </div>
             <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
               <span className="text-sm font-semibold text-gray-700">Tổng cộng</span>
@@ -308,7 +308,7 @@ export default function AdminDashboard() {
             </div>
             <Link 
               to="/promotions"
-              className="block text-center p-3 bg-gradient-to-r from-red-500 to-purple-500 text-white rounded-lg hover:from-red-600 hover:to-purple-600 transition font-semibold"
+              className="block text-center p-3 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-lg hover:from-red-600 hover:to-orange-600 transition font-semibold"
             >
               Quản lý Marketing →
             </Link>
@@ -367,11 +367,11 @@ export default function AdminDashboard() {
 
           <Link
             to="/vouchers"
-            className="group p-4 border-2 border-gray-200 rounded-lg hover:border-purple-500 hover:shadow-md transition"
+            className="group p-4 border-2 border-gray-200 rounded-lg hover:border-teal-500 hover:shadow-md transition"
           >
             <div className="flex items-center mb-2">
-              <div className="bg-purple-100 p-2 rounded-lg mr-3 group-hover:bg-purple-500 transition">
-                <svg className="w-6 h-6 text-purple-600 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="bg-teal-100 p-2 rounded-lg mr-3 group-hover:bg-teal-500 transition">
+                <svg className="w-6 h-6 text-teal-600 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
                 </svg>
               </div>

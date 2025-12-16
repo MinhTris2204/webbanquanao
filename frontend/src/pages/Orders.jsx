@@ -195,6 +195,7 @@ export default function Orders() {
                           className="w-20 h-20 object-cover rounded-lg"
                         />
                         <div className="flex-1">
+                          <p className="text-xs text-gray-400">ID: #{detail.product?.products_id}</p>
                           <p className="font-semibold text-gray-800 hover:text-blue-600 transition">{detail.product?.ten_san_pham}</p>
                           {detail.selected_size && (
                             <p className="text-xs text-blue-600 font-semibold">Size: {detail.selected_size}</p>

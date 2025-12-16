@@ -234,7 +234,7 @@ export default function AdminUsers() {
               onClick={() => handleRoleFilter('admin')}
               className={`px-4 py-2 rounded-lg font-semibold transition ${
                 roleFilter === 'admin' 
-                  ? 'bg-purple-600 text-white shadow-lg' 
+                  ? 'bg-indigo-600 text-white shadow-lg' 
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
@@ -298,7 +298,7 @@ export default function AdminUsers() {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
                       user.role === 'admin' 
-                        ? 'bg-purple-100 text-purple-800' 
+                        ? 'bg-indigo-100 text-indigo-800' 
                         : 'bg-green-100 text-green-800'
                     }`}>
                       {user.role === 'admin' ? '👑 Admin' : '👤 Khách hàng'}

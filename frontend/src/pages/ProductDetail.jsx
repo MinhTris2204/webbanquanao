@@ -6,6 +6,137 @@ import { useCart } from '../context/CartContext'
 import ProductReviews from '../components/ProductReviews'
 import RecommendedProducts from '../components/RecommendedProducts'
 
+// Size Guide Component
+function SizeGuide({ productType, gender }) {
+  const [isOpen, setIsOpen] = useState(false)
+  
+  // Determine if product uses number sizes (pants) or letter sizes (shirts, etc.)
+  const isPants = productType === 'Quần'
+  const isAccessory = productType === 'Phụ kiện'
+  
+  if (isAccessory) return null // No size guide for accessories
+  
+  const shirtSizesMale = [
+    { size: 'S', height: '160-165', weight: '50-55' },
+    { size: 'M', height: '165-170', weight: '55-62' },
+    { size: 'L', height: '170-175', weight: '62-70' },
+    { size: 'XL', height: '175-180', weight: '70-78' },
+    { size: 'XXL', height: '180-185', weight: '78-85' },
+  ]
+  
+  const shirtSizesFemale = [
+    { size: 'S', height: '150-155', weight: '42-48' },
+    { size: 'M', height: '155-160', weight: '48-54' },
+    { size: 'L', height: '160-165', weight: '54-60' },
+    { size: 'XL', height: '165-170', weight: '60-66' },
+  ]
+  
+  const pantsSizesMale = [
+    { size: '28', height: '160-165', weight: '50-55', waist: '70-72' },
+    { size: '29', height: '163-168', weight: '53-58', waist: '72-74' },
+    { size: '30', height: '165-170', weight: '58-63', waist: '74-76' },
+    { size: '31', height: '168-173', weight: '63-68', waist: '76-78' },
+    { size: '32', height: '170-175', weight: '68-73', waist: '78-80' },
+    { size: '33', height: '173-178', weight: '73-78', waist: '80-82' },
+    { size: '34', height: '175-180', weight: '78-83', waist: '82-84' },
+    { size: '36', height: '178-185', weight: '83-90', waist: '86-90' },
+  ]
+  
+  const pantsSizesFemale = [
+    { size: '26', height: '150-155', weight: '42-47', waist: '62-64' },
+    { size: '27', height: '153-158', weight: '47-50', waist: '64-66' },
+    { size: '28', height: '155-160', weight: '50-54', waist: '66-68' },
+    { size: '29', height: '158-163', weight: '54-58', waist: '68-70' },
+    { size: '30', height: '160-165', weight: '58-62', waist: '70-72' },
+    { size: '31', height: '163-168', weight: '62-66', waist: '72-74' },
+    { size: '32', height: '165-170', weight: '66-70', waist: '74-76' },
+  ]
+  
+  // Select appropriate size chart
+  let sizeData = []
+  let title = ''
+  
+  if (isPants) {
+    if (gender === 'Nam') {
+      sizeData = pantsSizesMale
+      title = 'Bảng size quần Nam'
+    } else if (gender === 'Nữ') {
+      sizeData = pantsSizesFemale
+      title = 'Bảng size quần Nữ'
+    } else {
+      // Unisex - show both
+      sizeData = pantsSizesMale
+      title = 'Bảng size quần'
+    }
+  } else {
+    if (gender === 'Nam') {
+      sizeData = shirtSizesMale
+      title = 'Bảng size áo Nam'
+    } else if (gender === 'Nữ') {
+      sizeData = shirtSizesFemale
+      title = 'Bảng size áo Nữ'
+    } else {
+      sizeData = shirtSizesMale
+      title = 'Bảng size'
+    }
+  }
+  
+  return (
+    <div className="mt-4">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-2 text-blue-600 hover:text-blue-800 font-medium text-sm transition-colors"
+      >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+        </svg>
+        📏 Hướng dẫn chọn size
+        <svg className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      
+      {isOpen && (
+        <div className="mt-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-5 border border-blue-200">
+          <h4 className="font-bold text-lg text-gray-800 mb-4 flex items-center gap-2">
+            📐 {title}
+          </h4>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-blue-600 text-white">
+                  <th className="px-4 py-3 text-left rounded-tl-lg">Size</th>
+                  <th className="px-4 py-3 text-left">Chiều cao (cm)</th>
+                  <th className="px-4 py-3 text-left">Cân nặng (kg)</th>
+                  {isPants && <th className="px-4 py-3 text-left rounded-tr-lg">Vòng eo (cm)</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {sizeData.map((row, idx) => (
+                  <tr key={row.size} className={idx % 2 === 0 ? 'bg-white' : 'bg-blue-50'}>
+                    <td className="px-4 py-3 font-bold text-blue-600">{row.size}</td>
+                    <td className="px-4 py-3 text-gray-700">{row.height}</td>
+                    <td className="px-4 py-3 text-gray-700">{row.weight}</td>
+                    {isPants && <td className="px-4 py-3 text-gray-700">{row.waist}</td>}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          
+          <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-sm text-yellow-800">
+              💡 <strong>Mẹo:</strong> Nếu bạn ở giữa 2 size, nên chọn size lớn hơn để thoải mái hơn.
+              {isPants && ' Quần jean co giãn có thể chọn nhỏ hơn 1 size.'}
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // Countdown Timer Component
 function CountdownTimer({ endDate }) {
   const calculateTimeLeft = () => {
@@ -86,8 +217,10 @@ export default function ProductDetail() {
       setProduct(res.data)
       // Auto-select first size if available
       if (res.data.size) {
-        const sizes = res.data.size.split(', ')
-        setSelectedSize(sizes[0])
+        const sizes = res.data.size.split(/,\s*/).map(s => s.trim()).filter(s => s)
+        if (sizes.length > 0) {
+          setSelectedSize(sizes[0])
+        }
       }
     } catch (err) {
       console.error(err)
@@ -179,7 +312,8 @@ export default function ProductDetail() {
     )
   }
 
-  const availableSizes = product.size ? product.size.split(', ') : []
+  // Support both "S, M, L" and "28,29,30" formats
+  const availableSizes = product.size ? product.size.split(/,\s*/).map(s => s.trim()).filter(s => s) : []
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
@@ -216,13 +350,14 @@ export default function ProductDetail() {
         <div className="space-y-6">
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-semibold">
+              <span className="bg-teal-100 text-teal-800 px-3 py-1 rounded-full text-sm font-semibold">
                 {product.loai}
               </span>
               <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold">
                 {product.gioi_tinh}
               </span>
             </div>
+            <p className="text-sm text-gray-400 mb-2">Mã sản phẩm: #{product.products_id}</p>
             <h1 className="text-4xl font-bold mb-4 text-gray-800">{product.ten_san_pham}</h1>
             {product.promotion ? (
               <div className="space-y-3 mb-6">
@@ -306,6 +441,9 @@ export default function ProductDetail() {
                   </button>
                 ))}
               </div>
+              
+              {/* Size Guide */}
+              <SizeGuide productType={product.loai} gender={product.gioi_tinh} />
             </div>
           )}
 

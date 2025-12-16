@@ -14,7 +14,14 @@ def get_products():
     query = Product.query
     
     if search:
-        query = query.filter(Product.ten_san_pham.ilike(f'%{search}%'))
+        # Check if search is a number (ID search)
+        if search.isdigit():
+            query = query.filter(Product.products_id == int(search))
+        elif search.startswith('#') and search[1:].isdigit():
+            # Support searching with # prefix like "#123"
+            query = query.filter(Product.products_id == int(search[1:]))
+        else:
+            query = query.filter(Product.ten_san_pham.ilike(f'%{search}%'))
     
     # Filter for products on sale
     if on_sale == 'true':
@@ -50,11 +57,23 @@ def autocomplete():
     if len(query) < 2:
         return jsonify({'suggestions': []}), 200
     
-    # Search for products with case-insensitive matching
-    products = Product.query.filter(
-        Product.ten_san_pham.ilike(f'%{query}%'),
-        Product.trang_thai == 'Con_hang'
-    ).limit(8).all()
+    # Check if query is a number (ID search)
+    if query.isdigit():
+        products = Product.query.filter(
+            Product.products_id == int(query),
+            Product.trang_thai == 'Con_hang'
+        ).limit(8).all()
+    elif query.startswith('#') and query[1:].isdigit():
+        products = Product.query.filter(
+            Product.products_id == int(query[1:]),
+            Product.trang_thai == 'Con_hang'
+        ).limit(8).all()
+    else:
+        # Search for products with case-insensitive matching
+        products = Product.query.filter(
+            Product.ten_san_pham.ilike(f'%{query}%'),
+            Product.trang_thai == 'Con_hang'
+        ).limit(8).all()
     
     # Format suggestions
     suggestions = [{

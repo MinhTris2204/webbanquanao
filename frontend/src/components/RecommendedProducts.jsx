@@ -104,6 +104,7 @@ export default function RecommendedProducts({ title = '🎯 Gợi ý dành cho b
             </div>
             
             <div className="p-4">
+              <p className="text-xs text-gray-400 mb-1">ID: #{product.products_id}</p>
               <h3 className="font-semibold text-gray-800 mb-2 line-clamp-2 text-sm">
                 {product.ten_san_pham}
               </h3>

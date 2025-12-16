@@ -520,6 +520,7 @@ export default function AdminOrders() {
                                 className="w-12 h-12 object-cover rounded"
                               />
                               <div>
+                                <p className="text-xs text-gray-400">ID: #{item.product?.products_id}</p>
                                 <p className="font-medium">{item.product?.ten_san_pham}</p>
                                 {item.selected_size && (
                                   <p className="text-sm text-gray-500">Size: {item.selected_size}</p>

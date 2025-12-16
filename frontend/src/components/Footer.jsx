@@ -121,6 +121,11 @@ export default function Footer() {
                   ❓ FAQ
                 </Link>
               </li>
+              <li>
+                <Link to="/info/size_guide" className="text-gray-400 hover:text-white transition">
+                  📏 Hướng dẫn chọn size
+                </Link>
+              </li>
             </ul>
           </div>
 

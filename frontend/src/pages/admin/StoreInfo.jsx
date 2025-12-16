@@ -95,7 +95,8 @@ export default function AdminStoreInfo() {
       contact_info: '📞 Liên hệ',
       payment_methods: '💳 Thanh toán',
       warranty_policy: '🛡️ Bảo hành',
-      faq: '❓ FAQ'
+      faq: '❓ FAQ',
+      size_guide: '📏 Hướng dẫn chọn size'
     }
     return labels[key] || key
   }
@@ -214,6 +215,7 @@ export default function AdminStoreInfo() {
                     <option value="payment_methods">💳 Phương thức thanh toán</option>
                     <option value="warranty_policy">🛡️ Chính sách bảo hành</option>
                     <option value="faq">❓ Câu hỏi thường gặp</option>
+                    <option value="size_guide">📏 Hướng dẫn chọn size</option>
                   </select>
                   <p className="text-xs text-gray-500 mt-1">Không thể thay đổi sau khi tạo</p>
                 </div>

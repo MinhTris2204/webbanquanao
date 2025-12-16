@@ -5,6 +5,19 @@ from functools import wraps
 
 admin_bp = Blueprint('admin', __name__)
 
+
+def generate_product_embedding(product):
+    """Generate and save embedding for a product"""
+    try:
+        from routes.chatbot import get_embedding
+        text = f"{product.ten_san_pham} {product.loai} {product.mo_ta or ''} {product.chat_lieu or ''} {product.gioi_tinh}"
+        embedding = get_embedding(text)
+        product.embedding = embedding
+        return True
+    except Exception as e:
+        print(f"Error generating embedding for product {product.products_id}: {e}")
+        return False
+
 def admin_required(fn):
     @wraps(fn)
     @jwt_required()
@@ -34,6 +47,11 @@ def create_product():
     )
     
     db.session.add(product)
+    db.session.flush()  # Get product ID before commit
+    
+    # Generate embedding for chatbot search
+    generate_product_embedding(product)
+    
     db.session.commit()
     
     return jsonify({'message': 'Tạo sản phẩm thành công', 'product': product.to_dict()}), 201
@@ -44,9 +62,17 @@ def update_product(product_id):
     product = Product.query.get_or_404(product_id)
     data = request.get_json()
     
+    # Track if text fields changed (need to regenerate embedding)
+    text_fields = ['ten_san_pham', 'loai', 'mo_ta', 'chat_lieu', 'gioi_tinh']
+    need_embedding_update = any(key in data for key in text_fields)
+    
     for key, value in data.items():
-        if hasattr(product, key):
+        if hasattr(product, key) and key != 'embedding':
             setattr(product, key, value)
+    
+    # Regenerate embedding if text fields changed
+    if need_embedding_update:
+        generate_product_embedding(product)
     
     db.session.commit()
     
@@ -60,6 +86,33 @@ def delete_product(product_id):
     db.session.commit()
     
     return jsonify({'message': 'Xóa sản phẩm thành công'}), 200
+
+
+@admin_bp.route('/products/update-all-embeddings', methods=['POST'])
+@admin_required
+def update_all_product_embeddings():
+    """Update embeddings for all products (run once to initialize)"""
+    try:
+        products = Product.query.all()
+        updated = 0
+        failed = 0
+        
+        for product in products:
+            if generate_product_embedding(product):
+                updated += 1
+            else:
+                failed += 1
+        
+        db.session.commit()
+        
+        return jsonify({
+            'message': f'Đã cập nhật embedding cho {updated} sản phẩm',
+            'updated': updated,
+            'failed': failed
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
 
 @admin_bp.route('/orders', methods=['GET'])
 @admin_required

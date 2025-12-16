@@ -171,7 +171,7 @@ export default function Search() {
           <div className="flex-1 relative" ref={searchRef}>
             <input
               type="text"
-              placeholder="Nhập tên sản phẩm cần tìm..."
+              placeholder="Nhập tên hoặc ID sản phẩm (VD: #123)..."
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={searchTerm}
               onChange={handleInputChange}
@@ -250,13 +250,14 @@ export default function Search() {
                   </div>
                   <div className="p-4">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full font-semibold">
+                      <span className="text-xs bg-teal-100 text-teal-800 px-2 py-1 rounded-full font-semibold">
                         {product.loai}
                       </span>
                       <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-semibold">
                         {product.gioi_tinh}
                       </span>
                     </div>
+                    <p className="text-xs text-gray-400 mb-1">ID: #{product.products_id}</p>
                     <h3 className="font-bold text-lg mb-2 text-gray-800 line-clamp-2 group-hover:text-blue-600 transition">
                       {product.ten_san_pham}
                     </h3>

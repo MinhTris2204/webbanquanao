@@ -38,7 +38,8 @@ export default function StoreInfoPage() {
       contact_info: '📞',
       payment_methods: '💳',
       warranty_policy: '🛡️',
-      faq: '❓'
+      faq: '❓',
+      size_guide: '📏'
     }
     return icons[key] || '📄'
   }
@@ -87,6 +88,160 @@ export default function StoreInfoPage() {
           </div>
         </div>
       </div>
+
+      {/* Size Guide Visual Tables */}
+      {info.key === 'size_guide' && (
+        <div className="mt-8 space-y-8">
+          {/* Shirt Sizes */}
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+              👕 Bảng size Áo
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Male */}
+              <div>
+                <h4 className="font-semibold text-blue-600 mb-3">👨 Nam</h4>
+                <table className="w-full text-sm border-collapse">
+                  <thead>
+                    <tr className="bg-blue-500 text-white">
+                      <th className="px-3 py-2 text-left">Size</th>
+                      <th className="px-3 py-2 text-left">Chiều cao</th>
+                      <th className="px-3 py-2 text-left">Cân nặng</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { size: 'S', height: '160-165cm', weight: '50-55kg' },
+                      { size: 'M', height: '165-170cm', weight: '55-62kg' },
+                      { size: 'L', height: '170-175cm', weight: '62-70kg' },
+                      { size: 'XL', height: '175-180cm', weight: '70-78kg' },
+                      { size: 'XXL', height: '180-185cm', weight: '78-85kg' },
+                    ].map((row, idx) => (
+                      <tr key={row.size} className={idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+                        <td className="px-3 py-2 font-bold text-blue-600">{row.size}</td>
+                        <td className="px-3 py-2">{row.height}</td>
+                        <td className="px-3 py-2">{row.weight}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {/* Female */}
+              <div>
+                <h4 className="font-semibold text-rose-600 mb-3">👩 Nữ</h4>
+                <table className="w-full text-sm border-collapse">
+                  <thead>
+                    <tr className="bg-rose-500 text-white">
+                      <th className="px-3 py-2 text-left">Size</th>
+                      <th className="px-3 py-2 text-left">Chiều cao</th>
+                      <th className="px-3 py-2 text-left">Cân nặng</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { size: 'S', height: '150-155cm', weight: '42-48kg' },
+                      { size: 'M', height: '155-160cm', weight: '48-54kg' },
+                      { size: 'L', height: '160-165cm', weight: '54-60kg' },
+                      { size: 'XL', height: '165-170cm', weight: '60-66kg' },
+                    ].map((row, idx) => (
+                      <tr key={row.size} className={idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+                        <td className="px-3 py-2 font-bold text-rose-600">{row.size}</td>
+                        <td className="px-3 py-2">{row.height}</td>
+                        <td className="px-3 py-2">{row.weight}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          {/* Pants Sizes */}
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+              👖 Bảng size Quần (Size số)
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Male */}
+              <div>
+                <h4 className="font-semibold text-blue-600 mb-3">👨 Nam</h4>
+                <table className="w-full text-sm border-collapse">
+                  <thead>
+                    <tr className="bg-blue-500 text-white">
+                      <th className="px-2 py-2 text-left">Size</th>
+                      <th className="px-2 py-2 text-left">Cao</th>
+                      <th className="px-2 py-2 text-left">Nặng</th>
+                      <th className="px-2 py-2 text-left">Eo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { size: '28', height: '160-165', weight: '50-55', waist: '70-72' },
+                      { size: '29', height: '163-168', weight: '53-58', waist: '72-74' },
+                      { size: '30', height: '165-170', weight: '58-63', waist: '74-76' },
+                      { size: '31', height: '168-173', weight: '63-68', waist: '76-78' },
+                      { size: '32', height: '170-175', weight: '68-73', waist: '78-80' },
+                      { size: '33', height: '173-178', weight: '73-78', waist: '80-82' },
+                      { size: '34', height: '175-180', weight: '78-83', waist: '82-84' },
+                      { size: '36', height: '178-185', weight: '83-90', waist: '86-90' },
+                    ].map((row, idx) => (
+                      <tr key={row.size} className={idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+                        <td className="px-2 py-2 font-bold text-blue-600">{row.size}</td>
+                        <td className="px-2 py-2 text-xs">{row.height}cm</td>
+                        <td className="px-2 py-2 text-xs">{row.weight}kg</td>
+                        <td className="px-2 py-2 text-xs">{row.waist}cm</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {/* Female */}
+              <div>
+                <h4 className="font-semibold text-rose-600 mb-3">👩 Nữ</h4>
+                <table className="w-full text-sm border-collapse">
+                  <thead>
+                    <tr className="bg-rose-500 text-white">
+                      <th className="px-2 py-2 text-left">Size</th>
+                      <th className="px-2 py-2 text-left">Cao</th>
+                      <th className="px-2 py-2 text-left">Nặng</th>
+                      <th className="px-2 py-2 text-left">Eo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { size: '26', height: '150-155', weight: '42-47', waist: '62-64' },
+                      { size: '27', height: '153-158', weight: '47-50', waist: '64-66' },
+                      { size: '28', height: '155-160', weight: '50-54', waist: '66-68' },
+                      { size: '29', height: '158-163', weight: '54-58', waist: '68-70' },
+                      { size: '30', height: '160-165', weight: '58-62', waist: '70-72' },
+                      { size: '31', height: '163-168', weight: '62-66', waist: '72-74' },
+                      { size: '32', height: '165-170', weight: '66-70', waist: '74-76' },
+                    ].map((row, idx) => (
+                      <tr key={row.size} className={idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+                        <td className="px-2 py-2 font-bold text-rose-600">{row.size}</td>
+                        <td className="px-2 py-2 text-xs">{row.height}cm</td>
+                        <td className="px-2 py-2 text-xs">{row.weight}kg</td>
+                        <td className="px-2 py-2 text-xs">{row.waist}cm</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          {/* Tips */}
+          <div className="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-6">
+            <h3 className="text-lg font-bold text-yellow-800 mb-3">💡 Mẹo chọn size</h3>
+            <ul className="space-y-2 text-yellow-700">
+              <li>• Nếu bạn ở giữa 2 size, nên chọn size lớn hơn để thoải mái hơn</li>
+              <li>• Quần jean co giãn có thể chọn size nhỏ hơn 1 size</li>
+              <li>• Quần kaki/tây nên chọn đúng size hoặc lớn hơn 1 size</li>
+              <li>• Áo form oversize nên chọn đúng size, không cần tăng size</li>
+            </ul>
+          </div>
+        </div>
+      )}
 
       {/* Contact Section for contact_info */}
       {info.key === 'contact_info' && (

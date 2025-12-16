@@ -117,6 +117,7 @@ export default function Cart() {
 
                   {/* Product Info */}
                   <div className="flex-1">
+                    <p className="text-xs text-gray-400">ID: #{item.product.products_id}</p>
                     <Link 
                       to={`/products/${item.product.products_id}`}
                       className="text-xl font-bold text-gray-800 hover:text-blue-600 transition"
@@ -125,7 +126,7 @@ export default function Cart() {
                     </Link>
                     <div className="mt-2 flex flex-wrap gap-2">
                       {item.product.loai && (
-                        <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full font-semibold">
+                        <span className="text-xs bg-teal-100 text-teal-800 px-2 py-1 rounded-full font-semibold">
                           {item.product.loai}
                         </span>
                       )}
