@@ -203,7 +203,7 @@ export default function CustomerChat() {
                 </svg>
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold text-white">Hỗ trợ trực tuyến</h3>
+                <h3 className="font-semibold text-white">Chat với nhân viên CSKH</h3>
                 <div className="flex items-center space-x-1.5">
                   <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-400 animate-pulse' : 'bg-gray-400'}`}></span>
                   <span className="text-xs text-blue-100">{isConnected ? 'Đang hoạt động' : 'Đang kết nối...'}</span>
