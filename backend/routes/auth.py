@@ -165,31 +165,23 @@ def register():
     if User.query.filter_by(taikhoan=data.get('taikhoan')).first():
         return jsonify({'error': 'Tài khoản đã tồn tại'}), 400
     
-    # Generate verification token
-    verify_token = secrets.token_urlsafe(32)
-    
     user = User(
         taikhoan=data.get('taikhoan'),
         email=data.get('email'),
         hoten=data.get('hoten'),
         sdt=data.get('sdt'),
         diachi=data.get('diachi'),
-        role='customer',
-        email_verified=False,
-        verify_token=verify_token
+        role='customer'
     )
     user.set_password(data.get('matkhau'))
     
     db.session.add(user)
     db.session.commit()
     
-    # Send verification email
-    send_verification_email(user.email, verify_token, user.hoten)
-    
     return jsonify({
-        'message': 'Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.',
+        'message': 'Đăng ký thành công!',
         'user': user.to_dict(),
-        'need_verification': True
+        'need_verification': False
     }), 201
 
 
@@ -253,12 +245,7 @@ def login():
         return jsonify({'error': 'Tài khoản hoặc mật khẩu không đúng'}), 401
     
     # Check if email is verified
-    if not user.email_verified:
-        return jsonify({
-            'error': 'Email chưa được xác thực. Vui lòng kiểm tra email của bạn.',
-            'need_verification': True,
-            'email': user.email
-        }), 401
+    # Bỏ check email_verified - không cần xác minh email nữa
     
     access_token = create_access_token(identity=str(user.user_id))
     

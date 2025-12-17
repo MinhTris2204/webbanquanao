@@ -91,6 +91,10 @@ def create_app():
     from routes.vnpay import vnpay_bp
     app.register_blueprint(vnpay_bp, url_prefix='/api/vnpay')
     
+    # Import Analytics blueprint
+    from routes.analytics import analytics_bp
+    app.register_blueprint(analytics_bp, url_prefix='/api/analytics')
+    
     @app.route('/api/health')
     def health():
         return {'status': 'ok'}

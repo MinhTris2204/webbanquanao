@@ -20,8 +20,6 @@ class User(db.Model):
     created_at = db.Column(db.TIMESTAMP, default=datetime.utcnow)
     reset_token = db.Column(db.String(100), nullable=True)
     reset_token_expires = db.Column(db.TIMESTAMP, nullable=True)
-    email_verified = db.Column(db.Boolean, default=False)
-    verify_token = db.Column(db.String(100), nullable=True)
     
     carts = db.relationship('Cart', backref='user', lazy=True, cascade='all, delete-orphan')
     orders = db.relationship('Order', backref='user', lazy=True)

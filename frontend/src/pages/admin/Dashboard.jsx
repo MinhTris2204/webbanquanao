@@ -316,6 +316,38 @@ export default function AdminDashboard() {
         </div>
       </div>
 
+      {/* Customer Insights Quick View */}
+      <div className="bg-white rounded-xl shadow-lg p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-bold text-gray-800">📈 Phân tích nhanh</h3>
+          <Link to="/customer-insights" className="text-blue-600 hover:text-blue-700 text-sm font-semibold">
+            Xem chi tiết →
+          </Link>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-gradient-to-br from-yellow-100 to-orange-100 p-4 rounded-lg text-center">
+            <span className="text-3xl">👑</span>
+            <p className="text-sm text-gray-600 mt-2">Top khách hàng</p>
+            <p className="font-semibold text-gray-800">Xem danh sách VIP</p>
+          </div>
+          <div className="bg-gradient-to-br from-red-100 to-orange-100 p-4 rounded-lg text-center">
+            <span className="text-3xl">🔥</span>
+            <p className="text-sm text-gray-600 mt-2">Sản phẩm hot</p>
+            <p className="font-semibold text-gray-800">Xu hướng bán chạy</p>
+          </div>
+          <div className="bg-gradient-to-br from-green-100 to-teal-100 p-4 rounded-lg text-center">
+            <span className="text-3xl">💡</span>
+            <p className="text-sm text-gray-600 mt-2">Gợi ý khuyến mãi</p>
+            <p className="font-semibold text-gray-800">AI đề xuất</p>
+          </div>
+          <div className="bg-gradient-to-br from-blue-100 to-teal-100 p-4 rounded-lg text-center">
+            <span className="text-3xl">👁️</span>
+            <p className="text-sm text-gray-600 mt-2">Tỷ lệ chuyển đổi</p>
+            <p className="font-semibold text-gray-800">Xem → Mua</p>
+          </div>
+        </div>
+      </div>
+
       {/* Quick Actions */}
       <div className="bg-white rounded-xl shadow-lg p-6">
         <h3 className="text-xl font-bold text-gray-800 mb-4">⚡ Quản lý nhanh</h3>

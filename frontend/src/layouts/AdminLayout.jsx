@@ -20,6 +20,8 @@ export default function AdminLayout() {
         return '🎫 Quản lý voucher'
       case '/users':
         return '👥 Quản lý người dùng'
+      case '/customer-insights':
+        return '📈 Phân tích khách hàng & Dữ liệu'
       case '/store-info':
         return 'ℹ️ Quản lý thông tin cửa hàng'
       case '/chat':

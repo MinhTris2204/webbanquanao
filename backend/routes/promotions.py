@@ -127,9 +127,16 @@ def create_promotion():
         print(f"Date parsing error: {e}")
         return jsonify({'error': f'Định dạng ngày không hợp lệ: {str(e)}'}), 400
     
-    # Validate dates
+    # Validate dates - không cho phép đặt thời gian trong quá khứ
+    # Frontend gửi ISO UTC string, so sánh với UTC now
+    now = datetime.utcnow()
+    
+    if start_date < now:
+        return jsonify({'error': 'Thời gian bắt đầu không được trong quá khứ'}), 400
+    if end_date < now:
+        return jsonify({'error': 'Thời gian kết thúc không được trong quá khứ'}), 400
     if end_date <= start_date:
-        return jsonify({'error': 'Ngày kết thúc phải sau ngày bắt đầu'}), 400
+        return jsonify({'error': 'Thời gian kết thúc phải sau thời gian bắt đầu'}), 400
     
     # Check for overlapping promotions
     overlapping = Promotion.query.filter(
@@ -208,8 +215,15 @@ def update_promotion(promotion_id):
             print(f"End date parsing error: {e}")
             return jsonify({'error': f'Định dạng ngày kết thúc không hợp lệ: {str(e)}'}), 400
     
+    # Validate dates - không cho phép đặt thời gian trong quá khứ
+    now = datetime.utcnow()
+    
+    if 'start_date' in data and start_date < now:
+        return jsonify({'error': 'Thời gian bắt đầu không được trong quá khứ'}), 400
+    if 'end_date' in data and end_date < now:
+        return jsonify({'error': 'Thời gian kết thúc không được trong quá khứ'}), 400
     if end_date <= start_date:
-        return jsonify({'error': 'Ngày kết thúc phải sau ngày bắt đầu'}), 400
+        return jsonify({'error': 'Thời gian kết thúc phải sau thời gian bắt đầu'}), 400
     
     # Update fields
     if 'discount_type' in data:
@@ -279,8 +293,15 @@ def bulk_create_promotions():
         print(f"Date parsing error: {e}")
         return jsonify({'error': f'Định dạng ngày không hợp lệ: {str(e)}'}), 400
     
+    # Validate dates - không cho phép đặt thời gian trong quá khứ
+    now = datetime.utcnow()
+    
+    if start_date < now:
+        return jsonify({'error': 'Thời gian bắt đầu không được trong quá khứ'}), 400
+    if end_date < now:
+        return jsonify({'error': 'Thời gian kết thúc không được trong quá khứ'}), 400
     if end_date <= start_date:
-        return jsonify({'error': 'Ngày kết thúc phải sau ngày bắt đầu'}), 400
+        return jsonify({'error': 'Thời gian kết thúc phải sau thời gian bắt đầu'}), 400
     
     success_count = 0
     failed_products = []

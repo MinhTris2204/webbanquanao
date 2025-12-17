@@ -42,6 +42,34 @@ def create_voucher():
     else:
         usage_limit = int(usage_limit)
     
+    # Parse dates - handle ISO format with timezone
+    start_date_str = data.get('start_date')
+    end_date_str = data.get('end_date')
+    
+    if 'Z' in start_date_str:
+        start_date_str = start_date_str.replace('Z', '+00:00')
+    if 'Z' in end_date_str:
+        end_date_str = end_date_str.replace('Z', '+00:00')
+    
+    start_date = datetime.fromisoformat(start_date_str)
+    end_date = datetime.fromisoformat(end_date_str)
+    
+    # Remove timezone info for comparison
+    if start_date.tzinfo is not None:
+        start_date = start_date.replace(tzinfo=None)
+    if end_date.tzinfo is not None:
+        end_date = end_date.replace(tzinfo=None)
+    
+    # Validate dates - không cho phép đặt thời gian trong quá khứ
+    now = datetime.utcnow()
+    
+    if start_date < now:
+        return jsonify({'error': 'Thời gian bắt đầu không được trong quá khứ'}), 400
+    if end_date < now:
+        return jsonify({'error': 'Thời gian kết thúc không được trong quá khứ'}), 400
+    if end_date <= start_date:
+        return jsonify({'error': 'Thời gian kết thúc phải sau thời gian bắt đầu'}), 400
+    
     voucher = Voucher(
         code=data.get('code').upper(),
         discount_type=data.get('discount_type'),
@@ -49,8 +77,8 @@ def create_voucher():
         min_order_value=float(data.get('min_order_value', 0)),
         max_discount=max_discount,
         usage_limit=usage_limit,
-        start_date=datetime.fromisoformat(data.get('start_date')),
-        end_date=datetime.fromisoformat(data.get('end_date')),
+        start_date=start_date,
+        end_date=end_date,
         is_active=data.get('is_active', True)
     )
     
@@ -64,6 +92,8 @@ def create_voucher():
 def update_voucher(voucher_id):
     voucher = Voucher.query.get_or_404(voucher_id)
     data = request.get_json()
+    
+    now = datetime.utcnow()
     
     if 'code' in data:
         voucher.code = data['code'].upper()
@@ -80,11 +110,31 @@ def update_voucher(voucher_id):
         usage_limit = data['usage_limit']
         voucher.usage_limit = None if usage_limit == '' or usage_limit is None else int(usage_limit)
     if 'start_date' in data:
-        voucher.start_date = datetime.fromisoformat(data['start_date'])
+        start_date_str = data['start_date']
+        if 'Z' in start_date_str:
+            start_date_str = start_date_str.replace('Z', '+00:00')
+        new_start_date = datetime.fromisoformat(start_date_str)
+        if new_start_date.tzinfo is not None:
+            new_start_date = new_start_date.replace(tzinfo=None)
+        if new_start_date < now:
+            return jsonify({'error': 'Thời gian bắt đầu không được trong quá khứ'}), 400
+        voucher.start_date = new_start_date
     if 'end_date' in data:
-        voucher.end_date = datetime.fromisoformat(data['end_date'])
+        end_date_str = data['end_date']
+        if 'Z' in end_date_str:
+            end_date_str = end_date_str.replace('Z', '+00:00')
+        new_end_date = datetime.fromisoformat(end_date_str)
+        if new_end_date.tzinfo is not None:
+            new_end_date = new_end_date.replace(tzinfo=None)
+        if new_end_date < now:
+            return jsonify({'error': 'Thời gian kết thúc không được trong quá khứ'}), 400
+        voucher.end_date = new_end_date
     if 'is_active' in data:
         voucher.is_active = data['is_active']
+    
+    # Validate end_date > start_date
+    if voucher.end_date <= voucher.start_date:
+        return jsonify({'error': 'Ngày kết thúc phải sau ngày bắt đầu'}), 400
     
     db.session.commit()
     
