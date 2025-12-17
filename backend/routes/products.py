@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
-from models import db, Product, Promotion
+from models import db, Product, Promotion, Order, OrderDetail
+from sqlalchemy import func, desc
 from datetime import datetime
 
 products_bp = Blueprint('products', __name__)
@@ -87,12 +88,34 @@ def autocomplete():
 
 @products_bp.route('/best-sellers', methods=['GET'])
 def get_best_sellers():
-    """Get best selling products (simulated by getting random products)"""
+    """Get best selling products based on completed orders"""
     limit = request.args.get('limit', 8, type=int)
     
-    # Get products ordered by ID descending (newest first) as a simple simulation
-    # In a real app, you would track sales and order by sales count
-    products = Product.query.filter_by(trang_thai='Con_hang').order_by(Product.products_id.desc()).limit(limit).all()
+    # Get products with most sales from completed orders (hoan_thanh)
+    best_sellers = db.session.query(
+        Product,
+        func.sum(OrderDetail.quantity).label('total_sold')
+    ).join(OrderDetail, Product.products_id == OrderDetail.product_id)\
+     .join(Order, OrderDetail.order_id == Order.id)\
+     .filter(
+        Order.trangthai == 'hoan_thanh',  # Only completed orders
+        Product.trang_thai == 'Con_hang'   # Only available products
+    ).group_by(Product.products_id)\
+     .order_by(desc('total_sold'))\
+     .limit(limit).all()
+    
+    # If not enough best sellers, fill with newest products
+    if len(best_sellers) < limit:
+        existing_ids = [p[0].products_id for p in best_sellers]
+        remaining = limit - len(best_sellers)
+        newest = Product.query.filter(
+            Product.trang_thai == 'Con_hang',
+            Product.products_id.notin_(existing_ids) if existing_ids else True
+        ).order_by(Product.created_at.desc()).limit(remaining).all()
+        
+        products = [p[0] for p in best_sellers] + newest
+    else:
+        products = [p[0] for p in best_sellers]
     
     return jsonify({
         'products': [p.to_dict() for p in products]
