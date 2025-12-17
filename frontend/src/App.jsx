@@ -11,7 +11,7 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
-import VerifyEmail from './pages/VerifyEmail'
+
 import Products from './pages/Products'
 import ProductDetail from './pages/ProductDetail'
 import Search from './pages/Search'
@@ -20,7 +20,7 @@ import Checkout from './pages/Checkout'
 import Orders from './pages/Orders'
 import Profile from './pages/Profile'
 import StoreInfoPage from './pages/StoreInfoPage'
-import ProtectedRoute from './components/ProtectedRoute'
+
 
 // Component to scroll to top on route change
 function ScrollToTop() {
@@ -50,7 +50,7 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/verify-email" element={<VerifyEmail />} />
+
           <Route path="/products" element={<Products />} />
           <Route path="/products/:id" element={<ProductDetail />} />
           <Route path="/search" element={<Search />} />

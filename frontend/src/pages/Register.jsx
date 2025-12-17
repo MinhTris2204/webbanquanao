@@ -37,7 +37,8 @@ export default function Register() {
       const { confirm_matkhau, ...registerData } = formData
       await register(registerData)
       setSuccess(true)
-      // Don't auto-redirect, let user see the verification message
+      // Auto redirect after 2 seconds
+      setTimeout(() => navigate('/login'), 2000)
     } catch (err) {
       setError(err.response?.data?.error || 'Đăng ký thất bại')
     }
@@ -70,7 +71,7 @@ export default function Register() {
               <span className="font-semibold">Đăng ký thành công!</span>
             </div>
             <p className="text-sm">
-              Vui lòng kiểm tra email <strong>{formData.email}</strong> để xác thực tài khoản.
+              Bạn có thể <Link to="/login" className="text-blue-600 hover:underline font-semibold">đăng nhập ngay</Link> để bắt đầu mua sắm.
             </p>
           </div>
         )}

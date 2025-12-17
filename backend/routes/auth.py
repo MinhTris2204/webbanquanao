@@ -49,50 +49,6 @@ def send_email(to_email, subject, html_content):
         return False
 
 
-def send_verification_email(to_email, verify_token, user_name):
-    """Send email verification"""
-    cfg = get_smtp_config()
-    verify_link = f"{cfg['frontend_url']}/verify-email?token={verify_token}"
-    
-    html = f"""
-    <html>
-    <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <div style="background: linear-gradient(135deg, #2563eb 0%, #0891b2 100%); padding: 30px; border-radius: 10px 10px 0 0;">
-            <h1 style="color: white; margin: 0; text-align: center;">🛍️ Fashion Store</h1>
-        </div>
-        <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
-            <h2 style="color: #333;">Chào mừng {user_name}!</h2>
-            <p style="color: #666; line-height: 1.6;">
-                Cảm ơn bạn đã đăng ký tài khoản tại Fashion Store.
-                Vui lòng xác thực email của bạn bằng cách nhấn vào nút bên dưới:
-            </p>
-            <div style="text-align: center; margin: 30px 0;">
-                <a href="{verify_link}" 
-                   style="background: linear-gradient(135deg, #2563eb 0%, #0891b2 100%); 
-                          color: white; 
-                          padding: 15px 40px; 
-                          text-decoration: none; 
-                          border-radius: 25px;
-                          font-weight: bold;
-                          display: inline-block;">
-                    Xác thực email
-                </a>
-            </div>
-            <p style="color: #999; font-size: 14px;">
-                Nếu bạn không đăng ký tài khoản, vui lòng bỏ qua email này.
-            </p>
-            <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
-            <p style="color: #999; font-size: 12px; text-align: center;">
-                © 2024 Fashion Store. All rights reserved.
-            </p>
-        </div>
-    </body>
-    </html>
-    """
-    
-    return send_email(to_email, '✉️ Xác thực email - Fashion Store', html)
-
-
 def send_reset_email(to_email, reset_token, user_name):
     """Send password reset email"""
     cfg = get_smtp_config()
@@ -183,54 +139,6 @@ def register():
         'user': user.to_dict(),
         'need_verification': False
     }), 201
-
-
-@auth_bp.route('/verify-email', methods=['POST'])
-def verify_email():
-    """Verify email with token"""
-    data = request.get_json()
-    token = data.get('token', '').strip()
-    
-    if not token:
-        return jsonify({'error': 'Token không hợp lệ'}), 400
-    
-    user = User.query.filter_by(verify_token=token).first()
-    
-    if not user:
-        return jsonify({'error': 'Token không hợp lệ hoặc đã được sử dụng'}), 400
-    
-    user.email_verified = True
-    user.verify_token = None
-    db.session.commit()
-    
-    return jsonify({'message': 'Xác thực email thành công! Bạn có thể đăng nhập ngay.'}), 200
-
-
-@auth_bp.route('/resend-verification', methods=['POST'])
-def resend_verification():
-    """Resend verification email"""
-    data = request.get_json()
-    email = data.get('email', '').strip()
-    
-    if not email:
-        return jsonify({'error': 'Vui lòng nhập email'}), 400
-    
-    user = User.query.filter_by(email=email).first()
-    
-    if not user:
-        return jsonify({'message': 'Nếu email tồn tại, bạn sẽ nhận được email xác thực'}), 200
-    
-    if user.email_verified:
-        return jsonify({'message': 'Email đã được xác thực'}), 200
-    
-    # Generate new token
-    verify_token = secrets.token_urlsafe(32)
-    user.verify_token = verify_token
-    db.session.commit()
-    
-    send_verification_email(user.email, verify_token, user.hoten)
-    
-    return jsonify({'message': 'Email xác thực đã được gửi lại'}), 200
 
 
 @auth_bp.route('/login', methods=['POST'])

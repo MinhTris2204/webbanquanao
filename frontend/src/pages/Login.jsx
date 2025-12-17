@@ -1,22 +1,16 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import api from '../utils/api'
 
 export default function Login() {
   const [formData, setFormData] = useState({ taikhoan: '', matkhau: '' })
   const [error, setError] = useState('')
-  const [needVerification, setNeedVerification] = useState(false)
-  const [verificationEmail, setVerificationEmail] = useState('')
-  const [resendLoading, setResendLoading] = useState(false)
-  const [resendSuccess, setResendSuccess] = useState(false)
   const { login } = useAuth()
   const navigate = useNavigate()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
-    setNeedVerification(false)
     try {
       const data = await login(formData.taikhoan, formData.matkhau)
       
@@ -28,26 +22,7 @@ export default function Login() {
       
       navigate('/')
     } catch (err) {
-      const errorData = err.response?.data
-      if (errorData?.need_verification) {
-        setNeedVerification(true)
-        setVerificationEmail(errorData.email)
-      }
-      setError(errorData?.error || 'Đăng nhập thất bại')
-    }
-  }
-
-  const handleResendVerification = async () => {
-    setResendLoading(true)
-    setResendSuccess(false)
-    try {
-      await api.post('/api/auth/resend-verification', { email: verificationEmail })
-      setResendSuccess(true)
-    } catch (err) {
-      // Still show success to prevent email enumeration
-      setResendSuccess(true)
-    } finally {
-      setResendLoading(false)
+      setError(err.response?.data?.error || 'Đăng nhập thất bại')
     }
   }
 
@@ -64,33 +39,10 @@ export default function Login() {
           <p className="text-gray-600 text-sm mt-2">Chào mừng bạn trở lại!</p>
         </div>
         
-        {error && !needVerification && (
+        {error && (
           <div className="bg-red-100 border-2 border-red-400 text-red-700 px-4 py-3 rounded-lg mb-4 flex items-center">
             <span className="text-xl mr-2">❌</span>
             {error}
-          </div>
-        )}
-
-        {needVerification && (
-          <div className="bg-yellow-50 border-2 border-yellow-400 text-yellow-800 px-4 py-3 rounded-lg mb-4">
-            <div className="flex items-center mb-2">
-              <span className="text-xl mr-2">⚠️</span>
-              <span className="font-semibold">Email chưa được xác thực</span>
-            </div>
-            <p className="text-sm mb-3">
-              Vui lòng kiểm tra email <strong>{verificationEmail}</strong> để xác thực tài khoản.
-            </p>
-            {resendSuccess ? (
-              <p className="text-sm text-green-600">✅ Email xác thực đã được gửi lại!</p>
-            ) : (
-              <button
-                onClick={handleResendVerification}
-                disabled={resendLoading}
-                className="text-sm text-blue-600 hover:text-blue-700 underline disabled:opacity-50"
-              >
-                {resendLoading ? 'Đang gửi...' : 'Gửi lại email xác thực'}
-              </button>
-            )}
           </div>
         )}
 
