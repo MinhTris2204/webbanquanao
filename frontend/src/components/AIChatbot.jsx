@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api, { getImageUrl } from '../utils/api'
 
-const INITIAL_MESSAGE = { role: 'assistant', content: 'Xin chào! 👋 Tôi là trợ lý AI của cửa hàng. Tôi có thể giúp bạn tìm sản phẩm, trả lời câu hỏi về cửa hàng. Bạn cần hỗ trợ gì?' }
+const INITIAL_MESSAGE = { role: 'assistant', content: 'Xin chào! 👋 Tôi là trợ lý AI của Shop Quần Áo. Tôi có thể giúp bạn tìm sản phẩm, trả lời câu hỏi về cửa hàng. Bạn cần hỗ trợ gì?' }
 const STORAGE_KEY = 'ai_chatbot_messages'
 const OPEN_STATE_KEY = 'ai_chatbot_open'
 

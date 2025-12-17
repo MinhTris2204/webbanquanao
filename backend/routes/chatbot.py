@@ -284,7 +284,7 @@ def get_all_store_info_simple():
         return []
 
 # ============ Prompt Template ============
-CHATBOT_PROMPT = """Bạn là trợ lý AI của cửa hàng thời trang Fashion Store. Nhiệm vụ của bạn là tư vấn sản phẩm, trả lời câu hỏi về cửa hàng.
+CHATBOT_PROMPT = """Bạn là trợ lý AI của cửa hàng thời trang Shop Quần Áo. Nhiệm vụ của bạn là tư vấn sản phẩm, trả lời câu hỏi về cửa hàng.
 
 **THÔNG TIN SẢN PHẨM CÓ SẴN:**
 {product_context}
@@ -330,7 +330,7 @@ def ask_chatbot():
     ql = query.lower()
     if not chat_history and (len(ql) < 3 or ql in {'hi', 'hello', 'xin chào', 'chào', 'hey', 'alo'}):
         return jsonify({
-            'response': 'Xin chào! 👋 Tôi là trợ lý AI của Fashion Store. Tôi có thể giúp bạn:\n• Tìm kiếm sản phẩm (áo, quần, váy, đầm...)\n• Thông tin cửa hàng, chính sách đổi trả, vận chuyển\n• Hướng dẫn chọn size\n\nBạn cần hỗ trợ gì ạ?',
+            'response': 'Xin chào! 👋 Tôi là trợ lý AI của Shop Quần Áo. Tôi có thể giúp bạn:\n• Tìm kiếm sản phẩm (áo, quần, váy, đầm...)\n• Thông tin cửa hàng, chính sách đổi trả, vận chuyển\n• Hướng dẫn chọn size\n\nBạn cần hỗ trợ gì ạ?',
             'products': [],
             'source': 'greeting'
         })

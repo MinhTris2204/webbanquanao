@@ -63,9 +63,9 @@ STORE_INFOS = [
     {
         "key": "about_us",
         "title": "Giới thiệu về cửa hàng",
-        "content": """Fashion Store là cửa hàng thời trang trực tuyến hàng đầu Việt Nam, được thành lập từ năm 2020. 
+        "content": """Shop Quần Áo là cửa hàng thời trang trực tuyến hàng đầu Việt Nam, được thành lập từ năm 2020. 
         
-Chúng tôi chuyên cung cấp các sản phẩm thời trang nam nữ chất lượng cao với giá cả phải chăng. Với đội ngũ thiết kế trẻ trung, năng động, Fashion Store luôn cập nhật những xu hướng thời trang mới nhất.
+Chúng tôi chuyên cung cấp các sản phẩm thời trang nam nữ chất lượng cao với giá cả phải chăng. Với đội ngũ thiết kế trẻ trung, năng động, Shop Quần Áo luôn cập nhật những xu hướng thời trang mới nhất.
 
 Sứ mệnh của chúng tôi là mang đến cho khách hàng những trải nghiệm mua sắm tuyệt vời nhất với sản phẩm chất lượng, dịch vụ tận tâm và giá cả hợp lý.
 
@@ -86,9 +86,9 @@ Tầm nhìn: Trở thành thương hiệu thời trang được yêu thích nh�
 - Thứ 2 - Thứ 6: 8:00 - 21:00
 - Thứ 7 - Chủ nhật: 9:00 - 20:00
 
-Fanpage Facebook: facebook.com/fashionstore
-Instagram: @fashionstore.vn
-Zalo OA: Fashion Store Official"""
+Fanpage Facebook: facebook.com/shopquanao
+Instagram: @shopquanao.vn
+Zalo OA: Shop Quần Áo Official"""
     },
     {
         "key": "shipping_policy",
@@ -141,8 +141,8 @@ Zalo OA: Fashion Store Official"""
 - Áp dụng toàn quốc
 
 2. Chuyển khoản ngân hàng:
-- Ngân hàng Vietcombank: 1234567890 - FASHION STORE
-- Ngân hàng Techcombank: 0987654321 - FASHION STORE
+- Ngân hàng Vietcombank: 1234567890 - SHOP QUAN AO
+- Ngân hàng Techcombank: 0987654321 - SHOP QUAN AO
 - Nội dung: [Mã đơn hàng] - [Số điện thoại]
 
 3. Ví điện tử:

@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { useSocket } from '../context/SocketContext'
 import api, { getImageUrl } from '../utils/api'
 
-const AI_INITIAL_MESSAGE = { role: 'assistant', content: 'Xin chào! 👋 Tôi là trợ lý AI của cửa hàng. Tôi có thể giúp bạn tìm sản phẩm, trả lời câu hỏi về cửa hàng. Bạn cần hỗ trợ gì?' }
+const AI_INITIAL_MESSAGE = { role: 'assistant', content: 'Xin chào! 👋 Tôi là trợ lý AI của Shop Quần Áo. Tôi có thể giúp bạn tìm sản phẩm, trả lời câu hỏi về cửa hàng. Bạn cần hỗ trợ gì?' }
 const AI_STORAGE_KEY = 'ai_chatbot_messages'
 
 export default function ChatWidget() {

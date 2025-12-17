@@ -55,7 +55,7 @@ def send_reset_email(to_email, reset_token, user_name):
     reset_link = f"{cfg['frontend_url']}/reset-password?token={reset_token}"
     
     msg = MIMEMultipart('alternative')
-    msg['Subject'] = '🔐 Đặt lại mật khẩu - Fashion Store'
+    msg['Subject'] = '🔐 Đặt lại mật khẩu - Shop Quần Áo'
     msg['From'] = cfg['user']
     msg['To'] = to_email
     
@@ -63,7 +63,7 @@ def send_reset_email(to_email, reset_token, user_name):
     <html>
     <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="background: linear-gradient(135deg, #2563eb 0%, #0891b2 100%); padding: 30px; border-radius: 10px 10px 0 0;">
-            <h1 style="color: white; margin: 0; text-align: center;">🛍️ Fashion Store</h1>
+            <h1 style="color: white; margin: 0; text-align: center;">🛍️ Shop Quần Áo</h1>
         </div>
         <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
             <h2 style="color: #333;">Xin chào {user_name}!</h2>
@@ -89,7 +89,7 @@ def send_reset_email(to_email, reset_token, user_name):
             </p>
             <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
             <p style="color: #999; font-size: 12px; text-align: center;">
-                © 2024 Fashion Store. All rights reserved.
+                © 2024 Shop Quần Áo. All rights reserved.
             </p>
         </div>
     </body>
