@@ -37,7 +37,7 @@ export default function Register() {
       const { confirm_matkhau, ...registerData } = formData
       await register(registerData)
       setSuccess(true)
-      setTimeout(() => navigate('/login'), 2000)
+      // Don't auto-redirect, let user see the verification message
     } catch (err) {
       setError(err.response?.data?.error || 'Đăng ký thất bại')
     }
@@ -64,9 +64,14 @@ export default function Register() {
         )}
 
         {success && (
-          <div className="bg-green-100 border-2 border-green-400 text-green-700 px-4 py-3 rounded-lg mb-4 flex items-center">
-            <span className="text-xl mr-2">✅</span>
-            Đăng ký thành công! Đang chuyển đến trang đăng nhập...
+          <div className="bg-green-100 border-2 border-green-400 text-green-700 px-4 py-3 rounded-lg mb-4">
+            <div className="flex items-center mb-2">
+              <span className="text-xl mr-2">✅</span>
+              <span className="font-semibold">Đăng ký thành công!</span>
+            </div>
+            <p className="text-sm">
+              Vui lòng kiểm tra email <strong>{formData.email}</strong> để xác thực tài khoản.
+            </p>
           </div>
         )}
 

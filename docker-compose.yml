@@ -31,6 +31,11 @@ services:
       VNPAY_RETURN_URL: "http://localhost:5000/api/vnpay/return"
       PUBLIC_BASE_URL: "http://localhost:5000"
       FRONTEND_URL: "http://localhost:5173"
+      # SMTP configuration for password reset emails
+      SMTP_SERVER: "smtp.gmail.com"
+      SMTP_PORT: "587"
+      SMTP_USER: "duongminhtri9311@gmail.com"
+      SMTP_PASSWORD: "ggscuurcikiwcyza"
     depends_on:
       db:
         condition: service_healthy

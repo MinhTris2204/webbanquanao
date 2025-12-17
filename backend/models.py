@@ -18,6 +18,10 @@ class User(db.Model):
     diachi = db.Column(db.String(225))
     role = db.Column(db.Enum('admin', 'customer', name='role_enum'), default='customer')
     created_at = db.Column(db.TIMESTAMP, default=datetime.utcnow)
+    reset_token = db.Column(db.String(100), nullable=True)
+    reset_token_expires = db.Column(db.TIMESTAMP, nullable=True)
+    email_verified = db.Column(db.Boolean, default=False)
+    verify_token = db.Column(db.String(100), nullable=True)
     
     carts = db.relationship('Cart', backref='user', lazy=True, cascade='all, delete-orphan')
     orders = db.relationship('Order', backref='user', lazy=True)
