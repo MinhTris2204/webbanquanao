@@ -550,7 +550,9 @@ class ChatConversation(db.Model):
     __tablename__ = 'chat_conversations'
     
     id = db.Column(db.Integer, primary_key=True)
-    customer_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
+    customer_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=True)  # Nullable cho guest
+    guest_session_id = db.Column(db.String(100), nullable=True)  # Session ID cho khách vãng lai
+    guest_name = db.Column(db.String(100), nullable=True)  # Tên khách vãng lai
     status = db.Column(db.Enum('active', 'closed', name='conversation_status_enum'), default='active')
     created_at = db.Column(db.TIMESTAMP, default=datetime.utcnow)
     updated_at = db.Column(db.TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -559,11 +561,25 @@ class ChatConversation(db.Model):
     messages = db.relationship('ChatMessage', backref='conversation', lazy=True, cascade='all, delete-orphan', order_by='ChatMessage.created_at')
     
     def to_dict(self, include_messages=False):
+        # Xác định tên khách hàng
+        if self.customer:
+            customer_name = self.customer.hoten
+            customer_email = self.customer.email
+        elif self.guest_name:
+            customer_name = f"{self.guest_name} (Khách)"
+            customer_email = None
+        else:
+            customer_name = f"Khách #{self.guest_session_id[:8] if self.guest_session_id else 'Unknown'}"
+            customer_email = None
+            
         result = {
             'id': self.id,
             'customer_id': self.customer_id,
-            'customer_name': self.customer.hoten if self.customer else 'Unknown',
-            'customer_email': self.customer.email if self.customer else None,
+            'guest_session_id': self.guest_session_id,
+            'guest_name': self.guest_name,
+            'is_guest': self.customer_id is None,
+            'customer_name': customer_name,
+            'customer_email': customer_email,
             'status': self.status,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
@@ -598,7 +614,7 @@ class ChatMessage(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     conversation_id = db.Column(db.Integer, db.ForeignKey('chat_conversations.id'), nullable=False)
-    sender_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
+    sender_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=True)  # Nullable cho guest
     sender_type = db.Column(db.Enum('customer', 'admin', name='sender_type_enum'), nullable=False)
     content = db.Column(db.Text)
     message_type = db.Column(db.String(20), default='text')  # text, image
@@ -609,12 +625,20 @@ class ChatMessage(db.Model):
     sender = db.relationship('User', backref='sent_messages', lazy=True)
     
     def to_dict(self):
+        # Lấy tên người gửi
+        if self.sender:
+            sender_name = self.sender.hoten
+        elif self.sender_type == 'customer':
+            sender_name = self.conversation.guest_name or 'Khách'
+        else:
+            sender_name = 'Admin'
+            
         return {
             'id': self.id,
             'conversation_id': self.conversation_id,
             'sender_id': self.sender_id,
             'sender_type': self.sender_type,
-            'sender_name': self.sender.hoten if self.sender else 'Unknown',
+            'sender_name': sender_name,
             'content': self.content,
             'message_type': self.message_type or 'text',
             'image_url': self.image_url,

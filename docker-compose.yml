@@ -5,6 +5,9 @@ services:
       POSTGRES_DB: webbanquanao
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+      LC_ALL: C.UTF-8
+      LANG: C.UTF-8
     ports:
       - "5433:5432"
     volumes:

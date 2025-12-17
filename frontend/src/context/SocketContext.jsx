@@ -3,6 +3,7 @@ import { io } from 'socket.io-client'
 import { useAuth } from './AuthContext'
 
 const SocketContext = createContext()
+const GUEST_SESSION_KEY = 'guest_chat_session_id'
 
 export const useSocket = () => {
   const context = useContext(SocketContext)
@@ -12,27 +13,29 @@ export const useSocket = () => {
   return context
 }
 
+// Lấy hoặc tạo session ID cho guest
+function getGuestSessionId() {
+  let sessionId = localStorage.getItem(GUEST_SESSION_KEY)
+  if (!sessionId) {
+    sessionId = 'guest_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
+    localStorage.setItem(GUEST_SESSION_KEY, sessionId)
+  }
+  return sessionId
+}
+
 export const SocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null)
   const [isConnected, setIsConnected] = useState(false)
-  const { user, isAuthenticated } = useAuth()
+  const { isAuthenticated } = useAuth()
   
   const isAdminApp = window.location.pathname.includes('admin.html')
   const tokenKey = isAdminApp ? 'admin_token' : 'customer_token'
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      if (socket) {
-        socket.disconnect()
-        setSocket(null)
-        setIsConnected(false)
-      }
-      return
-    }
-
     const token = localStorage.getItem(tokenKey)
-    if (!token) return
-
+    const guestSessionId = getGuestSessionId()
+    
+    // Kết nối socket cho cả user đã đăng nhập và guest
     const socketUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000'
     const newSocket = io(socketUrl, {
       transports: ['polling', 'websocket'],
@@ -45,8 +48,12 @@ export const SocketProvider = ({ children }) => {
     newSocket.on('connect', () => {
       console.log('Socket connected')
       setIsConnected(true)
-      // Authenticate after connection
-      newSocket.emit('authenticate', { token })
+      // Authenticate - dùng token nếu đã đăng nhập, session_id nếu là guest
+      if (token && isAuthenticated) {
+        newSocket.emit('authenticate', { token })
+      } else {
+        newSocket.emit('authenticate', { session_id: guestSessionId })
+      }
     })
 
     newSocket.on('disconnect', () => {
@@ -73,10 +80,14 @@ export const SocketProvider = ({ children }) => {
     }
   }, [isAuthenticated, tokenKey])
 
-  const joinConversation = useCallback((conversationId) => {
+  const joinConversation = useCallback((conversationId, guestSessionId = null) => {
     if (socket && isConnected) {
       const token = localStorage.getItem(tokenKey)
-      socket.emit('join_conversation', { conversation_id: conversationId, token })
+      socket.emit('join_conversation', { 
+        conversation_id: conversationId, 
+        token: token || null,
+        session_id: guestSessionId || getGuestSessionId()
+      })
     }
   }, [socket, isConnected, tokenKey])
 
@@ -86,7 +97,7 @@ export const SocketProvider = ({ children }) => {
     }
   }, [socket, isConnected])
 
-  const sendMessage = useCallback((conversationId, content, messageType = 'text', imageUrl = null) => {
+  const sendMessage = useCallback((conversationId, content, messageType = 'text', imageUrl = null, guestSessionId = null) => {
     if (socket && isConnected) {
       const token = localStorage.getItem(tokenKey)
       socket.emit('send_message', {
@@ -94,28 +105,31 @@ export const SocketProvider = ({ children }) => {
         content,
         message_type: messageType,
         image_url: imageUrl,
-        token
+        token: token || null,
+        session_id: guestSessionId || getGuestSessionId()
       })
     }
   }, [socket, isConnected, tokenKey])
 
-  const sendTyping = useCallback((conversationId, isTyping) => {
+  const sendTyping = useCallback((conversationId, isTyping, guestSessionId = null) => {
     if (socket && isConnected) {
       const token = localStorage.getItem(tokenKey)
       socket.emit('typing', {
         conversation_id: conversationId,
         is_typing: isTyping,
-        token
+        token: token || null,
+        session_id: guestSessionId || getGuestSessionId()
       })
     }
   }, [socket, isConnected, tokenKey])
 
-  const markAsRead = useCallback((conversationId) => {
+  const markAsRead = useCallback((conversationId, guestSessionId = null) => {
     if (socket && isConnected) {
       const token = localStorage.getItem(tokenKey)
       socket.emit('mark_read', {
         conversation_id: conversationId,
-        token
+        token: token || null,
+        session_id: guestSessionId || getGuestSessionId()
       })
     }
   }, [socket, isConnected, tokenKey])

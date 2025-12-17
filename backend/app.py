@@ -14,6 +14,7 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
     app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+    app.config['JSON_AS_ASCII'] = False  # Hỗ trợ tiếng Việt trong JSON response
     
     # Ensure upload folder exists
     os.makedirs(os.path.join(os.getcwd(), UPLOAD_FOLDER), exist_ok=True)

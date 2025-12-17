@@ -4,8 +4,22 @@ import { useAuth } from '../context/AuthContext'
 import { useSocket } from '../context/SocketContext'
 import api, { getImageUrl } from '../utils/api'
 
+// Icon paths from public folder
+const robotAssistantImg = '/robot-assistant.png'
+const cskhImg = '/icon_cskh.png'
+
 const AI_INITIAL_MESSAGE = { role: 'assistant', content: 'Xin chào! 👋 Tôi là trợ lý AI của Shop Quần Áo. Tôi có thể giúp bạn tìm sản phẩm, trả lời câu hỏi về cửa hàng. Bạn cần hỗ trợ gì?' }
 const AI_STORAGE_KEY = 'ai_chatbot_messages'
+const GUEST_SESSION_KEY = 'guest_chat_session_id'
+
+function getGuestSessionId() {
+  let sessionId = localStorage.getItem(GUEST_SESSION_KEY)
+  if (!sessionId) {
+    sessionId = 'guest_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
+    localStorage.setItem(GUEST_SESSION_KEY, sessionId)
+  }
+  return sessionId
+}
 
 export default function ChatWidget() {
   const navigate = useNavigate()
@@ -13,9 +27,9 @@ export default function ChatWidget() {
   const { socket, isConnected, joinConversation, leaveConversation, sendMessage: sendSocketMessage, sendTyping, markAsRead } = useSocket()
   
   const [isOpen, setIsOpen] = useState(false)
-  const [chatMode, setChatMode] = useState(null) // null = menu, 'ai' = AI chatbot, 'support' = CSKH
+  const [chatMode, setChatMode] = useState(null)
+  const [guestSessionId] = useState(getGuestSessionId())
   
-  // AI Chatbot state
   const [aiMessages, setAiMessages] = useState(() => {
     const saved = sessionStorage.getItem(AI_STORAGE_KEY)
     if (saved) {
@@ -26,7 +40,6 @@ export default function ChatWidget() {
   const [aiInput, setAiInput] = useState('')
   const [aiLoading, setAiLoading] = useState(false)
   
-  // CSKH state
   const [conversation, setConversation] = useState(null)
   const [cskhMessages, setCskhMessages] = useState([])
   const [cskhInput, setCskhInput] = useState('')
@@ -40,7 +53,6 @@ export default function ChatWidget() {
   const typingTimeoutRef = useRef(null)
   const fileInputRef = useRef(null)
 
-  // Persist AI messages
   useEffect(() => {
     sessionStorage.setItem(AI_STORAGE_KEY, JSON.stringify(aiMessages))
   }, [aiMessages])
@@ -48,25 +60,26 @@ export default function ChatWidget() {
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   useEffect(() => { scrollToBottom() }, [aiMessages, cskhMessages])
 
-
-  // Tải cuộc trò chuyện CSKH khi chuyển sang chế độ hỗ trợ
   useEffect(() => {
-    if (chatMode === 'support' && isAuthenticated && !conversation && !closedMessage) {
+    if (chatMode === 'support' && !conversation && !closedMessage) {
       loadConversation()
     }
-  }, [chatMode, isAuthenticated])
+  }, [chatMode])
 
-  // Socket events for CSKH
   useEffect(() => {
     if (!socket) return
     const handleNewMessage = (message) => {
-      if (message.conversation_id === conversation?.id) {
+      if (message.conversation_id === conversation?.id || !conversation?.id) {
         setCskhMessages(prev => prev.some(m => m.id === message.id) ? prev : [...prev, message])
-        if (message.sender_type === 'admin' && isOpen && chatMode === 'support') markAsRead(conversation?.id)
+        if (message.sender_type === 'admin' && isOpen && chatMode === 'support' && conversation?.id) {
+          markAsRead(conversation.id, guestSessionId)
+        }
       }
     }
     const handleNewAdminMessage = (data) => {
-      if ((!isOpen || chatMode !== 'support') && data.conversation_id === conversation?.id) setUnreadCount(prev => prev + 1)
+      if ((!isOpen || chatMode !== 'support') && data.conversation_id === conversation?.id) {
+        setUnreadCount(prev => prev + 1)
+      }
     }
     const handleTyping = (data) => {
       if (data.conversation_id === conversation?.id && data.sender_type !== 'customer') {
@@ -75,7 +88,9 @@ export default function ChatWidget() {
       }
     }
     const handleMessagesRead = (data) => {
-      if (data.conversation_id === conversation?.id) setCskhMessages(prev => prev.map(msg => ({ ...msg, is_read: true })))
+      if (data.conversation_id === conversation?.id) {
+        setCskhMessages(prev => prev.map(msg => ({ ...msg, is_read: true })))
+      }
     }
     const handleConversationClosed = (data) => {
       if (data.conversation_id === conversation?.id) {
@@ -83,36 +98,46 @@ export default function ChatWidget() {
         setConversation(prev => prev ? { ...prev, status: 'closed' } : null)
       }
     }
+    const handleConversationCreated = (data) => {
+      if (data.conversation) {
+        setConversation(data.conversation)
+      }
+    }
     socket.on('new_message', handleNewMessage)
     socket.on('new_admin_message', handleNewAdminMessage)
     socket.on('user_typing', handleTyping)
     socket.on('messages_read', handleMessagesRead)
     socket.on('conversation_closed', handleConversationClosed)
+    socket.on('conversation_created', handleConversationCreated)
     return () => {
       socket.off('new_message', handleNewMessage)
       socket.off('new_admin_message', handleNewAdminMessage)
       socket.off('user_typing', handleTyping)
       socket.off('messages_read', handleMessagesRead)
       socket.off('conversation_closed', handleConversationClosed)
+      socket.off('conversation_created', handleConversationCreated)
     }
-  }, [socket, conversation, isOpen, chatMode, markAsRead])
+  }, [socket, conversation, isOpen, chatMode, markAsRead, guestSessionId])
 
   useEffect(() => {
-    if (conversation && isConnected) {
-      joinConversation(conversation.id)
+    if (conversation?.id && isConnected) {
+      joinConversation(conversation.id, guestSessionId)
       return () => leaveConversation(conversation.id)
     }
-  }, [conversation, isConnected, joinConversation, leaveConversation])
+  }, [conversation?.id, isConnected, joinConversation, leaveConversation, guestSessionId])
 
   const loadConversation = async () => {
     setCskhLoading(true)
     try {
-      const res = await api.get('/api/chat/my-conversation')
+      const url = isAuthenticated 
+        ? '/api/chat/my-conversation'
+        : `/api/chat/my-conversation?session_id=${guestSessionId}`
+      const res = await api.get(url)
       setConversation(res.data)
       setCskhMessages(res.data.messages || [])
       setUnreadCount(0)
       if (res.data.status === 'closed') {
-        setClosedMessage('Cuộc trò chuyện đã được kết thúc bởi admin. Cảm ơn bạn đã liên hệ!')
+        setClosedMessage('Cuộc trò chuyện đã được kết thúc. Cảm ơn bạn đã liên hệ!')
       } else {
         setClosedMessage(null)
       }
@@ -126,7 +151,8 @@ export default function ChatWidget() {
   const startNewConversation = async () => {
     setCskhLoading(true)
     try {
-      const res = await api.post('/api/chat/start-new')
+      const data = isAuthenticated ? {} : { session_id: guestSessionId }
+      const res = await api.post('/api/chat/start-new', data)
       setConversation(res.data)
       setCskhMessages([])
       setClosedMessage(null)
@@ -137,7 +163,6 @@ export default function ChatWidget() {
     }
   }
 
-  // AI Chatbot functions
   const sendAiMessage = async (e) => {
     e.preventDefault()
     if (!aiInput.trim() || aiLoading) return
@@ -155,32 +180,36 @@ export default function ChatWidget() {
     }
   }
 
-  // CSKH functions
   const sendCskhMessage = (e) => {
     e.preventDefault()
-    if (!cskhInput.trim() || !conversation) return
-    sendSocketMessage(conversation.id, cskhInput.trim(), 'text')
+    if (!cskhInput.trim()) return
+    sendSocketMessage(conversation?.id || null, cskhInput.trim(), 'text', null, guestSessionId)
     setCskhInput('')
-    sendTyping(conversation.id, false)
+    if (conversation?.id) {
+      sendTyping(conversation.id, false, guestSessionId)
+    }
   }
 
   const handleCskhInputChange = (e) => {
     setCskhInput(e.target.value)
-    if (conversation) {
-      sendTyping(conversation.id, true)
+    if (conversation?.id) {
+      sendTyping(conversation.id, true, guestSessionId)
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
-      typingTimeoutRef.current = setTimeout(() => sendTyping(conversation.id, false), 2000)
+      typingTimeoutRef.current = setTimeout(() => sendTyping(conversation.id, false, guestSessionId), 2000)
     }
   }
 
   const handleImageSelect = (e) => {
     const file = e.target.files?.[0]
-    if (!file || !conversation) return
+    if (!file) return
     if (!file.type.startsWith('image/')) return alert('Vui lòng chọn file ảnh')
     if (file.size > 5 * 1024 * 1024) return alert('Ảnh không được vượt quá 5MB')
     setUploadingImage(true)
     const reader = new FileReader()
-    reader.onload = () => { sendSocketMessage(conversation.id, '', 'image', reader.result); setUploadingImage(false) }
+    reader.onload = () => { 
+      sendSocketMessage(conversation?.id || null, '', 'image', reader.result, guestSessionId)
+      setUploadingImage(false) 
+    }
     reader.onerror = () => { alert('Lỗi khi đọc file ảnh'); setUploadingImage(false) }
     reader.readAsDataURL(file)
     e.target.value = ''
@@ -198,20 +227,17 @@ export default function ChatWidget() {
   const selectMode = (mode) => {
     setChatMode(mode)
     if (mode === 'support' && conversation) {
-      markAsRead(conversation.id)
+      markAsRead(conversation.id, guestSessionId)
       setUnreadCount(0)
     }
   }
 
   const goBackToMenu = () => setChatMode(null)
-
   const formatPrice = (price) => new Intl.NumberFormat('vi-VN').format(price) + 'đ'
   const formatTime = (dateStr) => new Date(dateStr).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
 
-
   return (
     <div className="fixed bottom-6 right-6 z-50">
-      {/* Tooltip */}
       {!isOpen && (
         <div className="absolute bottom-16 right-0 mb-2 animate-bounce">
           <div className="bg-white text-gray-800 text-sm px-4 py-2 rounded-lg shadow-lg border border-gray-200 whitespace-nowrap">
@@ -220,7 +246,6 @@ export default function ChatWidget() {
         </div>
       )}
       
-      {/* Pulse effect */}
       {!isOpen && (
         <>
           <span className="absolute inset-0 w-14 h-14 rounded-full bg-blue-400 animate-ping opacity-75"></span>
@@ -228,7 +253,6 @@ export default function ChatWidget() {
         </>
       )}
       
-      {/* Toggle Button */}
       <button
         onClick={toggleChat}
         className={`group relative w-14 h-14 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110 ${
@@ -253,10 +277,8 @@ export default function ChatWidget() {
         )}
       </button>
 
-      {/* Chat Window */}
       {isOpen && (
         <div className="absolute bottom-20 right-0 w-[380px] bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-200">
-          {/* Menu Selection */}
           {chatMode === null && (
             <>
               <div className="bg-blue-500 p-4">
@@ -267,10 +289,8 @@ export default function ChatWidget() {
                   onClick={() => selectMode('ai')}
                   className="w-full flex items-center gap-4 p-4 bg-blue-50 hover:bg-blue-100 rounded-xl border border-blue-200 transition-all group"
                 >
-                  <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
-                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    <img src={robotAssistantImg} alt="AI Chatbot" className="w-full h-full object-cover" />
                   </div>
                   <div className="text-left">
                     <p className="font-semibold text-gray-800">🤖 Chat với AI</p>
@@ -278,45 +298,27 @@ export default function ChatWidget() {
                   </div>
                 </button>
                 
-                {isAuthenticated ? (
-                  <button
-                    onClick={() => selectMode('support')}
-                    className="w-full flex items-center gap-4 p-4 bg-orange-50 hover:bg-orange-100 rounded-xl border border-orange-200 transition-all group relative"
-                  >
-                    <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0">
-                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
-                      </svg>
-                    </div>
-                    <div className="text-left">
-                      <p className="font-semibold text-gray-800">👨‍💼 Chat với CSKH</p>
-                      <p className="text-sm text-gray-500">Nhân viên hỗ trợ trực tiếp</p>
-                    </div>
-                    {unreadCount > 0 && (
-                      <span className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
-                        {unreadCount > 9 ? '9+' : unreadCount}
-                      </span>
-                    )}
-                  </button>
-                ) : (
-                  <div className="w-full flex items-center gap-4 p-4 bg-gray-50 rounded-xl border border-gray-200 opacity-60">
-                    <div className="w-12 h-12 bg-gray-400 rounded-full flex items-center justify-center flex-shrink-0">
-                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
-                      </svg>
-                    </div>
-                    <div className="text-left">
-                      <p className="font-semibold text-gray-500">👨‍💼 Chat với CSKH</p>
-                      <p className="text-sm text-gray-400">Đăng nhập để chat với nhân viên</p>
-                    </div>
+                <button
+                  onClick={() => selectMode('support')}
+                  className="w-full flex items-center gap-4 p-4 bg-orange-50 hover:bg-orange-100 rounded-xl border border-orange-200 transition-all group relative"
+                >
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    <img src={cskhImg} alt="CSKH" className="w-full h-full object-cover" />
                   </div>
-                )}
+                  <div className="text-left">
+                    <p className="font-semibold text-gray-800">👨‍💼 Chat với CSKH</p>
+                    <p className="text-sm text-gray-500">Nhân viên hỗ trợ trực tiếp</p>
+                  </div>
+                  {unreadCount > 0 && (
+                    <span className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                </button>
               </div>
             </>
           )}
 
-
-          {/* AI Chatbot Mode */}
           {chatMode === 'ai' && (
             <>
               <div className="bg-blue-500 p-4">
@@ -327,10 +329,8 @@ export default function ChatWidget() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                       </svg>
                     </button>
-                    <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                      </svg>
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden bg-white">
+                      <img src={robotAssistantImg} alt="AI Chatbot" className="w-full h-full object-cover" />
                     </div>
                     <div>
                       <h3 className="font-semibold text-white">Trợ lý AI</h3>
@@ -353,10 +353,8 @@ export default function ChatWidget() {
                 {aiMessages.map((msg, idx) => (
                   <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                     {msg.role === 'assistant' && (
-                      <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center mr-2 flex-shrink-0">
-                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                        </svg>
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center mr-2 flex-shrink-0 overflow-hidden">
+                        <img src={robotAssistantImg} alt="AI" className="w-full h-full object-cover" />
                       </div>
                     )}
                     <div className="max-w-[80%]">
@@ -391,10 +389,8 @@ export default function ChatWidget() {
                 ))}
                 {aiLoading && (
                   <div className="flex items-center space-x-2">
-                    <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                      </svg>
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden">
+                      <img src={robotAssistantImg} alt="AI" className="w-full h-full object-cover" />
                     </div>
                     <div className="bg-white rounded-2xl px-4 py-3 shadow-sm border">
                       <div className="flex space-x-1">
@@ -432,8 +428,6 @@ export default function ChatWidget() {
             </>
           )}
 
-
-          {/* CSKH Support Mode */}
           {chatMode === 'support' && (
             <>
               <div className="bg-orange-500 p-4">
@@ -443,10 +437,8 @@ export default function ChatWidget() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                     </svg>
                   </button>
-                  <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
-                    </svg>
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden bg-white">
+                    <img src={cskhImg} alt="CSKH" className="w-full h-full object-cover" />
                   </div>
                   <div className="flex-1">
                     <h3 className="font-semibold text-white">Chat với CSKH</h3>
@@ -481,10 +473,8 @@ export default function ChatWidget() {
                   cskhMessages.map((msg) => (
                     <div key={msg.id} className={`flex ${msg.sender_type === 'customer' ? 'justify-end' : 'justify-start'}`}>
                       {msg.sender_type === 'admin' && (
-                        <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center mr-2 flex-shrink-0">
-                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
-                          </svg>
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center mr-2 flex-shrink-0 overflow-hidden">
+                          <img src={cskhImg} alt="CSKH" className="w-full h-full object-cover" />
                         </div>
                       )}
                       <div className="max-w-[75%]">
@@ -501,7 +491,7 @@ export default function ChatWidget() {
                         </div>
                         <p className={`text-[10px] mt-1 ${msg.sender_type === 'customer' ? 'text-right text-gray-400' : 'text-gray-400'}`}>
                           {formatTime(msg.created_at)}
-                          {msg.sender_type === 'customer' && <span className="ml-1">{msg.is_read ? '✓✓' : '✓'}</span>}
+                          {msg.sender_type === 'customer' && <span className="ml-1">{msg.is_read ? '' : ''}</span>}
                         </p>
                       </div>
                     </div>
@@ -509,10 +499,8 @@ export default function ChatWidget() {
                 )}
                 {typing && (
                   <div className="flex items-center space-x-2">
-                    <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
-                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
-                      </svg>
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden">
+                      <img src={cskhImg} alt="CSKH" className="w-full h-full object-cover" />
                     </div>
                     <div className="bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-100">
                       <div className="flex space-x-1">
@@ -553,8 +541,18 @@ export default function ChatWidget() {
                         </svg>
                       )}
                     </button>
-                    <input type="text" value={cskhInput} onChange={handleCskhInputChange} placeholder="Nhập tin nhắn..." className="flex-1 bg-transparent text-sm focus:outline-none placeholder-gray-400" />
-                    <button type="submit" disabled={!cskhInput.trim()} className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center text-white disabled:opacity-50 hover:bg-orange-600 transition-all">
+                    <input
+                      type="text"
+                      value={cskhInput}
+                      onChange={handleCskhInputChange}
+                      placeholder="Nhập tin nhắn..."
+                      className="flex-1 bg-transparent text-sm focus:outline-none placeholder-gray-400"
+                    />
+                    <button
+                      type="submit"
+                      disabled={!cskhInput.trim()}
+                      className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center text-white disabled:opacity-50 hover:bg-orange-600 transition-all"
+                    >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                       </svg>
