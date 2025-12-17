@@ -1,13 +1,6 @@
-"""
-==================== API GỢI Ý SẢN PHẨM ====================
-Gợi ý sản phẩm dựa trên:
-- Lịch sử xem của người dùng
-- Sản phẩm tương tự
-- Sản phẩm thường mua cùng
-- Sản phẩm trending
-"""
+
 from flask import Blueprint, jsonify, request
-from models import db, Product, ProductView, Order, OrderDetail, Cart, CartItem
+from models import db, Product, ProductView, Order, OrderDetail
 from flask_jwt_extended import jwt_required, get_jwt_identity, verify_jwt_in_request
 from sqlalchemy import func, desc, and_
 from datetime import datetime, timedelta
@@ -264,9 +257,12 @@ def get_frequently_bought_together(product_id):
     try:
         limit = request.args.get('limit', 4, type=int)
         
-        # Find orders containing this product
-        orders_with_product = db.session.query(OrderDetail.order_id).filter(
-            OrderDetail.product_id == product_id
+        # Find completed orders containing this product
+        orders_with_product = db.session.query(OrderDetail.order_id).join(
+            Order, OrderDetail.order_id == Order.id
+        ).filter(
+            OrderDetail.product_id == product_id,
+            Order.trangthai == 'hoan_thanh'  # Only completed orders
         ).subquery()
         
         # Find other products in those orders

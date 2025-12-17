@@ -104,18 +104,8 @@ def get_best_sellers():
      .order_by(desc('total_sold'))\
      .limit(limit).all()
     
-    # If not enough best sellers, fill with newest products
-    if len(best_sellers) < limit:
-        existing_ids = [p[0].products_id for p in best_sellers]
-        remaining = limit - len(best_sellers)
-        newest = Product.query.filter(
-            Product.trang_thai == 'Con_hang',
-            Product.products_id.notin_(existing_ids) if existing_ids else True
-        ).order_by(Product.created_at.desc()).limit(remaining).all()
-        
-        products = [p[0] for p in best_sellers] + newest
-    else:
-        products = [p[0] for p in best_sellers]
+    # Only return products that have actual sales data
+    products = [p[0] for p in best_sellers]
     
     return jsonify({
         'products': [p.to_dict() for p in products]
