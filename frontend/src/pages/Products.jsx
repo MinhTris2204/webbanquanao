@@ -19,7 +19,7 @@ export default function Products() {
   const [totalProducts, setTotalProducts] = useState(0)
   const itemsPerPage = 12
 
-  // Set category and sale filter from URL params
+  // Lấy danh mục và bộ lọc sale từ URL params
   useEffect(() => {
     const categoryParam = searchParams.get('category')
     const onSaleParam = searchParams.get('on_sale')
@@ -66,13 +66,13 @@ export default function Products() {
     const matchCategory = !selectedCategory || product.loai === selectedCategory
     const matchGender = !selectedGender || product.gioi_tinh === selectedGender
     
-    // Filter by size
+    // Lọc theo size
     const matchSize = !selectedSize || (product.size && product.size.includes(selectedSize))
     
-    // Filter by sale
+    // Lọc theo khuyến mãi
     const matchSale = !onSaleOnly || (product.promotion && product.promotion.promotional_price)
     
-    // Filter by price range
+    // Lọc theo khoảng giá
     const price = parseFloat(product.gia_ban)
     const minPrice = priceRange.min ? parseFloat(priceRange.min) : 0
     const maxPrice = priceRange.max ? parseFloat(priceRange.max) : Infinity

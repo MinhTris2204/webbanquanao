@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import api from '../utils/api'
 
 export default function Register() {
+  const [step, setStep] = useState(1) // 1: Form đăng ký, 2: Nhập OTP
   const [formData, setFormData] = useState({
     taikhoan: '',
     email: '',
@@ -12,38 +13,197 @@ export default function Register() {
     sdt: '',
     diachi: ''
   })
+  const [otp, setOtp] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
-  const { register } = useAuth()
+  const [loading, setLoading] = useState(false)
+  const [resendCooldown, setResendCooldown] = useState(0)
   const navigate = useNavigate()
+
+  // Đếm ngược để gửi lại OTP
+  const startResendCooldown = () => {
+    setResendCooldown(60)
+    const interval = setInterval(() => {
+      setResendCooldown(prev => {
+        if (prev <= 1) {
+          clearInterval(interval)
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
 
-    // Validate password match
     if (formData.matkhau !== formData.confirm_matkhau) {
       setError('Mật khẩu xác nhận không khớp')
       return
     }
 
-    // Validate password length
     if (formData.matkhau.length < 6) {
       setError('Mật khẩu phải có ít nhất 6 ký tự')
       return
     }
 
+    setLoading(true)
     try {
       const { confirm_matkhau, ...registerData } = formData
-      await register(registerData)
-      setSuccess(true)
-      // Auto redirect after 2 seconds
-      setTimeout(() => navigate('/login'), 2000)
+      const res = await api.post('/api/auth/register', registerData)
+      
+      if (res.data.need_verification) {
+        setStep(2)
+        startResendCooldown()
+      } else {
+        setSuccess(true)
+        setTimeout(() => navigate('/login'), 2000)
+      }
     } catch (err) {
       setError(err.response?.data?.error || 'Đăng ký thất bại')
+    } finally {
+      setLoading(false)
     }
   }
 
+  const handleVerifyOTP = async (e) => {
+    e.preventDefault()
+    setError('')
+
+    if (otp.length !== 6) {
+      setError('Mã OTP phải có 6 số')
+      return
+    }
+
+    setLoading(true)
+    try {
+      await api.post('/api/auth/verify-email', {
+        email: formData.email,
+        otp: otp
+      })
+      setSuccess(true)
+      setTimeout(() => navigate('/login'), 2000)
+    } catch (err) {
+      setError(err.response?.data?.error || 'Xác thực thất bại')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleResendOTP = async () => {
+    if (resendCooldown > 0) return
+    
+    setError('')
+    setLoading(true)
+    try {
+      await api.post('/api/auth/resend-otp', {
+        email: formData.email,
+        purpose: 'register'
+      })
+      startResendCooldown()
+    } catch (err) {
+      setError(err.response?.data?.error || 'Không thể gửi lại mã OTP')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Step 2: OTP Verification
+  if (step === 2) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-cyan-600 py-8 px-4">
+        <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md">
+          <div className="text-center mb-6">
+            <div className="bg-gradient-to-br from-green-500 to-emerald-600 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-800">Xác nhận Email</h2>
+            <p className="text-gray-600 text-sm mt-2">
+              Mã OTP đã được gửi đến<br/>
+              <span className="font-semibold text-blue-600">{formData.email}</span>
+            </p>
+          </div>
+
+          {error && (
+            <div className="bg-red-100 border-2 border-red-400 text-red-700 px-4 py-3 rounded-lg mb-4 flex items-center">
+              <span className="text-xl mr-2">❌</span>
+              {error}
+            </div>
+          )}
+
+          {success ? (
+            <div className="bg-green-100 border-2 border-green-400 text-green-700 px-4 py-3 rounded-lg mb-4">
+              <div className="flex items-center mb-2">
+                <span className="text-xl mr-2">✅</span>
+                <span className="font-semibold">Xác thực thành công!</span>
+              </div>
+              <p className="text-sm">
+                Đang chuyển đến trang đăng nhập...
+              </p>
+            </div>
+          ) : (
+            <form onSubmit={handleVerifyOTP} className="space-y-4">
+              <div>
+                <label className="block text-gray-700 mb-2 font-semibold text-center">
+                  Nhập mã OTP (6 số)
+                </label>
+                <input
+                  type="text"
+                  maxLength={6}
+                  className="w-full px-4 py-4 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition text-center text-2xl tracking-widest font-mono"
+                  placeholder="000000"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                  required
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading || otp.length !== 6}
+                className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white py-4 rounded-lg hover:from-green-600 hover:to-emerald-700 font-bold text-lg shadow-lg hover:shadow-xl transition disabled:opacity-50"
+              >
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    Đang xác thực...
+                  </span>
+                ) : '✓ Xác nhận'}
+              </button>
+
+              <div className="text-center">
+                <p className="text-gray-600 text-sm mb-2">Không nhận được mã?</p>
+                <button
+                  type="button"
+                  onClick={handleResendOTP}
+                  disabled={resendCooldown > 0 || loading}
+                  className="text-blue-600 hover:text-blue-700 font-semibold disabled:text-gray-400"
+                >
+                  {resendCooldown > 0 ? `Gửi lại sau ${resendCooldown}s` : 'Gửi lại mã OTP'}
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setStep(1)}
+                className="w-full text-gray-600 hover:text-gray-800 py-2"
+              >
+                ← Quay lại đăng ký
+              </button>
+            </form>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // Step 1: Registration Form
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-cyan-600 py-8 px-4">
       <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md">
@@ -61,18 +221,6 @@ export default function Register() {
           <div className="bg-red-100 border-2 border-red-400 text-red-700 px-4 py-3 rounded-lg mb-4 flex items-center">
             <span className="text-xl mr-2">❌</span>
             {error}
-          </div>
-        )}
-
-        {success && (
-          <div className="bg-green-100 border-2 border-green-400 text-green-700 px-4 py-3 rounded-lg mb-4">
-            <div className="flex items-center mb-2">
-              <span className="text-xl mr-2">✅</span>
-              <span className="font-semibold">Đăng ký thành công!</span>
-            </div>
-            <p className="text-sm">
-              Bạn có thể <Link to="/login" className="text-blue-600 hover:underline font-semibold">đăng nhập ngay</Link> để bắt đầu mua sắm.
-            </p>
           </div>
         )}
 
@@ -103,6 +251,7 @@ export default function Register() {
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               required
             />
+            <p className="text-sm text-gray-500 mt-1">Bạn sẽ nhận mã OTP qua email này</p>
           </div>
 
           <div>
@@ -177,9 +326,18 @@ export default function Register() {
 
           <button
             type="submit"
-            className="w-full bg-gradient-to-r from-blue-500 to-cyan-600 text-white py-4 rounded-lg hover:from-blue-600 hover:to-cyan-700 font-bold text-lg shadow-lg hover:shadow-xl transition"
+            disabled={loading}
+            className="w-full bg-gradient-to-r from-blue-500 to-cyan-600 text-white py-4 rounded-lg hover:from-blue-600 hover:to-cyan-700 font-bold text-lg shadow-lg hover:shadow-xl transition disabled:opacity-50"
           >
-            🚀 Đăng ký ngay
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                Đang xử lý...
+              </span>
+            ) : '🚀 Đăng ký ngay'}
           </button>
         </form>
 

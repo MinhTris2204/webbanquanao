@@ -11,7 +11,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true)
   const [loadingBestSellers, setLoadingBestSellers] = useState(true)
 
-  // Banner slides
+  // Các slide banner
   const slides = [
     {
       title: 'Bộ Sưu Tập Mùa Hè 2024',
@@ -39,7 +39,7 @@ export default function Home() {
     }
   ]
 
-  // Auto slide
+  // Tự động chuyển slide
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slides.length)
@@ -47,12 +47,12 @@ export default function Home() {
     return () => clearInterval(timer)
   }, [])
 
-  // Fetch sale products (products with active promotions)
+  // Lấy sản phẩm sale (sản phẩm có khuyến mãi đang hoạt động)
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         const res = await api.get('/api/products?per_page=100')
-        // Filter only products with active promotions
+        // Chỉ lọc sản phẩm có khuyến mãi đang hoạt động
         const saleProducts = (res.data.products || []).filter(p => p.promotion && p.promotion.promotional_price)
         setFeaturedProducts(saleProducts.slice(0, 8))
       } catch (err) {
@@ -64,7 +64,7 @@ export default function Home() {
     fetchProducts()
   }, [])
 
-  // Fetch best sellers
+  // Lấy sản phẩm bán chạy
   useEffect(() => {
     const fetchBestSellers = async () => {
       try {

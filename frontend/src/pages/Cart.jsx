@@ -26,7 +26,7 @@ export default function Cart() {
     try {
       const res = await api.get('/api/cart')
       setCart(res.data)
-      fetchCartCount() // Update cart count
+      fetchCartCount() // Cập nhật số lượng giỏ hàng
     } catch (err) {
       console.error(err)
     } finally {

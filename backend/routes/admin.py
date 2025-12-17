@@ -314,12 +314,12 @@ def get_all_users():
     
     query = User.query
     
-    # Search filter
+    # Search filter - use new column names
     if search:
         query = query.filter(
             db.or_(
-                User.taikhoan.ilike(f'%{search}%'),
-                User.hoten.ilike(f'%{search}%'),
+                User.username.ilike(f'%{search}%'),
+                User.full_name.ilike(f'%{search}%'),
                 User.email.ilike(f'%{search}%')
             )
         )
@@ -351,17 +351,19 @@ def update_user(user_id):
     user = User.query.get_or_404(user_id)
     data = request.get_json()
     
-    # Update allowed fields
-    if 'hoten' in data:
-        user.hoten = data['hoten']
+    # Update allowed fields - support both old and new field names
+    if 'hoten' in data or 'full_name' in data:
+        user.full_name = data.get('full_name') or data.get('hoten')
     if 'email' in data:
         user.email = data['email']
-    if 'sdt' in data:
-        user.sdt = data['sdt']
-    if 'diachi' in data:
-        user.diachi = data['diachi']
+    if 'sdt' in data or 'phone' in data:
+        user.phone = data.get('phone') or data.get('sdt')
+    if 'diachi' in data or 'address' in data:
+        user.address = data.get('address') or data.get('diachi')
     if 'role' in data:
         user.role = data['role']
+    if 'is_verified' in data:
+        user.is_verified = data['is_verified']
     
     db.session.commit()
     
@@ -387,22 +389,24 @@ def delete_user(user_id):
 def create_user():
     data = request.get_json()
     
+    username = data.get('taikhoan') or data.get('username')
     # Check if username or email already exists
-    if User.query.filter_by(taikhoan=data.get('taikhoan')).first():
+    if User.query.filter_by(username=username).first():
         return jsonify({'error': 'Tài khoản đã tồn tại'}), 400
     
     if User.query.filter_by(email=data.get('email')).first():
         return jsonify({'error': 'Email đã tồn tại'}), 400
     
     user = User(
-        taikhoan=data.get('taikhoan'),
-        hoten=data.get('hoten'),
+        username=username,
+        full_name=data.get('hoten') or data.get('full_name'),
         email=data.get('email'),
-        sdt=data.get('sdt'),
-        diachi=data.get('diachi'),
-        role=data.get('role', 'customer')
+        phone=data.get('sdt') or data.get('phone'),
+        address=data.get('diachi') or data.get('address'),
+        role=data.get('role', 'customer'),
+        is_verified=True  # Admin-created users are verified by default
     )
-    user.set_password(data.get('matkhau'))
+    user.set_password(data.get('matkhau') or data.get('password'))
     
     db.session.add(user)
     db.session.commit()

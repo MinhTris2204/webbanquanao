@@ -24,7 +24,7 @@ export default function Orders() {
   const [vnpayMessage, setVnpayMessage] = useState(null)
 
   useEffect(() => {
-    // Check for success message
+    // Kiểm tra thông báo thành công
     if (searchParams.get('success') === 'true') {
       setShowSuccess(true)
       const timer = setTimeout(() => {
@@ -35,7 +35,7 @@ export default function Orders() {
       return () => clearTimeout(timer)
     }
 
-    // Check for VNPay return
+    // Kiểm tra kết quả VNPay
     const vnpayStatus = searchParams.get('vnpay')
     if (vnpayStatus) {
       const orderId = searchParams.get('order_id')

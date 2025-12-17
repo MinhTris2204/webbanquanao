@@ -9,9 +9,9 @@ export default function StoreInfoPage() {
 
   useEffect(() => {
     if (key) {
-      setInfo(null) // Reset info to show loading
+      setInfo(null) // Reset để hiển thị loading
       setLoading(true)
-      window.scrollTo(0, 0) // Scroll to top when key changes
+      window.scrollTo(0, 0) // Cuộn lên đầu khi key thay đổi
       fetchInfo()
     }
   }, [key])

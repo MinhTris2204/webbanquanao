@@ -41,7 +41,7 @@ export const AuthProvider = ({ children }) => {
         })
         .catch((error) => {
           console.log('Auth check failed:', error.response?.status, error.response?.data)
-          // Only clear token if it's actually invalid (401 or 422)
+          // Chỉ xóa token nếu thực sự không hợp lệ (401 hoặc 422)
           if (error.response && (error.response.status === 401 || error.response.status === 422)) {
             console.log('Clearing invalid token')
             localStorage.removeItem(tokenKey)

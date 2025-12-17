@@ -82,7 +82,7 @@ export default function CustomerChat() {
       setConversation(res.data)
       setMessages(res.data.messages || [])
       setUnreadCount(0)
-      // Check if conversation is closed
+      // Kiểm tra xem cuộc trò chuyện đã đóng chưa
       if (res.data.status === 'closed') {
         setClosedMessage('Cuộc trò chuyện đã được kết thúc bởi admin. Cảm ơn bạn đã liên hệ!')
       } else {

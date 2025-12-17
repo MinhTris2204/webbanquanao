@@ -50,7 +50,7 @@ export default function AdminProducts() {
 
   const handleSearch = (e) => {
     setSearchTerm(e.target.value)
-    setCurrentPage(1) // Reset to first page when searching
+    setCurrentPage(1) // Reset về trang đầu khi tìm kiếm
   }
 
   const handleSubmit = async (e) => {
@@ -89,7 +89,7 @@ export default function AdminProducts() {
       hinh_anh: product.hinh_anh || '',
       trang_thai: product.trang_thai || 'Con_hang'
     })
-    // Parse sizes from string to array (handle both ", " and "," separators)
+    // Chuyển size từ chuỗi sang mảng (hỗ trợ cả ", " và ",")
     const sizes = product.size ? product.size.split(/,\s*/).map(s => s.trim()).filter(s => s) : []
     setSelectedSizes(sizes)
     setImagePreview(getImageUrl(product.hinh_anh) || '')

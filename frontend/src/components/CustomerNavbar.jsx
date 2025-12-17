@@ -37,7 +37,7 @@ export default function CustomerNavbar() {
     fetchCategories()
   }, [])
 
-  // Handle click outside for menus
+  // Xử lý click bên ngoài để đóng menu
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (productMenuRef.current && !productMenuRef.current.contains(e.target)) {

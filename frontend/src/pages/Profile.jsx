@@ -8,7 +8,7 @@ export default function Profile() {
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('info')
   
-  // Info form
+  // Form thông tin
   const [infoForm, setInfoForm] = useState({
     hoten: '',
     email: '',
@@ -16,14 +16,14 @@ export default function Profile() {
     diachi: ''
   })
   
-  // Password form
+  // Form mật khẩu
   const [passwordForm, setPasswordForm] = useState({
     current_password: '',
     new_password: '',
     confirm_password: ''
   })
   
-  // Delete account
+  // Xóa tài khoản
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
   

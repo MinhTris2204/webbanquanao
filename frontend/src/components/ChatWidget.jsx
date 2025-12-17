@@ -49,7 +49,7 @@ export default function ChatWidget() {
   useEffect(() => { scrollToBottom() }, [aiMessages, cskhMessages])
 
 
-  // Load CSKH conversation when switching to support mode
+  // Tải cuộc trò chuyện CSKH khi chuyển sang chế độ hỗ trợ
   useEffect(() => {
     if (chatMode === 'support' && isAuthenticated && !conversation && !closedMessage) {
       loadConversation()

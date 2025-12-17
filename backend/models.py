@@ -1,5 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
+from datetime import datetime, timedelta
 import bcrypt
 from pgvector.sqlalchemy import Vector
 
@@ -10,35 +10,104 @@ class User(db.Model):
     __tablename__ = 'users'
     
     user_id = db.Column(db.Integer, primary_key=True)
-    taikhoan = db.Column(db.String(50), unique=True, nullable=False)
-    matkhau = db.Column(db.String(225), nullable=False)
-    hoten = db.Column(db.String(100), nullable=False)
+    username = db.Column(db.String(50), unique=True, nullable=False)  # Tên đăng nhập
+    password_hash = db.Column(db.String(225), nullable=False)  # Mật khẩu đã mã hóa
+    full_name = db.Column(db.String(100), nullable=False)  # Họ tên
     email = db.Column(db.String(100), unique=True, nullable=False)
-    sdt = db.Column(db.String(20))
-    diachi = db.Column(db.String(225))
+    phone = db.Column(db.String(20))  # Số điện thoại
+    address = db.Column(db.String(225))  # Địa chỉ
     role = db.Column(db.Enum('admin', 'customer', name='role_enum'), default='customer')
+    is_verified = db.Column(db.Boolean, default=False)  # Email đã xác thực chưa
+    otp_code = db.Column(db.String(64), nullable=True)  # Mã OTP hoặc reset token
+    otp_expires = db.Column(db.TIMESTAMP, nullable=True)  # Thời gian hết hạn OTP
     created_at = db.Column(db.TIMESTAMP, default=datetime.utcnow)
-    reset_token = db.Column(db.String(100), nullable=True)
-    reset_token_expires = db.Column(db.TIMESTAMP, nullable=True)
     
     carts = db.relationship('Cart', backref='user', lazy=True, cascade='all, delete-orphan')
     orders = db.relationship('Order', backref='user', lazy=True)
     
     def set_password(self, password):
-        self.matkhau = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        self.password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
     
     def check_password(self, password):
-        return bcrypt.checkpw(password.encode('utf-8'), self.matkhau.encode('utf-8'))
+        return bcrypt.checkpw(password.encode('utf-8'), self.password_hash.encode('utf-8'))
+    
+    def generate_otp(self):
+        """Tạo mã OTP 6 số"""
+        import random
+        self.otp_code = ''.join([str(random.randint(0, 9)) for _ in range(6)])
+        self.otp_expires = datetime.utcnow() + timedelta(minutes=10)
+        return self.otp_code
+    
+    def verify_otp(self, otp):
+        """Xác thực mã OTP"""
+        if not self.otp_code or not self.otp_expires:
+            return False, "Không có mã OTP"
+        if datetime.utcnow() > self.otp_expires:
+            return False, "Mã OTP đã hết hạn"
+        if self.otp_code != otp:
+            return False, "Mã OTP không đúng"
+        return True, "OTP hợp lệ"
+    
+    def clear_otp(self):
+        """Xóa mã OTP sau khi xác thực"""
+        self.otp_code = None
+        self.otp_expires = None
+    
+    # Backward compatibility properties
+    @property
+    def taikhoan(self):
+        return self.username
+    
+    @taikhoan.setter
+    def taikhoan(self, value):
+        self.username = value
+    
+    @property
+    def matkhau(self):
+        return self.password_hash
+    
+    @matkhau.setter
+    def matkhau(self, value):
+        self.password_hash = value
+    
+    @property
+    def hoten(self):
+        return self.full_name
+    
+    @hoten.setter
+    def hoten(self, value):
+        self.full_name = value
+    
+    @property
+    def sdt(self):
+        return self.phone
+    
+    @sdt.setter
+    def sdt(self, value):
+        self.phone = value
+    
+    @property
+    def diachi(self):
+        return self.address
+    
+    @diachi.setter
+    def diachi(self, value):
+        self.address = value
     
     def to_dict(self):
         return {
             'user_id': self.user_id,
-            'taikhoan': self.taikhoan,
-            'hoten': self.hoten,
+            'username': self.username,
+            'taikhoan': self.username,  # Backward compatibility
+            'full_name': self.full_name,
+            'hoten': self.full_name,  # Backward compatibility
             'email': self.email,
-            'sdt': self.sdt,
-            'diachi': self.diachi,
+            'phone': self.phone,
+            'sdt': self.phone,  # Backward compatibility
+            'address': self.address,
+            'diachi': self.address,  # Backward compatibility
             'role': self.role,
+            'is_verified': self.is_verified,
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
 

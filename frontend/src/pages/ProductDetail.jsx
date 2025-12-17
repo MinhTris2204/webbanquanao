@@ -6,15 +6,15 @@ import { useCart } from '../context/CartContext'
 import ProductReviews from '../components/ProductReviews'
 import RecommendedProducts from '../components/RecommendedProducts'
 
-// Size Guide Component
+// Component hướng dẫn chọn size
 function SizeGuide({ productType, gender }) {
   const [isOpen, setIsOpen] = useState(false)
   
-  // Determine if product uses number sizes (pants) or letter sizes (shirts, etc.)
+  // Xác định sản phẩm dùng size số (quần) hay size chữ (áo, v.v.)
   const isPants = productType === 'Quần'
   const isAccessory = productType === 'Phụ kiện'
   
-  if (isAccessory) return null // No size guide for accessories
+  if (isAccessory) return null // Không có hướng dẫn size cho phụ kiện
   
   const shirtSizesMale = [
     { size: 'S', height: '160-165', weight: '50-55' },
@@ -52,7 +52,7 @@ function SizeGuide({ productType, gender }) {
     { size: '32', height: '165-170', weight: '66-70', waist: '74-76' },
   ]
   
-  // Select appropriate size chart
+  // Chọn bảng size phù hợp
   let sizeData = []
   let title = ''
   
@@ -137,7 +137,7 @@ function SizeGuide({ productType, gender }) {
   )
 }
 
-// Countdown Timer Component
+// Component đếm ngược thời gian
 function CountdownTimer({ endDate }) {
   const calculateTimeLeft = () => {
     if (!endDate) return null
@@ -236,7 +236,7 @@ export default function ProductDetail() {
         product_id: parseInt(id)
       })
     } catch (err) {
-      // Silently fail - tracking is not critical
+      // Bỏ qua lỗi - tracking không quan trọng
       console.error('Failed to track view:', err)
     }
   }
@@ -258,7 +258,7 @@ export default function ProductDetail() {
         quantity,
         selected_size: selectedSize
       })
-      fetchCartCount() // Refresh cart count
+      fetchCartCount() // Cập nhật số lượng giỏ hàng
       setMessage({ text: '✅ Đã thêm vào giỏ hàng!', type: 'success' })
       setTimeout(() => setMessage({ text: '', type: '' }), 3000)
     } catch (err) {
@@ -278,14 +278,14 @@ export default function ProductDetail() {
     }
 
     try {
-      // Add to cart first
+      // Thêm vào giỏ hàng trước
       await api.post('/api/cart/add', {
         product_id: product.products_id,
         quantity,
         selected_size: selectedSize
       })
-      fetchCartCount() // Refresh cart count
-      // Go directly to checkout
+      fetchCartCount() // Cập nhật số lượng giỏ hàng
+      // Chuyển đến trang thanh toán
       navigate('/checkout')
     } catch (err) {
       setMessage({ text: '❌ Có lỗi xảy ra', type: 'error' })
@@ -312,7 +312,7 @@ export default function ProductDetail() {
     )
   }
 
-  // Support both "S, M, L" and "28,29,30" formats
+  // Hỗ trợ cả định dạng "S, M, L" và "28,29,30"
   const availableSizes = product.size ? product.size.split(/,\s*/).map(s => s.trim()).filter(s => s) : []
 
   return (

@@ -28,7 +28,7 @@ export default function AdminSidebar({ isOpen = true }) {
     }
   }, [socket])
 
-  // Reset count when visiting chat page
+  // Reset số đếm khi vào trang chat
   useEffect(() => {
     if (location.pathname === '/chat') {
       setUnreadCount(0)

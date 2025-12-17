@@ -10,7 +10,7 @@ export default function Search() {
   const [loading, setLoading] = useState(false)
   const [searched, setSearched] = useState(false)
   
-  // Autocomplete states
+  // Trạng thái gợi ý tự động
   const [suggestions, setSuggestions] = useState([])
   const [showDropdown, setShowDropdown] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState(-1)
@@ -21,7 +21,7 @@ export default function Search() {
   const debounceTimer = useRef(null)
   const abortController = useRef(null)
 
-  // Fetch autocomplete suggestions
+  // Lấy gợi ý tự động
   const fetchSuggestions = async (query) => {
     if (query.trim().length < 2) {
       setSuggestions([])
@@ -29,7 +29,7 @@ export default function Search() {
       return
     }
 
-    // Cancel previous request
+    // Hủy request trước đó
     if (abortController.current) {
       abortController.current.abort()
     }
@@ -55,23 +55,23 @@ export default function Search() {
     }
   }
 
-  // Handle input change with debouncing
+  // Xử lý thay đổi input với debounce
   const handleInputChange = (e) => {
     const value = e.target.value
     setSearchTerm(value)
 
-    // Clear previous timer
+    // Xóa timer trước đó
     if (debounceTimer.current) {
       clearTimeout(debounceTimer.current)
     }
 
-    // Set new timer
+    // Đặt timer mới
     debounceTimer.current = setTimeout(() => {
       fetchSuggestions(value)
     }, 300)
   }
 
-  // Handle keyboard navigation
+  // Xử lý điều hướng bàn phím
   const handleKeyDown = (e) => {
     if (!showDropdown || suggestions.length === 0) {
       if (e.key === 'Escape') {
@@ -111,7 +111,7 @@ export default function Search() {
     }
   }
 
-  // Handle click outside
+  // Xử lý click bên ngoài
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (
@@ -128,7 +128,7 @@ export default function Search() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Cleanup on unmount
+  // Dọn dẹp khi unmount
   useEffect(() => {
     return () => {
       if (debounceTimer.current) {

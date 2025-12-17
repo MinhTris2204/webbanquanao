@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import api from '../../utils/api';
 
 export default function Promotions() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [promotions, setPromotions] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -10,13 +12,13 @@ export default function Promotions() {
   const [editingPromotion, setEditingPromotion] = useState(null);
   const [stats, setStats] = useState(null);
   
-  // Filters
+  // Bộ lọc
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   
-  // Form data
+  // Dữ liệu form
   const [formData, setFormData] = useState({
     product_id: '',
     discount_type: 'percent',
@@ -38,6 +40,20 @@ export default function Promotions() {
     start_date: '',
     end_date: ''
   });
+
+  // Kiểm tra URL có product_id để tự động mở modal
+  useEffect(() => {
+    const productIdFromUrl = searchParams.get('product_id');
+    if (productIdFromUrl && products.length > 0) {
+      const product = products.find(p => p.products_id === parseInt(productIdFromUrl));
+      if (product) {
+        setFormData(prev => ({ ...prev, product_id: parseInt(productIdFromUrl) }));
+        setShowModal(true);
+        // Xóa param khỏi URL
+        setSearchParams({});
+      }
+    }
+  }, [searchParams, products]);
 
   useEffect(() => {
     fetchPromotions();
@@ -155,7 +171,7 @@ export default function Promotions() {
     const startDate = new Date(promotion.start_date);
     const endDate = new Date(promotion.end_date);
     
-    // Format to datetime-local input format (YYYY-MM-DDTHH:mm)
+    // Định dạng cho input datetime-local (YYYY-MM-DDTHH:mm)
     const formatDateTimeLocal = (date) => {
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');

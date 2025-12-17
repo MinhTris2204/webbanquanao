@@ -495,7 +495,7 @@ export default function AdminReviews() {
             <div className="flex items-center gap-2">
               {[...Array(totalPages)].map((_, i) => {
                 const page = i + 1
-                // Show first page, last page, current page, and pages around current
+                // Hiển thị trang đầu, trang cuối, trang hiện tại và các trang xung quanh
                 if (
                   page === 1 ||
                   page === totalPages ||

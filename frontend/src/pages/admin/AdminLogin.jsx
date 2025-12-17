@@ -14,7 +14,7 @@ export default function AdminLogin() {
     try {
       const data = await login(formData.taikhoan, formData.matkhau)
       
-      // Check if user is admin
+      // Kiểm tra xem user có phải admin không
       if (data.user.role !== 'admin') {
         setError('Bạn không có quyền truy cập trang quản trị')
         localStorage.removeItem('token')
