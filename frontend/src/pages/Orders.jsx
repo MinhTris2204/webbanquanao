@@ -21,18 +21,46 @@ export default function Orders() {
     }
   }, [isAuthenticated, authLoading, navigate])
 
+  const [vnpayMessage, setVnpayMessage] = useState(null)
+
   useEffect(() => {
     // Check for success message
     if (searchParams.get('success') === 'true') {
       setShowSuccess(true)
-      // Auto-dismiss after 5 seconds
       const timer = setTimeout(() => {
         setShowSuccess(false)
-        // Remove success param from URL
         searchParams.delete('success')
         setSearchParams(searchParams)
       }, 5000)
-      
+      return () => clearTimeout(timer)
+    }
+
+    // Check for VNPay return
+    const vnpayStatus = searchParams.get('vnpay')
+    if (vnpayStatus) {
+      const orderId = searchParams.get('order_id')
+      if (vnpayStatus === 'success') {
+        setVnpayMessage({
+          type: 'success',
+          title: 'Thanh toán VNPay thành công!',
+          message: `Đơn hàng #${orderId} đã được thanh toán thành công.`
+        })
+      } else if (vnpayStatus === 'failed') {
+        const code = searchParams.get('code')
+        setVnpayMessage({
+          type: 'error',
+          title: 'Thanh toán VNPay thất bại',
+          message: `Đơn hàng #${orderId} chưa được thanh toán. Mã lỗi: ${code}`
+        })
+      }
+      // Auto-dismiss after 8 seconds
+      const timer = setTimeout(() => {
+        setVnpayMessage(null)
+        searchParams.delete('vnpay')
+        searchParams.delete('order_id')
+        searchParams.delete('code')
+        setSearchParams(searchParams)
+      }, 8000)
       return () => clearTimeout(timer)
     }
   }, [searchParams, setSearchParams])
@@ -63,7 +91,10 @@ export default function Orders() {
   const getStatusColor = (status) => {
     const colors = {
       'cho_xac_nhan': 'bg-yellow-100 text-yellow-800 border-yellow-300',
+      'Chờ thanh toán': 'bg-orange-100 text-orange-800 border-orange-300',
+      'Đã thanh toán': 'bg-blue-100 text-blue-800 border-blue-300',
       'hoan_thanh': 'bg-green-100 text-green-800 border-green-300',
+      'Hủy': 'bg-red-100 text-red-800 border-red-300',
       'huy': 'bg-red-100 text-red-800 border-red-300'
     }
     return colors[status] || 'bg-gray-100 text-gray-800 border-gray-300'
@@ -72,19 +103,21 @@ export default function Orders() {
   const getStatusText = (status) => {
     const texts = {
       'cho_xac_nhan': '⏳ Chờ xác nhận',
+      'Chờ thanh toán': '💳 Chờ thanh toán',
+      'Đã thanh toán': '✅ Đã thanh toán',
       'hoan_thanh': '✅ Hoàn thành',
+      'Hủy': '❌ Đã hủy',
       'huy': '❌ Đã hủy'
     }
     return texts[status] || status
   }
 
-  const getStatusIcon = (status) => {
-    const icons = {
-      'cho_xac_nhan': '⏳',
-      'hoan_thanh': '✅',
-      'huy': '❌'
+  const getPaymentMethodText = (method) => {
+    const methods = {
+      'COD': '💵 Thanh toán khi nhận hàng',
+      'VNPAY': '💳 VNPay'
     }
-    return icons[status] || '📦'
+    return methods[method] || method
   }
 
   if (loading) {
@@ -113,6 +146,31 @@ export default function Orders() {
           <button
             onClick={() => setShowSuccess(false)}
             className="text-green-700 hover:text-green-900 font-bold text-xl"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
+      {/* VNPay Message */}
+      {vnpayMessage && (
+        <div className={`mb-6 px-6 py-4 rounded-xl flex items-center justify-between animate-fadeIn ${
+          vnpayMessage.type === 'success' 
+            ? 'bg-green-100 border-2 border-green-400 text-green-700' 
+            : 'bg-red-100 border-2 border-red-400 text-red-700'
+        }`}>
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">{vnpayMessage.type === 'success' ? '💳✅' : '💳❌'}</span>
+            <div>
+              <p className="font-bold">{vnpayMessage.title}</p>
+              <p className="text-sm">{vnpayMessage.message}</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setVnpayMessage(null)}
+            className={`font-bold text-xl ${
+              vnpayMessage.type === 'success' ? 'text-green-700 hover:text-green-900' : 'text-red-700 hover:text-red-900'
+            }`}
           >
             ×
           </button>
@@ -260,7 +318,7 @@ export default function Orders() {
                 {/* Payment Method */}
                 <div className="mt-4 pt-4 border-t">
                   <p className="text-sm text-gray-600">
-                    💰 Phương thức thanh toán: <span className="font-semibold text-gray-800">{order.payment_method === 'COD' ? 'Thanh toán khi nhận hàng' : order.payment_method}</span>
+                    💰 Phương thức thanh toán: <span className="font-semibold text-gray-800">{getPaymentMethodText(order.payment_method)}</span>
                   </p>
                 </div>
               </div>

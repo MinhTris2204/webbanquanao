@@ -1,4 +1,5 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'
+import { useEffect } from 'react'
 import { CartProvider } from './context/CartContext'
 import { SocketProvider } from './context/SocketContext'
 import { ToastProvider } from './components/Toast'
@@ -18,12 +19,24 @@ import Profile from './pages/Profile'
 import StoreInfoPage from './pages/StoreInfoPage'
 import ProtectedRoute from './components/ProtectedRoute'
 
+// Component to scroll to top on route change
+function ScrollToTop() {
+  const { pathname } = useLocation()
+  
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [pathname])
+  
+  return null
+}
+
 function App() {
   return (
     <ToastProvider>
       <CartProvider>
         <SocketProvider>
         <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <ScrollToTop />
         <CookieConsent />
         <ChatWidget />
         <Routes>

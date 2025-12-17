@@ -73,6 +73,10 @@ def create_app():
     from routes.chatbot import chatbot_bp
     app.register_blueprint(chatbot_bp, url_prefix='/api/chatbot')
     
+    # Import VNPay blueprint
+    from routes.vnpay import vnpay_bp
+    app.register_blueprint(vnpay_bp, url_prefix='/api/vnpay')
+    
     @app.route('/api/health')
     def health():
         return {'status': 'ok'}

@@ -108,7 +108,25 @@ export default function Checkout() {
         ...formData,
         ma_voucher: appliedVoucher?.code || null
       }
-      await api.post('/api/orders/create', orderData)
+      const orderRes = await api.post('/api/orders/create', orderData)
+      const orderId = orderRes.data.order?.id
+
+      // Nếu chọn VNPay, tạo payment URL và redirect
+      if (formData.payment_method === 'VNPAY' && orderId) {
+        try {
+          const paymentRes = await api.post(`/api/vnpay/create-payment/${orderId}`)
+          if (paymentRes.data.payment_url) {
+            // Redirect đến trang thanh toán VNPay
+            window.location.href = paymentRes.data.payment_url
+            return
+          }
+        } catch (vnpayErr) {
+          setError(vnpayErr.response?.data?.error || 'Không thể tạo thanh toán VNPay')
+          setSubmitting(false)
+          return
+        }
+      }
+
       navigate('/orders?success=true')
     } catch (err) {
       setError(err.response?.data?.error || 'Có lỗi xảy ra khi đặt hàng')
@@ -218,17 +236,29 @@ export default function Checkout() {
                   </div>
                 </label>
 
-                <label className="flex items-center p-4 border-2 border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 transition opacity-50">
+                <label className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition ${
+                  formData.payment_method === 'VNPAY' 
+                    ? 'border-blue-500 bg-blue-50' 
+                    : 'border-gray-300 hover:border-blue-500'
+                }`}>
                   <input
                     type="radio"
                     name="payment_method"
-                    value="BANK"
-                    disabled
+                    value="VNPAY"
+                    checked={formData.payment_method === 'VNPAY'}
+                    onChange={(e) => setFormData({ ...formData, payment_method: e.target.value })}
                     className="w-5 h-5 text-blue-600"
                   />
-                  <div className="ml-4">
-                    <p className="font-semibold text-gray-800">🏦 Chuyển khoản ngân hàng</p>
-                    <p className="text-sm text-gray-500">Đang phát triển</p>
+                  <div className="ml-4 flex items-center gap-3">
+                    <img 
+                      src="https://cdn.haitrieu.com/wp-content/uploads/2022/10/Icon-VNPAY-QR.png" 
+                      alt="VNPay" 
+                      className="h-8 w-auto"
+                    />
+                    <div>
+                      <p className="font-semibold text-gray-800">💳 Thanh toán VNPay</p>
+                      <p className="text-sm text-gray-500">Quét mã QR / Thẻ ATM / Visa / MasterCard</p>
+                    </div>
                   </div>
                 </label>
               </div>
