@@ -1,9 +1,84 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, send_from_directory, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from models import db, User, Product, Order
 from functools import wraps
+from werkzeug.utils import secure_filename
+import os
+import uuid
+import base64
 
 admin_bp = Blueprint('admin', __name__)
+
+# Upload configuration
+UPLOAD_FOLDER = 'uploads'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+def save_base64_image(base64_string, original_filename=None):
+    """Save base64 image to uploads folder and return the filename"""
+    try:
+        # Remove data URL prefix if present
+        if ',' in base64_string:
+            header, base64_data = base64_string.split(',', 1)
+            # Get extension from header
+            if 'png' in header:
+                ext = 'png'
+            elif 'gif' in header:
+                ext = 'gif'
+            elif 'webp' in header:
+                ext = 'webp'
+            else:
+                ext = 'jpg'
+        else:
+            base64_data = base64_string
+            ext = 'jpg'
+        
+        # Decode base64
+        image_data = base64.b64decode(base64_data)
+        
+        # Use original filename if provided, otherwise generate unique name
+        if original_filename:
+            # Secure the filename and keep original name
+            filename = secure_filename(original_filename)
+            # If file exists, add timestamp to make unique
+            upload_path = os.path.join(os.getcwd(), UPLOAD_FOLDER)
+            os.makedirs(upload_path, exist_ok=True)
+            filepath = os.path.join(upload_path, filename)
+            if os.path.exists(filepath):
+                name, ext_orig = os.path.splitext(filename)
+                import time
+                filename = f"{name}_{int(time.time())}{ext_orig}"
+                filepath = os.path.join(upload_path, filename)
+        else:
+            filename = f"{uuid.uuid4().hex}.{ext}"
+            upload_path = os.path.join(os.getcwd(), UPLOAD_FOLDER)
+            os.makedirs(upload_path, exist_ok=True)
+            filepath = os.path.join(upload_path, filename)
+        
+        # Save file
+        with open(filepath, 'wb') as f:
+            f.write(image_data)
+        
+        return filename
+    except Exception as e:
+        print(f"Error saving base64 image: {e}")
+        return None
+
+
+def delete_image_file(filename):
+    """Delete image file from uploads folder"""
+    if not filename or filename.startswith('http') or filename.startswith('data:'):
+        return
+    try:
+        filepath = os.path.join(os.getcwd(), UPLOAD_FOLDER, filename)
+        if os.path.exists(filepath):
+            os.remove(filepath)
+    except Exception as e:
+        print(f"Error deleting image: {e}")
 
 
 def generate_product_embedding(product):
@@ -34,6 +109,19 @@ def admin_required(fn):
 def create_product():
     data = request.get_json()
     
+    # Handle image - convert base64 to file
+    hinh_anh = data.get('hinh_anh')
+    original_filename = data.get('hinh_anh_filename')
+    if hinh_anh:
+        if hinh_anh.startswith('data:'):
+            # Save base64 image to file with original filename
+            filename = save_base64_image(hinh_anh, original_filename)
+            if filename:
+                hinh_anh = filename
+        elif hinh_anh.startswith('/uploads/'):
+            # Extract just the filename
+            hinh_anh = hinh_anh.replace('/uploads/', '')
+    
     product = Product(
         ten_san_pham=data.get('ten_san_pham'),
         gia_ban=data.get('gia_ban'),
@@ -42,7 +130,7 @@ def create_product():
         size=data.get('size'),
         chat_lieu=data.get('chat_lieu'),
         gioi_tinh=data.get('gioi_tinh', 'Unisex'),
-        hinh_anh=data.get('hinh_anh'),
+        hinh_anh=hinh_anh,
         trang_thai=data.get('trang_thai', 'Con_hang')
     )
     
@@ -66,6 +154,27 @@ def update_product(product_id):
     text_fields = ['ten_san_pham', 'loai', 'mo_ta', 'chat_lieu', 'gioi_tinh']
     need_embedding_update = any(key in data for key in text_fields)
     
+    # Handle image update
+    if 'hinh_anh' in data:
+        new_image = data['hinh_anh']
+        old_image = product.hinh_anh
+        
+        if new_image and new_image.startswith('data:'):
+            # Save new base64 image to file with original filename
+            original_filename = data.get('hinh_anh_filename')
+            filename = save_base64_image(new_image, original_filename)
+            if filename:
+                # Delete old image file if it exists
+                delete_image_file(old_image)
+                data['hinh_anh'] = filename
+        elif new_image and new_image.startswith('/uploads/'):
+            # Frontend sent back the URL format, extract just the filename
+            data['hinh_anh'] = new_image.replace('/uploads/', '')
+        elif not new_image:
+            # Image was cleared
+            delete_image_file(old_image)
+            data['hinh_anh'] = None
+    
     for key, value in data.items():
         if hasattr(product, key) and key != 'embedding':
             setattr(product, key, value)
@@ -82,6 +191,10 @@ def update_product(product_id):
 @admin_required
 def delete_product(product_id):
     product = Product.query.get_or_404(product_id)
+    
+    # Delete image file if exists
+    delete_image_file(product.hinh_anh)
+    
     db.session.delete(product)
     db.session.commit()
     

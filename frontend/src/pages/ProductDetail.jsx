@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import api from '../utils/api'
+import api, { getImageUrl } from '../utils/api'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
 import ProductReviews from '../components/ProductReviews'
@@ -330,7 +330,7 @@ export default function ProductDetail() {
         {/* Product Image */}
         <div className="relative">
           <img
-            src={product.hinh_anh || 'https://via.placeholder.com/600'}
+            src={getImageUrl(product.hinh_anh) || 'https://via.placeholder.com/600'}
             alt={product.ten_san_pham}
             className="w-full rounded-2xl shadow-2xl"
           />

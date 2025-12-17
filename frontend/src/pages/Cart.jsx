@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
-import api from '../utils/api'
+import api, { getImageUrl } from '../utils/api'
 
 export default function Cart() {
   const { isAuthenticated, loading: authLoading } = useAuth()
@@ -109,7 +109,7 @@ export default function Cart() {
                   {/* Product Image */}
                   <Link to={`/products/${item.product.products_id}`} className="flex-shrink-0">
                     <img
-                      src={item.product.hinh_anh || 'https://via.placeholder.com/150'}
+                      src={getImageUrl(item.product.hinh_anh) || 'https://via.placeholder.com/150'}
                       alt={item.product.ten_san_pham}
                       className="w-full md:w-32 h-32 object-cover rounded-lg"
                     />

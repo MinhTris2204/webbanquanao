@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import api from '../../utils/api'
+import api, { getImageUrl } from '../../utils/api'
 import { useToast } from '../../components/Toast'
 
 export default function AdminOrders() {
@@ -515,7 +515,7 @@ export default function AdminOrders() {
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-3">
                               <img 
-                                src={item.product?.hinh_anh || 'https://via.placeholder.com/50'} 
+                                src={getImageUrl(item.product?.hinh_anh) || 'https://via.placeholder.com/50'} 
                                 alt={item.product?.ten_san_pham}
                                 className="w-12 h-12 object-cover rounded"
                               />

@@ -1,14 +1,22 @@
-from flask import Flask
+from flask import Flask, send_from_directory
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from flask_migrate import Migrate
 from config import Config
 from models import db
 from socket_events import socketio
+import os
+
+# Upload folder configuration
+UPLOAD_FOLDER = 'uploads'
 
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
+    app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+    
+    # Ensure upload folder exists
+    os.makedirs(os.path.join(os.getcwd(), UPLOAD_FOLDER), exist_ok=True)
     
     # Disable strict slashes to avoid redirects
     app.url_map.strict_slashes = False
@@ -21,6 +29,12 @@ def create_app():
             "allow_headers": ["Content-Type", "Authorization"],
             "expose_headers": ["Content-Type", "Authorization"],
             "supports_credentials": True
+        },
+        r"/uploads/*": {
+            "origins": "*",
+            "methods": ["GET", "OPTIONS"],
+            "allow_headers": ["Content-Type"],
+            "supports_credentials": False
         },
         r"/socket.io/*": {
             "origins": "*",
@@ -80,5 +94,10 @@ def create_app():
     @app.route('/api/health')
     def health():
         return {'status': 'ok'}
+    
+    # Serve uploaded images
+    @app.route('/uploads/<filename>')
+    def uploaded_file(filename):
+        return send_from_directory(os.path.join(os.getcwd(), UPLOAD_FOLDER), filename)
     
     return app

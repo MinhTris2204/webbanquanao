@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import api from '../../utils/api'
+import api, { getImageUrl } from '../../utils/api'
 
 export default function AdminReviews() {
   const [reviews, setReviews] = useState([])
@@ -317,7 +317,7 @@ export default function AdminReviews() {
                   <div className="flex gap-4">
                     {review.product.hinh_anh && (
                       <img 
-                        src={review.product.hinh_anh} 
+                        src={getImageUrl(review.product.hinh_anh)} 
                         alt={review.product.ten_san_pham}
                         className="w-20 h-20 object-cover rounded-lg shadow-md"
                       />

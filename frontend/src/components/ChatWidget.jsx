@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useSocket } from '../context/SocketContext'
-import api from '../utils/api'
+import api, { getImageUrl } from '../utils/api'
 
 const AI_INITIAL_MESSAGE = { role: 'assistant', content: 'Xin chào! 👋 Tôi là trợ lý AI của cửa hàng. Tôi có thể giúp bạn tìm sản phẩm, trả lời câu hỏi về cửa hàng. Bạn cần hỗ trợ gì?' }
 const AI_STORAGE_KEY = 'ai_chatbot_messages'
@@ -376,7 +376,7 @@ export default function ChatWidget() {
                               className="block bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-blue-400 hover:shadow-lg transition-all group text-left"
                             >
                               <div className="aspect-square overflow-hidden bg-gray-100">
-                                <img src={product.hinh_anh || 'https://via.placeholder.com/150'} alt={product.ten_san_pham} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                                <img src={getImageUrl(product.hinh_anh) || 'https://via.placeholder.com/150'} alt={product.ten_san_pham} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
                               </div>
                               <div className="p-2">
                                 <p className="text-xs font-medium text-gray-800 line-clamp-2 leading-tight">{product.ten_san_pham}</p>

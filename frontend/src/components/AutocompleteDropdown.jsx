@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { getImageUrl } from '../utils/api'
 
 export default function AutocompleteDropdown({ 
   suggestions, 
@@ -66,7 +67,7 @@ export default function AutocompleteDropdown({
           } ${index !== suggestions.length - 1 ? 'border-b border-gray-100' : ''}`}
         >
           <img
-            src={suggestion.hinh_anh || 'https://via.placeholder.com/60'}
+            src={getImageUrl(suggestion.hinh_anh) || 'https://via.placeholder.com/60'}
             alt={suggestion.ten_san_pham}
             className="w-12 h-12 object-cover rounded mr-3"
           />

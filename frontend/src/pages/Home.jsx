@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import api from '../utils/api'
+import api, { getImageUrl } from '../utils/api'
 import RecommendedProducts from '../components/RecommendedProducts'
 import ProductRating from '../components/ProductRating'
 
@@ -214,7 +214,7 @@ export default function Home() {
                 )}
                 <div className="aspect-square overflow-hidden rounded-t-xl bg-gray-100">
                   <img
-                    src={product.hinh_anh || 'https://via.placeholder.com/300'}
+                    src={getImageUrl(product.hinh_anh) || 'https://via.placeholder.com/300'}
                     alt={product.ten_san_pham}
                     className="w-full h-full object-cover group-hover:scale-110 transition duration-300"
                   />
@@ -298,7 +298,7 @@ export default function Home() {
                   )}
                   <div className="aspect-square overflow-hidden rounded-t-xl bg-gray-100">
                     <img
-                      src={product.hinh_anh || 'https://via.placeholder.com/300'}
+                      src={getImageUrl(product.hinh_anh) || 'https://via.placeholder.com/300'}
                       alt={product.ten_san_pham}
                       className="w-full h-full object-cover group-hover:scale-110 transition duration-300"
                     />

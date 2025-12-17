@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import api from '../utils/api'
+import api, { getImageUrl } from '../utils/api'
 import AutocompleteDropdown from '../components/AutocompleteDropdown'
 import ProductRating from '../components/ProductRating'
 
@@ -228,7 +228,7 @@ export default function Search() {
                 >
                   <div className="relative overflow-hidden">
                     <img
-                      src={product.hinh_anh || 'https://via.placeholder.com/300'}
+                      src={getImageUrl(product.hinh_anh) || 'https://via.placeholder.com/300'}
                       alt={product.ten_san_pham}
                       className="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-300"
                     />

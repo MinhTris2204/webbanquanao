@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import api from '../utils/api'
+import api, { getImageUrl } from '../utils/api'
 
 export default function Orders() {
   const { isAuthenticated, loading: authLoading } = useAuth()
@@ -248,7 +248,7 @@ export default function Orders() {
                         onClick={() => navigate(`/products/${detail.product?.products_id}`)}
                       >
                         <img
-                          src={detail.product?.hinh_anh || 'https://via.placeholder.com/80'}
+                          src={getImageUrl(detail.product?.hinh_anh) || 'https://via.placeholder.com/80'}
                           alt={detail.product?.ten_san_pham}
                           className="w-20 h-20 object-cover rounded-lg"
                         />

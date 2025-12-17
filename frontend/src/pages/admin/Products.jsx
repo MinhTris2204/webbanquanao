@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import api from '../../utils/api'
+import api, { getImageUrl } from '../../utils/api'
 
 export default function AdminProducts() {
   const [products, setProducts] = useState([])
@@ -92,7 +92,7 @@ export default function AdminProducts() {
     // Parse sizes from string to array (handle both ", " and "," separators)
     const sizes = product.size ? product.size.split(/,\s*/).map(s => s.trim()).filter(s => s) : []
     setSelectedSizes(sizes)
-    setImagePreview(product.hinh_anh || '')
+    setImagePreview(getImageUrl(product.hinh_anh) || '')
     setShowForm(true)
   }
 
@@ -102,7 +102,8 @@ export default function AdminProducts() {
       const reader = new FileReader()
       reader.onloadend = () => {
         setImagePreview(reader.result)
-        setFormData({ ...formData, hinh_anh: reader.result })
+        // Send both base64 data and original filename
+        setFormData({ ...formData, hinh_anh: reader.result, hinh_anh_filename: file.name })
       }
       reader.readAsDataURL(file)
     }
@@ -485,7 +486,7 @@ export default function AdminProducts() {
                   <td className="px-6 py-4 whitespace-nowrap">
                     {product.hinh_anh ? (
                       <img 
-                        src={product.hinh_anh} 
+                        src={getImageUrl(product.hinh_anh)} 
                         alt={product.ten_san_pham} 
                         className="w-20 h-20 object-cover rounded-lg shadow-md border-2 border-gray-100"
                       />

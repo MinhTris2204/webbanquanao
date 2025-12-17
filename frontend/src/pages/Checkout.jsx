@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import api from '../utils/api'
+import api, { getImageUrl } from '../utils/api'
 import { useAuth } from '../context/AuthContext'
 
 export default function Checkout() {
@@ -275,7 +275,7 @@ export default function Checkout() {
                 {cart.cart_items.map((item) => (
                   <div key={item.cart_item_id} className="flex gap-3">
                     <img
-                      src={item.product.hinh_anh || 'https://via.placeholder.com/60'}
+                      src={getImageUrl(item.product.hinh_anh) || 'https://via.placeholder.com/60'}
                       alt={item.product.ten_san_pham}
                       className="w-16 h-16 object-cover rounded-lg"
                     />

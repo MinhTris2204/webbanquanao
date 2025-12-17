@@ -61,6 +61,11 @@ class Product(db.Model):
     order_details = db.relationship('OrderDetail', backref='product', lazy=True)
     
     def to_dict(self, include_promotion=True, include_rating=True):
+        # Handle image URL - if it's a filename (not URL or base64), prepend /uploads/
+        hinh_anh = self.hinh_anh
+        if hinh_anh and not hinh_anh.startswith('http') and not hinh_anh.startswith('data:'):
+            hinh_anh = f"/uploads/{hinh_anh}"
+        
         result = {
             'products_id': self.products_id,
             'ten_san_pham': self.ten_san_pham,
@@ -70,7 +75,7 @@ class Product(db.Model):
             'size': self.size,
             'chat_lieu': self.chat_lieu,
             'gioi_tinh': self.gioi_tinh,
-            'hinh_anh': self.hinh_anh,
+            'hinh_anh': hinh_anh,
             'trang_thai': self.trang_thai,
             'created_at': self.created_at.isoformat() if self.created_at else None
         }

@@ -19,3 +19,23 @@ api.interceptors.request.use(config => {
 })
 
 export default api
+
+
+// Helper function to get full image URL
+export const getImageUrl = (imagePath) => {
+  if (!imagePath) return null
+  
+  // If already a full URL or base64, return as is
+  if (imagePath.startsWith('http') || imagePath.startsWith('data:')) {
+    return imagePath
+  }
+  
+  // If it's a relative path starting with /uploads/, prepend API base URL
+  const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+  if (imagePath.startsWith('/uploads/')) {
+    return `${baseURL}${imagePath}`
+  }
+  
+  // Otherwise, assume it's just a filename
+  return `${baseURL}/uploads/${imagePath}`
+}

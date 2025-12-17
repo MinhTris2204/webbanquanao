@@ -31,3 +31,7 @@ dist/
 # Database
 *.db
 *.sqlite
+
+# Uploads (keep .gitkeep)
+backend/uploads/*
+!backend/uploads/.gitkeep
