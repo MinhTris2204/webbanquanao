@@ -6,15 +6,15 @@ import { useCart } from '../context/CartContext'
 import ProductReviews from '../components/ProductReviews'
 import RecommendedProducts from '../components/RecommendedProducts'
 
-// Component hÆ°á»›ng dáº«n chá»n size
+// Component huong dan chon size
 function SizeGuide({ productType, gender }) {
   const [isOpen, setIsOpen] = useState(false)
   
-  // XĂ¡c Ä‘á»‹nh sáº£n pháº©m dĂ¹ng size sá»‘ (quáº§n) hay size chá»¯ (Ă¡o, v.v.)
-  const isPants = productType === 'Quáº§n'
-  const isAccessory = productType === 'Phá»¥ kiá»‡n'
+  // Xac dinh san pham dung size so (quan) hay size chu (ao, v.v.)
+  const isPants = productType === 'Quan'
+  const isAccessory = productType === 'Phu kien'
   
-  if (isAccessory) return null // KhĂ´ng cĂ³ hÆ°á»›ng dáº«n size cho phá»¥ kiá»‡n
+  if (isAccessory) return null // Khong co huong dan size cho phu kien
   
   const shirtSizesMale = [
     { size: 'S', height: '160-165', weight: '50-55' },
@@ -52,32 +52,31 @@ function SizeGuide({ productType, gender }) {
     { size: '32', height: '165-170', weight: '66-70', waist: '74-76' },
   ]
   
-  // Chá»n báº£ng size phĂ¹ há»£p
+  // Chon bang size phu hop
   let sizeData = []
   let title = ''
   
   if (isPants) {
     if (gender === 'Nam') {
       sizeData = pantsSizesMale
-      title = 'Báº£ng size quáº§n Nam'
-    } else if (gender === 'Ná»¯') {
+      title = 'Bang size quan Nam'
+    } else if (gender === 'Nu') {
       sizeData = pantsSizesFemale
-      title = 'Báº£ng size quáº§n Ná»¯'
+      title = 'Bang size quan Nu'
     } else {
-      // Unisex - show both
       sizeData = pantsSizesMale
-      title = 'Báº£ng size quáº§n'
+      title = 'Bang size quan'
     }
   } else {
     if (gender === 'Nam') {
       sizeData = shirtSizesMale
-      title = 'Báº£ng size Ă¡o Nam'
-    } else if (gender === 'Ná»¯') {
+      title = 'Bang size ao Nam'
+    } else if (gender === 'Nu') {
       sizeData = shirtSizesFemale
-      title = 'Báº£ng size Ă¡o Ná»¯'
+      title = 'Bang size ao Nu'
     } else {
       sizeData = shirtSizesMale
-      title = 'Báº£ng size'
+      title = 'Bang size'
     }
   }
   
@@ -90,7 +89,7 @@ function SizeGuide({ productType, gender }) {
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
         </svg>
-        đŸ“ HÆ°á»›ng dáº«n chá»n size
+        Huong dan chon size
         <svg className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
@@ -99,7 +98,7 @@ function SizeGuide({ productType, gender }) {
       {isOpen && (
         <div className="mt-4 bg-gradient-to-br from-gray-50 to-blue-50 rounded-xl p-5 border border-blue-200">
           <h4 className="font-bold text-lg text-gray-800 mb-4 flex items-center gap-2">
-            đŸ“ {title}
+            {title}
           </h4>
           
           <div className="overflow-x-auto">
@@ -107,9 +106,9 @@ function SizeGuide({ productType, gender }) {
               <thead>
                 <tr className="bg-blue-600 text-white">
                   <th className="px-4 py-3 text-left rounded-tl-lg">Size</th>
-                  <th className="px-4 py-3 text-left">Chiá»u cao (cm)</th>
-                  <th className="px-4 py-3 text-left">CĂ¢n náº·ng (kg)</th>
-                  {isPants && <th className="px-4 py-3 text-left rounded-tr-lg">VĂ²ng eo (cm)</th>}
+                  <th className="px-4 py-3 text-left">Chieu cao (cm)</th>
+                  <th className="px-4 py-3 text-left">Can nang (kg)</th>
+                  {isPants && <th className="px-4 py-3 text-left rounded-tr-lg">Vong eo (cm)</th>}
                 </tr>
               </thead>
               <tbody>
@@ -127,8 +126,8 @@ function SizeGuide({ productType, gender }) {
           
           <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
             <p className="text-sm text-yellow-800">
-              đŸ’¡ <strong>Máº¹o:</strong> Náº¿u báº¡n á»Ÿ giá»¯a 2 size, nĂªn chá»n size lá»›n hÆ¡n Ä‘á»ƒ thoáº£i mĂ¡i hÆ¡n.
-              {isPants && ' Quáº§n jean co giĂ£n cĂ³ thá»ƒ chá»n nhá» hÆ¡n 1 size.'}
+              <strong>Meo:</strong> Neu ban o giua 2 size, nen chon size lon hon de thoai mai hon.
+              {isPants && ' Quan jean co gian co the chon nho hon 1 size.'}
             </p>
           </div>
         </div>
@@ -137,7 +136,8 @@ function SizeGuide({ productType, gender }) {
   )
 }
 
-// Component Ä‘áº¿m ngÆ°á»£c thá»i gian
+
+// Component dem nguoc thoi gian
 function CountdownTimer({ endDate }) {
   const calculateTimeLeft = () => {
     if (!endDate) return null
@@ -167,28 +167,27 @@ function CountdownTimer({ endDate }) {
     return () => clearInterval(timer)
   }, [endDate])
 
-  // Don't render anything if expired
   if (!timeLeft) {
     return null
   }
 
   return (
     <div className="flex items-center gap-2">
-      <span className="text-sm font-semibold text-gray-700">â° Káº¿t thĂºc sau:</span>
+      <span className="text-sm font-semibold text-gray-700">Ket thuc sau:</span>
       <div className="flex gap-1">
         {timeLeft.days > 0 && (
           <div className="bg-red-600 text-white px-2 py-1 rounded font-bold text-sm">
-            {timeLeft.days} ngĂ y
+            {timeLeft.days} ngay
           </div>
         )}
         <div className="bg-red-600 text-white px-2 py-1 rounded font-bold text-sm">
-          {String(timeLeft.hours).padStart(2, '0')} giá»
+          {String(timeLeft.hours).padStart(2, '0')} gio
         </div>
         <div className="bg-red-600 text-white px-2 py-1 rounded font-bold text-sm">
-          {String(timeLeft.minutes).padStart(2, '0')} phĂºt
+          {String(timeLeft.minutes).padStart(2, '0')} phut
         </div>
         <div className="bg-red-600 text-white px-2 py-1 rounded font-bold text-sm animate-pulse">
-          {String(timeLeft.seconds).padStart(2, '0')} giĂ¢y
+          {String(timeLeft.seconds).padStart(2, '0')} giay
         </div>
       </div>
     </div>
@@ -215,7 +214,6 @@ export default function ProductDetail() {
     try {
       const res = await api.get(`/api/products/${id}`)
       setProduct(res.data)
-      // Auto-select first size if available
       if (res.data.size) {
         const sizes = res.data.size.split(/,\s*/).map(s => s.trim()).filter(s => s)
         if (sizes.length > 0) {
@@ -224,7 +222,7 @@ export default function ProductDetail() {
       }
     } catch (err) {
       console.error(err)
-      setMessage({ text: 'KhĂ´ng tĂ¬m tháº¥y sáº£n pháº©m', type: 'error' })
+      setMessage({ text: 'Khong tim thay san pham', type: 'error' })
     } finally {
       setLoading(false)
     }
@@ -236,7 +234,6 @@ export default function ProductDetail() {
         product_id: parseInt(id)
       })
     } catch (err) {
-      // Bá» qua lá»—i - tracking khĂ´ng quan trá»ng
       console.error('Failed to track view:', err)
     }
   }
@@ -248,7 +245,7 @@ export default function ProductDetail() {
     }
 
     if (product.size && !selectedSize) {
-      setMessage({ text: 'Vui lĂ²ng chá»n size!', type: 'error' })
+      setMessage({ text: 'Vui long chon size!', type: 'error' })
       return
     }
 
@@ -258,11 +255,11 @@ export default function ProductDetail() {
         quantity,
         selected_size: selectedSize
       })
-      fetchCartCount() // Cáº­p nháº­t sá»‘ lÆ°á»£ng giá» hĂ ng
-      setMessage({ text: 'âœ… ÄĂ£ thĂªm vĂ o giá» hĂ ng!', type: 'success' })
+      fetchCartCount()
+      setMessage({ text: 'Da them vao gio hang!', type: 'success' })
       setTimeout(() => setMessage({ text: '', type: '' }), 3000)
     } catch (err) {
-      setMessage({ text: 'âŒ CĂ³ lá»—i xáº£y ra', type: 'error' })
+      setMessage({ text: 'Co loi xay ra', type: 'error' })
     }
   }
 
@@ -273,22 +270,20 @@ export default function ProductDetail() {
     }
 
     if (product.size && !selectedSize) {
-      setMessage({ text: 'Vui lĂ²ng chá»n size!', type: 'error' })
+      setMessage({ text: 'Vui long chon size!', type: 'error' })
       return
     }
 
     try {
-      // ThĂªm vĂ o giá» hĂ ng trÆ°á»›c
       await api.post('/api/cart/add', {
         product_id: product.products_id,
         quantity,
         selected_size: selectedSize
       })
-      fetchCartCount() // Cáº­p nháº­t sá»‘ lÆ°á»£ng giá» hĂ ng
-      // Chuyá»ƒn Ä‘áº¿n trang thanh toĂ¡n
+      fetchCartCount()
       navigate('/checkout')
     } catch (err) {
-      setMessage({ text: 'âŒ CĂ³ lá»—i xáº£y ra', type: 'error' })
+      setMessage({ text: 'Co loi xay ra', type: 'error' })
     }
   }
 
@@ -297,7 +292,7 @@ export default function ProductDetail() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Äang táº£i sáº£n pháº©m...</p>
+          <p className="text-gray-600">Dang tai san pham...</p>
         </div>
       </div>
     )
@@ -306,21 +301,21 @@ export default function ProductDetail() {
   if (!product) {
     return (
       <div className="text-center py-20">
-        <div className="text-6xl mb-4">đŸ˜•</div>
-        <p className="text-gray-500 text-xl">KhĂ´ng tĂ¬m tháº¥y sáº£n pháº©m</p>
+        <div className="text-6xl mb-4">:(</div>
+        <p className="text-gray-500 text-xl">Khong tim thay san pham</p>
       </div>
     )
   }
 
-  // Há»— trá»£ cáº£ Ä‘á»‹nh dáº¡ng "S, M, L" vĂ  "28,29,30"
   const availableSizes = product.size ? product.size.split(/,\s*/).map(s => s.trim()).filter(s => s) : []
+
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       {/* Breadcrumb */}
       <div className="mb-6 text-sm text-gray-600">
         <button onClick={() => navigate('/products')} className="hover:text-blue-600">
-          Sáº£n pháº©m
+          San pham
         </button>
         <span className="mx-2">/</span>
         <span className="text-gray-800 font-medium">{product.ten_san_pham}</span>
@@ -336,12 +331,12 @@ export default function ProductDetail() {
           />
           {product.trang_thai === 'Het_hang' && (
             <div className="absolute top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg font-bold shadow-lg">
-              Háº¿t hĂ ng
+              Het hang
             </div>
           )}
           {product.trang_thai === 'Con_hang' && (
             <div className="absolute top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg font-bold shadow-lg">
-              CĂ²n hĂ ng
+              Con hang
             </div>
           )}
         </div>
@@ -357,7 +352,7 @@ export default function ProductDetail() {
                 {product.gioi_tinh}
               </span>
             </div>
-            <p className="text-sm text-gray-400 mb-2">MĂ£ sáº£n pháº©m: #{product.products_id}</p>
+            <p className="text-sm text-gray-400 mb-2">Ma san pham: #{product.products_id}</p>
             <h1 className="text-4xl font-bold mb-4 text-gray-800">{product.ten_san_pham}</h1>
             {product.promotion ? (
               <div className="space-y-3 mb-6">
@@ -365,7 +360,7 @@ export default function ProductDetail() {
                 <div className="bg-gradient-to-r from-red-50 to-orange-50 border-2 border-red-200 rounded-xl p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-bold text-red-700 mb-1">đŸ”¥ FLASH SALE</p>
+                      <p className="text-sm font-bold text-red-700 mb-1">FLASH SALE</p>
                       <CountdownTimer endDate={product.promotion.end_date} />
                     </div>
                     <div className="text-right">
@@ -379,19 +374,19 @@ export default function ProductDetail() {
                 {/* Price */}
                 <div className="flex items-center gap-3">
                   <p className="text-4xl text-red-600 font-bold">
-                    {product.promotion.promotional_price?.toLocaleString('vi-VN')}â‚«
+                    {product.promotion.promotional_price?.toLocaleString('vi-VN')}d
                   </p>
                 </div>
                 <p className="text-xl text-gray-500 line-through">
-                  GiĂ¡ gá»‘c: {product.gia_ban?.toLocaleString('vi-VN')}â‚«
+                  Gia goc: {product.gia_ban?.toLocaleString('vi-VN')}d
                 </p>
                 <p className="text-lg text-green-600 font-semibold">
-                  đŸ‰ Tiáº¿t kiá»‡m {(product.gia_ban - product.promotion.promotional_price)?.toLocaleString('vi-VN')}â‚«
+                  Tiet kiem {(product.gia_ban - product.promotion.promotional_price)?.toLocaleString('vi-VN')}d
                 </p>
               </div>
             ) : (
               <p className="text-4xl text-blue-600 font-bold mb-6">
-                {product.gia_ban?.toLocaleString('vi-VN')}â‚«
+                {product.gia_ban?.toLocaleString('vi-VN')}d
               </p>
             )}
           </div>
@@ -400,13 +395,13 @@ export default function ProductDetail() {
           <div className="bg-gray-50 rounded-xl p-6 space-y-3">
             {product.chat_lieu && (
               <div className="flex items-center">
-                <span className="font-semibold text-gray-700 w-32">Cháº¥t liá»‡u:</span>
+                <span className="font-semibold text-gray-700 w-32">Chat lieu:</span>
                 <span className="text-gray-600">{product.chat_lieu}</span>
               </div>
             )}
             {product.size && (
               <div className="flex items-center">
-                <span className="font-semibold text-gray-700 w-32">Size cĂ³ sáºµn:</span>
+                <span className="font-semibold text-gray-700 w-32">Size co san:</span>
                 <span className="text-gray-600">{product.size}</span>
               </div>
             )}
@@ -415,7 +410,7 @@ export default function ProductDetail() {
           {/* Description */}
           {product.mo_ta && (
             <div className="bg-gray-50 rounded-xl p-6">
-              <h3 className="font-bold text-xl mb-3 text-gray-800">đŸ“ MĂ´ táº£ sáº£n pháº©m:</h3>
+              <h3 className="font-bold text-xl mb-3 text-gray-800">Mo ta san pham:</h3>
               <p className="text-gray-700 leading-relaxed whitespace-pre-line">{product.mo_ta}</p>
             </div>
           )}
@@ -424,7 +419,7 @@ export default function ProductDetail() {
           {availableSizes.length > 0 && (
             <div>
               <label className="block font-bold text-lg mb-3 text-gray-800">
-                Chá»n size: <span className="text-red-500">*</span>
+                Chon size: <span className="text-red-500">*</span>
               </label>
               <div className="flex flex-wrap gap-3">
                 {availableSizes.map((size) => (
@@ -447,9 +442,10 @@ export default function ProductDetail() {
             </div>
           )}
 
+
           {/* Quantity */}
           <div>
-            <label className="block font-bold text-lg mb-3 text-gray-800">Sá»‘ lÆ°á»£ng:</label>
+            <label className="block font-bold text-lg mb-3 text-gray-800">So luong:</label>
             <div className="flex items-center gap-4">
               <button
                 onClick={() => setQuantity(Math.max(1, quantity - 1))}
@@ -495,7 +491,7 @@ export default function ProductDetail() {
                   : 'bg-white border-2 border-blue-600 text-blue-600 hover:bg-blue-50'
               }`}
             >
-              đŸ›’ ThĂªm vĂ o giá»
+              Them vao gio
             </button>
             <button
               onClick={handleBuyNow}
@@ -506,7 +502,7 @@ export default function ProductDetail() {
                   : 'bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700'
               }`}
             >
-              â¡ Mua ngay
+              Mua ngay
             </button>
           </div>
         </div>
@@ -518,7 +514,7 @@ export default function ProductDetail() {
       {/* Recommended For You */}
       <div className="mt-16">
         <RecommendedProducts 
-          title="đŸ¯ Gá»£i Ă½ dĂ nh cho báº¡n" 
+          title="Goi y danh cho ban" 
           limit={8} 
           type="for-you"
         />
@@ -527,7 +523,7 @@ export default function ProductDetail() {
       {/* Frequently Bought Together */}
       <div className="mt-16">
         <RecommendedProducts 
-          title="đŸ›’ ThÆ°á»ng Ä‘Æ°á»£c mua cĂ¹ng nhau" 
+          title="Thuong duoc mua cung nhau" 
           limit={4} 
           type="frequently-bought" 
           productId={product.products_id}
@@ -537,7 +533,7 @@ export default function ProductDetail() {
       {/* Similar Products */}
       <div className="mt-16">
         <RecommendedProducts 
-          title="đŸ” Sáº£n pháº©m tÆ°Æ¡ng tá»±" 
+          title="San pham tuong tu" 
           limit={8} 
           type="similar" 
           productId={product.products_id}
