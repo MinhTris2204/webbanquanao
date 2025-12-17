@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api, { getImageUrl } from '../utils/api'
 import { useAuth } from '../context/AuthContext'
@@ -6,15 +6,15 @@ import { useCart } from '../context/CartContext'
 import ProductReviews from '../components/ProductReviews'
 import RecommendedProducts from '../components/RecommendedProducts'
 
-// Component hướng dẫn chọn size
+// Component hÆ°á»›ng dáº«n chá»n size
 function SizeGuide({ productType, gender }) {
   const [isOpen, setIsOpen] = useState(false)
   
-  // Xác định sản phẩm dùng size số (quần) hay size chữ (áo, v.v.)
-  const isPants = productType === 'Quần'
-  const isAccessory = productType === 'Phụ kiện'
+  // XĂ¡c Ä‘á»‹nh sáº£n pháº©m dĂ¹ng size sá»‘ (quáº§n) hay size chá»¯ (Ă¡o, v.v.)
+  const isPants = productType === 'Quáº§n'
+  const isAccessory = productType === 'Phá»¥ kiá»‡n'
   
-  if (isAccessory) return null // Không có hướng dẫn size cho phụ kiện
+  if (isAccessory) return null // KhĂ´ng cĂ³ hÆ°á»›ng dáº«n size cho phá»¥ kiá»‡n
   
   const shirtSizesMale = [
     { size: 'S', height: '160-165', weight: '50-55' },
@@ -52,32 +52,32 @@ function SizeGuide({ productType, gender }) {
     { size: '32', height: '165-170', weight: '66-70', waist: '74-76' },
   ]
   
-  // Chọn bảng size phù hợp
+  // Chá»n báº£ng size phĂ¹ há»£p
   let sizeData = []
   let title = ''
   
   if (isPants) {
     if (gender === 'Nam') {
       sizeData = pantsSizesMale
-      title = 'Bảng size quần Nam'
-    } else if (gender === 'Nữ') {
+      title = 'Báº£ng size quáº§n Nam'
+    } else if (gender === 'Ná»¯') {
       sizeData = pantsSizesFemale
-      title = 'Bảng size quần Nữ'
+      title = 'Báº£ng size quáº§n Ná»¯'
     } else {
       // Unisex - show both
       sizeData = pantsSizesMale
-      title = 'Bảng size quần'
+      title = 'Báº£ng size quáº§n'
     }
   } else {
     if (gender === 'Nam') {
       sizeData = shirtSizesMale
-      title = 'Bảng size áo Nam'
-    } else if (gender === 'Nữ') {
+      title = 'Báº£ng size Ă¡o Nam'
+    } else if (gender === 'Ná»¯') {
       sizeData = shirtSizesFemale
-      title = 'Bảng size áo Nữ'
+      title = 'Báº£ng size Ă¡o Ná»¯'
     } else {
       sizeData = shirtSizesMale
-      title = 'Bảng size'
+      title = 'Báº£ng size'
     }
   }
   
@@ -90,16 +90,16 @@ function SizeGuide({ productType, gender }) {
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
         </svg>
-        📏 Hướng dẫn chọn size
+        đŸ“ HÆ°á»›ng dáº«n chá»n size
         <svg className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </button>
       
       {isOpen && (
-        <div className="mt-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-5 border border-blue-200">
+        <div className="mt-4 bg-gradient-to-br from-gray-50 to-blue-50 rounded-xl p-5 border border-blue-200">
           <h4 className="font-bold text-lg text-gray-800 mb-4 flex items-center gap-2">
-            📐 {title}
+            đŸ“ {title}
           </h4>
           
           <div className="overflow-x-auto">
@@ -107,9 +107,9 @@ function SizeGuide({ productType, gender }) {
               <thead>
                 <tr className="bg-blue-600 text-white">
                   <th className="px-4 py-3 text-left rounded-tl-lg">Size</th>
-                  <th className="px-4 py-3 text-left">Chiều cao (cm)</th>
-                  <th className="px-4 py-3 text-left">Cân nặng (kg)</th>
-                  {isPants && <th className="px-4 py-3 text-left rounded-tr-lg">Vòng eo (cm)</th>}
+                  <th className="px-4 py-3 text-left">Chiá»u cao (cm)</th>
+                  <th className="px-4 py-3 text-left">CĂ¢n náº·ng (kg)</th>
+                  {isPants && <th className="px-4 py-3 text-left rounded-tr-lg">VĂ²ng eo (cm)</th>}
                 </tr>
               </thead>
               <tbody>
@@ -127,8 +127,8 @@ function SizeGuide({ productType, gender }) {
           
           <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
             <p className="text-sm text-yellow-800">
-              💡 <strong>Mẹo:</strong> Nếu bạn ở giữa 2 size, nên chọn size lớn hơn để thoải mái hơn.
-              {isPants && ' Quần jean co giãn có thể chọn nhỏ hơn 1 size.'}
+              đŸ’¡ <strong>Máº¹o:</strong> Náº¿u báº¡n á»Ÿ giá»¯a 2 size, nĂªn chá»n size lá»›n hÆ¡n Ä‘á»ƒ thoáº£i mĂ¡i hÆ¡n.
+              {isPants && ' Quáº§n jean co giĂ£n cĂ³ thá»ƒ chá»n nhá» hÆ¡n 1 size.'}
             </p>
           </div>
         </div>
@@ -137,7 +137,7 @@ function SizeGuide({ productType, gender }) {
   )
 }
 
-// Component đếm ngược thời gian
+// Component Ä‘áº¿m ngÆ°á»£c thá»i gian
 function CountdownTimer({ endDate }) {
   const calculateTimeLeft = () => {
     if (!endDate) return null
@@ -174,21 +174,21 @@ function CountdownTimer({ endDate }) {
 
   return (
     <div className="flex items-center gap-2">
-      <span className="text-sm font-semibold text-gray-700">⏰ Kết thúc sau:</span>
+      <span className="text-sm font-semibold text-gray-700">â° Káº¿t thĂºc sau:</span>
       <div className="flex gap-1">
         {timeLeft.days > 0 && (
           <div className="bg-red-600 text-white px-2 py-1 rounded font-bold text-sm">
-            {timeLeft.days} ngày
+            {timeLeft.days} ngĂ y
           </div>
         )}
         <div className="bg-red-600 text-white px-2 py-1 rounded font-bold text-sm">
-          {String(timeLeft.hours).padStart(2, '0')} giờ
+          {String(timeLeft.hours).padStart(2, '0')} giá»
         </div>
         <div className="bg-red-600 text-white px-2 py-1 rounded font-bold text-sm">
-          {String(timeLeft.minutes).padStart(2, '0')} phút
+          {String(timeLeft.minutes).padStart(2, '0')} phĂºt
         </div>
         <div className="bg-red-600 text-white px-2 py-1 rounded font-bold text-sm animate-pulse">
-          {String(timeLeft.seconds).padStart(2, '0')} giây
+          {String(timeLeft.seconds).padStart(2, '0')} giĂ¢y
         </div>
       </div>
     </div>
@@ -224,7 +224,7 @@ export default function ProductDetail() {
       }
     } catch (err) {
       console.error(err)
-      setMessage({ text: 'Không tìm thấy sản phẩm', type: 'error' })
+      setMessage({ text: 'KhĂ´ng tĂ¬m tháº¥y sáº£n pháº©m', type: 'error' })
     } finally {
       setLoading(false)
     }
@@ -236,7 +236,7 @@ export default function ProductDetail() {
         product_id: parseInt(id)
       })
     } catch (err) {
-      // Bỏ qua lỗi - tracking không quan trọng
+      // Bá» qua lá»—i - tracking khĂ´ng quan trá»ng
       console.error('Failed to track view:', err)
     }
   }
@@ -248,7 +248,7 @@ export default function ProductDetail() {
     }
 
     if (product.size && !selectedSize) {
-      setMessage({ text: 'Vui lòng chọn size!', type: 'error' })
+      setMessage({ text: 'Vui lĂ²ng chá»n size!', type: 'error' })
       return
     }
 
@@ -258,11 +258,11 @@ export default function ProductDetail() {
         quantity,
         selected_size: selectedSize
       })
-      fetchCartCount() // Cập nhật số lượng giỏ hàng
-      setMessage({ text: '✅ Đã thêm vào giỏ hàng!', type: 'success' })
+      fetchCartCount() // Cáº­p nháº­t sá»‘ lÆ°á»£ng giá» hĂ ng
+      setMessage({ text: 'âœ… ÄĂ£ thĂªm vĂ o giá» hĂ ng!', type: 'success' })
       setTimeout(() => setMessage({ text: '', type: '' }), 3000)
     } catch (err) {
-      setMessage({ text: '❌ Có lỗi xảy ra', type: 'error' })
+      setMessage({ text: 'âŒ CĂ³ lá»—i xáº£y ra', type: 'error' })
     }
   }
 
@@ -273,22 +273,22 @@ export default function ProductDetail() {
     }
 
     if (product.size && !selectedSize) {
-      setMessage({ text: 'Vui lòng chọn size!', type: 'error' })
+      setMessage({ text: 'Vui lĂ²ng chá»n size!', type: 'error' })
       return
     }
 
     try {
-      // Thêm vào giỏ hàng trước
+      // ThĂªm vĂ o giá» hĂ ng trÆ°á»›c
       await api.post('/api/cart/add', {
         product_id: product.products_id,
         quantity,
         selected_size: selectedSize
       })
-      fetchCartCount() // Cập nhật số lượng giỏ hàng
-      // Chuyển đến trang thanh toán
+      fetchCartCount() // Cáº­p nháº­t sá»‘ lÆ°á»£ng giá» hĂ ng
+      // Chuyá»ƒn Ä‘áº¿n trang thanh toĂ¡n
       navigate('/checkout')
     } catch (err) {
-      setMessage({ text: '❌ Có lỗi xảy ra', type: 'error' })
+      setMessage({ text: 'âŒ CĂ³ lá»—i xáº£y ra', type: 'error' })
     }
   }
 
@@ -297,7 +297,7 @@ export default function ProductDetail() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Đang tải sản phẩm...</p>
+          <p className="text-gray-600">Äang táº£i sáº£n pháº©m...</p>
         </div>
       </div>
     )
@@ -306,13 +306,13 @@ export default function ProductDetail() {
   if (!product) {
     return (
       <div className="text-center py-20">
-        <div className="text-6xl mb-4">😕</div>
-        <p className="text-gray-500 text-xl">Không tìm thấy sản phẩm</p>
+        <div className="text-6xl mb-4">đŸ˜•</div>
+        <p className="text-gray-500 text-xl">KhĂ´ng tĂ¬m tháº¥y sáº£n pháº©m</p>
       </div>
     )
   }
 
-  // Hỗ trợ cả định dạng "S, M, L" và "28,29,30"
+  // Há»— trá»£ cáº£ Ä‘á»‹nh dáº¡ng "S, M, L" vĂ  "28,29,30"
   const availableSizes = product.size ? product.size.split(/,\s*/).map(s => s.trim()).filter(s => s) : []
 
   return (
@@ -320,7 +320,7 @@ export default function ProductDetail() {
       {/* Breadcrumb */}
       <div className="mb-6 text-sm text-gray-600">
         <button onClick={() => navigate('/products')} className="hover:text-blue-600">
-          Sản phẩm
+          Sáº£n pháº©m
         </button>
         <span className="mx-2">/</span>
         <span className="text-gray-800 font-medium">{product.ten_san_pham}</span>
@@ -336,12 +336,12 @@ export default function ProductDetail() {
           />
           {product.trang_thai === 'Het_hang' && (
             <div className="absolute top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg font-bold shadow-lg">
-              Hết hàng
+              Háº¿t hĂ ng
             </div>
           )}
           {product.trang_thai === 'Con_hang' && (
             <div className="absolute top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg font-bold shadow-lg">
-              Còn hàng
+              CĂ²n hĂ ng
             </div>
           )}
         </div>
@@ -357,7 +357,7 @@ export default function ProductDetail() {
                 {product.gioi_tinh}
               </span>
             </div>
-            <p className="text-sm text-gray-400 mb-2">Mã sản phẩm: #{product.products_id}</p>
+            <p className="text-sm text-gray-400 mb-2">MĂ£ sáº£n pháº©m: #{product.products_id}</p>
             <h1 className="text-4xl font-bold mb-4 text-gray-800">{product.ten_san_pham}</h1>
             {product.promotion ? (
               <div className="space-y-3 mb-6">
@@ -365,7 +365,7 @@ export default function ProductDetail() {
                 <div className="bg-gradient-to-r from-red-50 to-orange-50 border-2 border-red-200 rounded-xl p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-bold text-red-700 mb-1">🔥 FLASH SALE</p>
+                      <p className="text-sm font-bold text-red-700 mb-1">đŸ”¥ FLASH SALE</p>
                       <CountdownTimer endDate={product.promotion.end_date} />
                     </div>
                     <div className="text-right">
@@ -379,19 +379,19 @@ export default function ProductDetail() {
                 {/* Price */}
                 <div className="flex items-center gap-3">
                   <p className="text-4xl text-red-600 font-bold">
-                    {product.promotion.promotional_price?.toLocaleString('vi-VN')}₫
+                    {product.promotion.promotional_price?.toLocaleString('vi-VN')}â‚«
                   </p>
                 </div>
                 <p className="text-xl text-gray-500 line-through">
-                  Giá gốc: {product.gia_ban?.toLocaleString('vi-VN')}₫
+                  GiĂ¡ gá»‘c: {product.gia_ban?.toLocaleString('vi-VN')}â‚«
                 </p>
                 <p className="text-lg text-green-600 font-semibold">
-                  🎉 Tiết kiệm {(product.gia_ban - product.promotion.promotional_price)?.toLocaleString('vi-VN')}₫
+                  đŸ‰ Tiáº¿t kiá»‡m {(product.gia_ban - product.promotion.promotional_price)?.toLocaleString('vi-VN')}â‚«
                 </p>
               </div>
             ) : (
               <p className="text-4xl text-blue-600 font-bold mb-6">
-                {product.gia_ban?.toLocaleString('vi-VN')}₫
+                {product.gia_ban?.toLocaleString('vi-VN')}â‚«
               </p>
             )}
           </div>
@@ -400,13 +400,13 @@ export default function ProductDetail() {
           <div className="bg-gray-50 rounded-xl p-6 space-y-3">
             {product.chat_lieu && (
               <div className="flex items-center">
-                <span className="font-semibold text-gray-700 w-32">Chất liệu:</span>
+                <span className="font-semibold text-gray-700 w-32">Cháº¥t liá»‡u:</span>
                 <span className="text-gray-600">{product.chat_lieu}</span>
               </div>
             )}
             {product.size && (
               <div className="flex items-center">
-                <span className="font-semibold text-gray-700 w-32">Size có sẵn:</span>
+                <span className="font-semibold text-gray-700 w-32">Size cĂ³ sáºµn:</span>
                 <span className="text-gray-600">{product.size}</span>
               </div>
             )}
@@ -415,7 +415,7 @@ export default function ProductDetail() {
           {/* Description */}
           {product.mo_ta && (
             <div className="bg-gray-50 rounded-xl p-6">
-              <h3 className="font-bold text-xl mb-3 text-gray-800">📝 Mô tả sản phẩm:</h3>
+              <h3 className="font-bold text-xl mb-3 text-gray-800">đŸ“ MĂ´ táº£ sáº£n pháº©m:</h3>
               <p className="text-gray-700 leading-relaxed whitespace-pre-line">{product.mo_ta}</p>
             </div>
           )}
@@ -424,7 +424,7 @@ export default function ProductDetail() {
           {availableSizes.length > 0 && (
             <div>
               <label className="block font-bold text-lg mb-3 text-gray-800">
-                Chọn size: <span className="text-red-500">*</span>
+                Chá»n size: <span className="text-red-500">*</span>
               </label>
               <div className="flex flex-wrap gap-3">
                 {availableSizes.map((size) => (
@@ -449,7 +449,7 @@ export default function ProductDetail() {
 
           {/* Quantity */}
           <div>
-            <label className="block font-bold text-lg mb-3 text-gray-800">Số lượng:</label>
+            <label className="block font-bold text-lg mb-3 text-gray-800">Sá»‘ lÆ°á»£ng:</label>
             <div className="flex items-center gap-4">
               <button
                 onClick={() => setQuantity(Math.max(1, quantity - 1))}
@@ -495,7 +495,7 @@ export default function ProductDetail() {
                   : 'bg-white border-2 border-blue-600 text-blue-600 hover:bg-blue-50'
               }`}
             >
-              🛒 Thêm vào giỏ
+              đŸ›’ ThĂªm vĂ o giá»
             </button>
             <button
               onClick={handleBuyNow}
@@ -506,7 +506,7 @@ export default function ProductDetail() {
                   : 'bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700'
               }`}
             >
-              ⚡ Mua ngay
+              â¡ Mua ngay
             </button>
           </div>
         </div>
@@ -518,7 +518,7 @@ export default function ProductDetail() {
       {/* Recommended For You */}
       <div className="mt-16">
         <RecommendedProducts 
-          title="🎯 Gợi ý dành cho bạn" 
+          title="đŸ¯ Gá»£i Ă½ dĂ nh cho báº¡n" 
           limit={8} 
           type="for-you"
         />
@@ -527,7 +527,7 @@ export default function ProductDetail() {
       {/* Frequently Bought Together */}
       <div className="mt-16">
         <RecommendedProducts 
-          title="🛒 Thường được mua cùng nhau" 
+          title="đŸ›’ ThÆ°á»ng Ä‘Æ°á»£c mua cĂ¹ng nhau" 
           limit={4} 
           type="frequently-bought" 
           productId={product.products_id}
@@ -537,7 +537,7 @@ export default function ProductDetail() {
       {/* Similar Products */}
       <div className="mt-16">
         <RecommendedProducts 
-          title="🔍 Sản phẩm tương tự" 
+          title="đŸ” Sáº£n pháº©m tÆ°Æ¡ng tá»±" 
           limit={8} 
           type="similar" 
           productId={product.products_id}
@@ -546,3 +546,4 @@ export default function ProductDetail() {
     </div>
   )
 }
+

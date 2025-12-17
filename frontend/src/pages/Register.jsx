@@ -18,6 +18,7 @@ export default function Register() {
   const [success, setSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
   const [resendCooldown, setResendCooldown] = useState(0)
+  const [otpExpiry, setOtpExpiry] = useState(0) // Đếm ngược thời gian OTP hết hạn
   const navigate = useNavigate()
 
   // Đếm ngược để gửi lại OTP
@@ -32,6 +33,27 @@ export default function Register() {
         return prev - 1
       })
     }, 1000)
+  }
+
+  // Đếm ngược thời gian OTP hết hạn (10 phút)
+  const startOtpExpiry = () => {
+    setOtpExpiry(600) // 10 phút = 600 giây
+    const interval = setInterval(() => {
+      setOtpExpiry(prev => {
+        if (prev <= 1) {
+          clearInterval(interval)
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+  }
+
+  // Format thời gian mm:ss
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
   const handleSubmit = async (e) => {
@@ -56,6 +78,7 @@ export default function Register() {
       if (res.data.need_verification) {
         setStep(2)
         startResendCooldown()
+        startOtpExpiry()
       } else {
         setSuccess(true)
         setTimeout(() => navigate('/login'), 2000)
@@ -102,6 +125,7 @@ export default function Register() {
         purpose: 'register'
       })
       startResendCooldown()
+      startOtpExpiry()
     } catch (err) {
       setError(err.response?.data?.error || 'Không thể gửi lại mã OTP')
     } finally {
@@ -125,6 +149,18 @@ export default function Register() {
               Mã OTP đã được gửi đến<br/>
               <span className="font-semibold text-blue-600">{formData.email}</span>
             </p>
+            {otpExpiry > 0 && (
+              <div className={`mt-3 px-4 py-2 rounded-lg ${otpExpiry <= 60 ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
+                <span className="font-semibold">⏱️ Mã OTP hết hạn sau: </span>
+                <span className="font-mono text-lg">{formatTime(otpExpiry)}</span>
+              </div>
+            )}
+            {otpExpiry === 0 && step === 2 && !success && (
+              <div className="mt-3 px-4 py-2 rounded-lg bg-red-100 text-red-700">
+                <span className="font-semibold">⚠️ Mã OTP đã hết hạn!</span>
+                <p className="text-sm">Vui lòng nhấn "Gửi lại mã OTP" để nhận mã mới.</p>
+              </div>
+            )}
           </div>
 
           {error && (
