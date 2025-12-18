@@ -278,19 +278,12 @@ def get_frequently_bought_together(product_id):
         
         product_ids = [item[0] for item in frequently_bought]
         
+        # Nếu không có dữ liệu thực tế, trả về mảng rỗng (không fallback)
         if not product_ids:
-            # If no data, return similar products
-            product = Product.query.get(product_id)
-            if product:
-                similar = Product.query.filter(
-                    Product.products_id != product_id,
-                    Product.loai == product.loai,
-                    Product.trang_thai == 'Con_hang'
-                ).limit(limit).all()
-                return jsonify({
-                    'products': [p.to_dict() for p in similar],
-                    'based_on': 'similar_category'
-                })
+            return jsonify({
+                'products': [],
+                'based_on': 'no_data'
+            })
         
         products = Product.query.filter(
             Product.products_id.in_(product_ids),

@@ -87,12 +87,11 @@ export default function RecommendedProducts({ title = '🎯 Gợi ý dành cho b
       <div className="flex justify-between items-center mb-6">
         <div>
           <h2 className="text-2xl font-bold">{title}</h2>
-          {basedOn && (
+          {basedOn && basedOn !== 'no_data' && (
             <p className="text-sm text-gray-600 mt-1">
               {basedOn === 'user_behavior' && '📊 Dựa trên lịch sử xem của bạn'}
               {basedOn === 'trending' && '🔥 Sản phẩm đang thịnh hành'}
-              {basedOn === 'similar_category' && '🔍 Sản phẩm cùng danh mục'}
-              {basedOn === 'frequently_bought_together' && '🛒 Thường được mua cùng nhau'}
+              {basedOn === 'frequently_bought_together' && '🛒 Dựa trên đơn hàng thực tế'}
             </p>
           )}
         </div>

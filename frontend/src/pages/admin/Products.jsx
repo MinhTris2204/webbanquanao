@@ -8,6 +8,7 @@ export default function AdminProducts() {
   const [imagePreview, setImagePreview] = useState('')
   const [selectedSizes, setSelectedSizes] = useState([])
   const [searchTerm, setSearchTerm] = useState('')
+  const [sortBy, setSortBy] = useState('newest')
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalProducts, setTotalProducts] = useState(0)
@@ -22,6 +23,7 @@ export default function AdminProducts() {
     hinh_anh: '',
     trang_thai: 'Con_hang'
   })
+  const [submitting, setSubmitting] = useState(false)
 
   const letterSizes = ['S', 'M', 'L', 'XL', 'XXL']
   const numberSizes = ['26', '27', '28', '29', '30', '31', '32', '33', '34', '36']
@@ -29,7 +31,7 @@ export default function AdminProducts() {
 
   useEffect(() => {
     fetchProducts()
-  }, [currentPage, searchTerm])
+  }, [currentPage, searchTerm, sortBy])
 
   const fetchProducts = async () => {
     try {
@@ -37,7 +39,8 @@ export default function AdminProducts() {
         params: {
           page: currentPage,
           per_page: 10,
-          search: searchTerm
+          search: searchTerm,
+          sort_by: sortBy
         }
       })
       setProducts(res.data.products)
@@ -55,6 +58,9 @@ export default function AdminProducts() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (submitting) return // Ngăn submit nhiều lần
+    
+    setSubmitting(true)
     try {
       // Convert selected sizes array to string (use comma without space for consistency)
       const dataToSubmit = {
@@ -73,6 +79,8 @@ export default function AdminProducts() {
       fetchProducts()
     } catch (err) {
       alert('Có lỗi xảy ra')
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -172,9 +180,9 @@ export default function AdminProducts() {
         </button>
       </div>
 
-      {/* Search Bar */}
-      <div className="mb-6 flex items-center gap-4">
-        <div className="flex-1 relative">
+      {/* Search Bar & Sort */}
+      <div className="mb-6 flex items-center gap-4 flex-wrap">
+        <div className="flex-1 min-w-[250px] relative">
           <input
             type="text"
             placeholder="🔍 Tìm kiếm sản phẩm theo tên..."
@@ -191,6 +199,26 @@ export default function AdminProducts() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
         </div>
+        
+        {/* Sort Dropdown */}
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-600 font-medium">Sắp xếp:</span>
+          <select
+            value={sortBy}
+            onChange={(e) => {
+              setSortBy(e.target.value)
+              setCurrentPage(1)
+            }}
+            className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition bg-white font-medium text-gray-700"
+          >
+            <option value="newest">🆕 Mới nhất</option>
+            <option value="oldest">📅 Cũ nhất</option>
+            <option value="name">🔤 Tên A-Z</option>
+            <option value="price_asc">💰 Giá thấp → cao</option>
+            <option value="price_desc">💎 Giá cao → thấp</option>
+          </select>
+        </div>
+        
         <div className="text-sm text-gray-600 bg-gray-100 px-4 py-3 rounded-lg">
           Tổng: <span className="font-bold text-blue-600">{totalProducts}</span> sản phẩm
         </div>
@@ -440,18 +468,38 @@ export default function AdminProducts() {
               <div className="flex gap-3 mt-8 pt-6 border-t">
                 <button
                   type="submit"
-                  className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg font-semibold"
+                  disabled={submitting}
+                  className={`flex-1 px-6 py-3 rounded-lg transition-all shadow-md hover:shadow-lg font-semibold flex items-center justify-center gap-2 ${
+                    submitting 
+                      ? 'bg-gray-400 cursor-not-allowed' 
+                      : 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700'
+                  } text-white`}
                 >
-                  {editingProduct ? '💾 Cập nhật' : '➕ Thêm sản phẩm'}
+                  {submitting ? (
+                    <>
+                      <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Đang xử lý...
+                    </>
+                  ) : (
+                    editingProduct ? '💾 Cập nhật' : '➕ Thêm sản phẩm'
+                  )}
                 </button>
                 <button
                   type="button"
+                  disabled={submitting}
                   onClick={() => {
                     setShowForm(false)
                     setEditingProduct(null)
                     resetForm()
                   }}
-                  className="flex-1 bg-gray-500 text-white px-6 py-3 rounded-lg hover:bg-gray-600 transition-all shadow-md hover:shadow-lg font-semibold"
+                  className={`flex-1 px-6 py-3 rounded-lg transition-all shadow-md hover:shadow-lg font-semibold ${
+                    submitting 
+                      ? 'bg-gray-300 cursor-not-allowed text-gray-500' 
+                      : 'bg-gray-500 hover:bg-gray-600 text-white'
+                  }`}
                 >
                   ❌ Hủy
                 </button>

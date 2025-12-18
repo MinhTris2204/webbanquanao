@@ -372,6 +372,78 @@ def get_product_promotion_info(product_id):
         print(f"Error getting product promotion: {e}")
         return None
 
+
+def get_products_by_price(order='desc', limit=5, category=None):
+    """Get products sorted by price (highest or lowest)"""
+    try:
+        order_clause = "DESC" if order == 'desc' else "ASC"
+        category_filter = f"AND loai = '{category}'" if category else ""
+        
+        results = db.session.execute(
+            db.text(f"""
+                SELECT products_id, ten_san_pham, gia_ban, loai, mo_ta, size, chat_lieu, gioi_tinh, hinh_anh
+                FROM products
+                WHERE trang_thai = 'Con_hang' {category_filter}
+                ORDER BY gia_ban {order_clause}
+                LIMIT {limit}
+            """)
+        ).fetchall()
+        
+        products = []
+        for row in results:
+            products.append({
+                'id': row.products_id,
+                'ten_san_pham': row.ten_san_pham,
+                'gia_ban': float(row.gia_ban) if row.gia_ban else 0,
+                'loai': row.loai,
+                'mo_ta': row.mo_ta,
+                'size': row.size,
+                'chat_lieu': row.chat_lieu,
+                'gioi_tinh': row.gioi_tinh,
+                'hinh_anh': row.hinh_anh
+            })
+        return products
+    except Exception as e:
+        print(f"Error getting products by price: {e}")
+        return []
+
+
+def detect_price_query(query):
+    """Detect if query is asking about highest/lowest price products"""
+    ql = query.lower()
+    
+    # Detect highest price
+    highest_keywords = ['đắt nhất', 'cao nhất', 'giá cao nhất', 'mắc nhất', 'đắt tiền nhất', 'giá đắt', 'cao giá']
+    for kw in highest_keywords:
+        if kw in ql:
+            return 'highest'
+    
+    # Detect lowest price
+    lowest_keywords = ['rẻ nhất', 'thấp nhất', 'giá thấp nhất', 'giá rẻ nhất', 'rẻ tiền nhất', 'giá rẻ', 'thấp giá']
+    for kw in lowest_keywords:
+        if kw in ql:
+            return 'lowest'
+    
+    return None
+
+
+def detect_category_in_query(query):
+    """Detect product category mentioned in query"""
+    ql = query.lower()
+    categories = {
+        'áo': 'Áo',
+        'quần': 'Quần',
+        'váy': 'Váy',
+        'đầm': 'Đầm',
+        'áo khoác': 'Áo khoác',
+        'phụ kiện': 'Phụ kiện'
+    }
+    
+    for keyword, category in categories.items():
+        if keyword in ql:
+            return category
+    return None
+
 # ============ Prompt Template ============
 CHATBOT_PROMPT = """Bạn là trợ lý AI của cửa hàng thời trang Shop Quần Áo. Nhiệm vụ của bạn là tư vấn sản phẩm, trả lời câu hỏi về cửa hàng.
 
@@ -396,14 +468,19 @@ CHATBOT_PROMPT = """Bạn là trợ lý AI của cửa hàng thời trang Shop Q
    - Nếu khách hỏi "2 quần" → CHỈ gợi ý ĐÚNG 2 sản phẩm QUẦN
    - Nếu khách hỏi "3 sản phẩm" → gợi ý ĐÚNG 3 sản phẩm
    - LUÔN tuân thủ ĐÚNG số lượng và ĐÚNG loại sản phẩm khách yêu cầu
-3. **KHUYẾN MÃI:**
+3. **GIÁ CAO NHẤT / THẤP NHẤT:**
+   - Nếu khách hỏi "sản phẩm đắt nhất", "giá cao nhất" → Trả lời sản phẩm #1 trong danh sách GIÁ CAO NHẤT
+   - Nếu khách hỏi "sản phẩm rẻ nhất", "giá thấp nhất" → Trả lời sản phẩm #1 trong danh sách GIÁ THẤP NHẤT
+   - Nếu hỏi "top 3 đắt nhất" → Trả lời 3 sản phẩm đầu tiên trong danh sách GIÁ CAO NHẤT
+   - PHẢI dùng đúng sản phẩm từ danh sách đã được sắp xếp theo giá
+4. **KHUYẾN MÃI:**
    - Nếu khách hỏi về khuyến mãi, giảm giá, sale → ƯU TIÊN giới thiệu sản phẩm từ danh sách ĐANG KHUYẾN MÃI
    - Khi giới thiệu sản phẩm khuyến mãi, PHẢI nêu rõ: giá gốc, mức giảm, giá sau giảm
    - Ví dụ: "Áo ABC đang giảm 30%! Giá gốc 500.000đ → Chỉ còn 350.000đ"
-4. Nếu hỏi về cửa hàng/chính sách → trích dẫn thông tin liên quan
-5. Trả lời bằng tiếng Việt, thân thiện, ngắn gọn
-6. KHÔNG bịa đặt thông tin không có trong dữ liệu
-7. SỬ DỤNG LỊCH SỬ HỘI THOẠI để hiểu ngữ cảnh và trả lời phù hợp
+5. Nếu hỏi về cửa hàng/chính sách → trích dẫn thông tin liên quan
+6. Trả lời bằng tiếng Việt, thân thiện, ngắn gọn
+7. KHÔNG bịa đặt thông tin không có trong dữ liệu
+8. SỬ DỤNG LỊCH SỬ HỘI THOẠI để hiểu ngữ cảnh và trả lời phù hợp
 
 **BẮT BUỘC:** Ở DÒNG CUỐI CÙNG của câu trả lời, PHẢI ghi CHÍNH XÁC theo format:
 [PRODUCTS: id1,id2] - chỉ ghi ID của sản phẩm bạn ĐÃ ĐỀ CẬP trong câu trả lời
@@ -435,10 +512,20 @@ def ask_chatbot():
         products = []
         store_infos = []
         promotional_products = []
+        price_sorted_products = []
         
         # Check if query is about promotions/sales
-        promo_keywords = ['khuyến mãi', 'giảm giá', 'sale', 'ưu đãi', 'khuyến mại', 'giảm', 'rẻ', 'tiết kiệm', 'deal', 'hot']
+        promo_keywords = ['khuyến mãi', 'giảm giá', 'sale', 'ưu đãi', 'khuyến mại', 'giảm', 'tiết kiệm', 'deal', 'hot']
         is_promo_query = any(kw in ql for kw in promo_keywords)
+        
+        # Check if query is about price (highest/lowest)
+        price_query_type = detect_price_query(query)
+        category_in_query = detect_category_in_query(query)
+        
+        if price_query_type:
+            order = 'desc' if price_query_type == 'highest' else 'asc'
+            price_sorted_products = get_products_by_price(order=order, limit=5, category=category_in_query)
+            print(f"[CHAT] Price query detected: {price_query_type}, found {len(price_sorted_products)} products")
         
         # Get promotional products
         promotional_products = get_promotional_products()
@@ -476,6 +563,20 @@ def ask_chatbot():
         
         # Build context
         product_context = ""
+        
+        # If price query, prioritize price-sorted products
+        if price_sorted_products:
+            price_label = "GIÁ CAO NHẤT" if price_query_type == 'highest' else "GIÁ THẤP NHẤT"
+            category_label = f" ({category_in_query})" if category_in_query else ""
+            product_context += f"**SẢN PHẨM {price_label}{category_label}:**\n"
+            for i, p in enumerate(price_sorted_products, 1):
+                product_context += f"- [ID:{p['id']}] #{i} {p['ten_san_pham']}: {p['gia_ban']:,.0f}đ, Loại: {p['loai']}, Size: {p.get('size', 'N/A')}\n"
+            product_context += "\n**CÁC SẢN PHẨM KHÁC:**\n"
+            # Add price_sorted_products to products for later lookup
+            for p in price_sorted_products:
+                if p not in products:
+                    products.append(p)
+        
         if products:
             for p in products[:10]:
                 if p.get('is_promotional') and p.get('gia_khuyen_mai'):

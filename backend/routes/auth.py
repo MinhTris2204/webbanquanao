@@ -215,8 +215,8 @@ def login():
     if not user or not user.check_password(password):
         return jsonify({'error': 'Tài khoản hoặc mật khẩu không đúng'}), 401
     
-    # Check if email is verified
-    if not user.is_verified:
+    # Admin không cần xác minh email
+    if user.role != 'admin' and not user.is_verified:
         # Generate new OTP and send
         otp_code = user.generate_otp()
         db.session.commit()

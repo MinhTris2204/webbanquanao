@@ -11,6 +11,7 @@ def get_products():
     per_page = request.args.get('per_page', 12, type=int)
     search = request.args.get('search', '')
     on_sale = request.args.get('on_sale', '')  # Filter for products with active promotions
+    sort_by = request.args.get('sort_by', 'newest')  # newest, oldest, name, price_asc, price_desc
     
     query = Product.query
     
@@ -32,6 +33,20 @@ def get_products():
             Promotion.start_date <= now,
             Promotion.end_date >= now
         )
+    
+    # Sorting
+    if sort_by == 'newest':
+        query = query.order_by(desc(Product.created_at))
+    elif sort_by == 'oldest':
+        query = query.order_by(Product.created_at)
+    elif sort_by == 'name':
+        query = query.order_by(Product.ten_san_pham)
+    elif sort_by == 'price_asc':
+        query = query.order_by(Product.gia_ban)
+    elif sort_by == 'price_desc':
+        query = query.order_by(desc(Product.gia_ban))
+    else:
+        query = query.order_by(desc(Product.created_at))  # Default: newest first
     
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
     
