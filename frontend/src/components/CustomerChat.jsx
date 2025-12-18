@@ -129,8 +129,23 @@ export default function CustomerChat() {
   const handleImageSelect = (e) => {
     const file = e.target.files?.[0]
     if (!file || !conversation) return
-    if (!file.type.startsWith('image/')) return alert('Vui lòng chọn file ảnh')
+    
+    // Danh sách các định dạng ảnh được hỗ trợ
+    const allowedTypes = [
+      'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+      'image/bmp', 'image/svg+xml', 'image/tiff', 'image/ico', 'image/x-icon',
+      'image/heic', 'image/heif', 'image/avif'
+    ]
+    const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg', '.tiff', '.tif', '.ico', '.heic', '.heif', '.avif']
+    
+    const fileExtension = '.' + file.name.split('.').pop().toLowerCase()
+    const isValidType = allowedTypes.includes(file.type) || allowedExtensions.includes(fileExtension)
+    
+    if (!isValidType) {
+      return alert('Định dạng ảnh không được hỗ trợ. Vui lòng chọn file: ' + allowedExtensions.join(', '))
+    }
     if (file.size > 5 * 1024 * 1024) return alert('Ảnh không được vượt quá 5MB')
+    
     setUploadingImage(true)
     const reader = new FileReader()
     reader.onload = () => { sendMessage(conversation.id, '', 'image', reader.result); setUploadingImage(false) }
@@ -303,7 +318,7 @@ export default function CustomerChat() {
           ) : (
             <form onSubmit={handleSendMessage} className="p-4 bg-white border-t border-gray-100">
               <div className="flex items-center space-x-2 bg-gray-100 rounded-full px-4 py-2">
-                <input type="file" ref={fileInputRef} onChange={handleImageSelect} accept="image/*" className="hidden" />
+                <input type="file" ref={fileInputRef} onChange={handleImageSelect} accept=".jpg,.jpeg,.png,.gif,.webp,.bmp,.svg,.tiff,.tif,.ico,.heic,.heif,.avif,image/*" className="hidden" />
                 <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploadingImage} className="text-gray-400 hover:text-blue-600 transition-colors disabled:opacity-50">
                   {uploadingImage ? (
                     <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>

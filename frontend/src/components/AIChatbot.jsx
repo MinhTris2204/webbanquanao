@@ -167,8 +167,14 @@ export default function AIChatbot() {
                         <button
                           key={pIdx}
                           onClick={() => navigate(`/products/${product.id}`)}
-                          className="block bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-emerald-400 hover:shadow-lg transition-all group text-left"
+                          className="block bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-emerald-400 hover:shadow-lg transition-all group text-left relative"
                         >
+                          {/* Badge khuyến mãi */}
+                          {product.is_promotional && product.discount_text && (
+                            <div className="absolute top-1 left-1 z-10 bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">
+                              {product.discount_text}
+                            </div>
+                          )}
                           <div className="aspect-square overflow-hidden bg-gray-100">
                             <img 
                               src={getImageUrl(product.hinh_anh) || 'https://via.placeholder.com/150'} 
@@ -179,7 +185,15 @@ export default function AIChatbot() {
                           <div className="p-2">
                             <p className="text-[10px] text-gray-400">ID: #{product.id}</p>
                             <p className="text-xs font-medium text-gray-800 line-clamp-2 leading-tight">{product.ten_san_pham}</p>
-                            <p className="text-sm text-emerald-600 font-bold mt-1">{formatPrice(product.gia_ban)}</p>
+                            {/* Hiển thị giá khuyến mãi */}
+                            {product.is_promotional && product.gia_khuyen_mai ? (
+                              <div className="mt-1">
+                                <p className="text-[10px] text-gray-400 line-through">{formatPrice(product.gia_ban)}</p>
+                                <p className="text-sm text-red-500 font-bold">{formatPrice(product.gia_khuyen_mai)}</p>
+                              </div>
+                            ) : (
+                              <p className="text-sm text-emerald-600 font-bold mt-1">{formatPrice(product.gia_ban)}</p>
+                            )}
                             {product.size && (
                               <p className="text-[10px] text-gray-500 mt-0.5">Size: {product.size}</p>
                             )}

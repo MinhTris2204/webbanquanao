@@ -1,9 +1,10 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from models import db, Product, StoreInfo
+from models import db, Product, StoreInfo, Promotion
 from sentence_transformers import SentenceTransformer
 import google.generativeai as genai
 from google.api_core.exceptions import ResourceExhausted, GoogleAPICallError
+from datetime import datetime
 import numpy as np
 import os
 
@@ -283,11 +284,102 @@ def get_all_store_info_simple():
         print(f"Error getting store info: {e}")
         return []
 
+
+def get_promotional_products():
+    """Get all products currently on promotion"""
+    try:
+        now = datetime.utcnow()
+        
+        # Query products with active promotions
+        results = db.session.execute(
+            db.text("""
+                SELECT p.products_id, p.ten_san_pham, p.gia_ban, p.loai, p.mo_ta, 
+                       p.size, p.chat_lieu, p.gioi_tinh, p.hinh_anh,
+                       pr.discount_type, pr.discount_value, pr.end_date
+                FROM products p
+                INNER JOIN promotions pr ON p.products_id = pr.product_id
+                WHERE p.trang_thai = 'Con_hang'
+                  AND pr.is_active = true
+                  AND pr.start_date <= :now
+                  AND pr.end_date >= :now
+                ORDER BY pr.discount_value DESC
+                LIMIT 10
+            """),
+            {'now': now}
+        ).fetchall()
+        
+        products = []
+        for row in results:
+            original_price = float(row.gia_ban) if row.gia_ban else 0
+            discount_value = float(row.discount_value) if row.discount_value else 0
+            
+            # Calculate promotional price
+            if row.discount_type == 'percent':
+                promotional_price = original_price * (1 - discount_value / 100)
+                discount_text = f"Giảm {int(discount_value)}%"
+            else:
+                promotional_price = original_price - discount_value
+                discount_text = f"Giảm {discount_value:,.0f}đ"
+            
+            products.append({
+                'id': row.products_id,
+                'ten_san_pham': row.ten_san_pham,
+                'gia_ban': original_price,
+                'gia_khuyen_mai': max(promotional_price, 0),
+                'discount_text': discount_text,
+                'discount_type': row.discount_type,
+                'discount_value': discount_value,
+                'loai': row.loai,
+                'mo_ta': row.mo_ta,
+                'size': row.size,
+                'chat_lieu': row.chat_lieu,
+                'gioi_tinh': row.gioi_tinh,
+                'hinh_anh': row.hinh_anh,
+                'end_date': row.end_date.isoformat() if row.end_date else None,
+                'is_promotional': True
+            })
+        return products
+    except Exception as e:
+        print(f"Error getting promotional products: {e}")
+        return []
+
+
+def get_product_promotion_info(product_id):
+    """Get promotion info for a specific product"""
+    try:
+        now = datetime.utcnow()
+        result = db.session.execute(
+            db.text("""
+                SELECT discount_type, discount_value, end_date
+                FROM promotions
+                WHERE product_id = :product_id
+                  AND is_active = true
+                  AND start_date <= :now
+                  AND end_date >= :now
+                LIMIT 1
+            """),
+            {'product_id': product_id, 'now': now}
+        ).first()
+        
+        if result:
+            return {
+                'discount_type': result.discount_type,
+                'discount_value': float(result.discount_value),
+                'end_date': result.end_date.isoformat() if result.end_date else None
+            }
+        return None
+    except Exception as e:
+        print(f"Error getting product promotion: {e}")
+        return None
+
 # ============ Prompt Template ============
 CHATBOT_PROMPT = """Bạn là trợ lý AI của cửa hàng thời trang Shop Quần Áo. Nhiệm vụ của bạn là tư vấn sản phẩm, trả lời câu hỏi về cửa hàng.
 
 **THÔNG TIN SẢN PHẨM CÓ SẴN:**
 {product_context}
+
+**SẢN PHẨM ĐANG KHUYẾN MÃI:**
+{promotion_context}
 
 **THÔNG TIN CỬA HÀNG:**
 {store_context}
@@ -304,10 +396,14 @@ CHATBOT_PROMPT = """Bạn là trợ lý AI của cửa hàng thời trang Shop Q
    - Nếu khách hỏi "2 quần" → CHỈ gợi ý ĐÚNG 2 sản phẩm QUẦN
    - Nếu khách hỏi "3 sản phẩm" → gợi ý ĐÚNG 3 sản phẩm
    - LUÔN tuân thủ ĐÚNG số lượng và ĐÚNG loại sản phẩm khách yêu cầu
-3. Nếu hỏi về cửa hàng/chính sách → trích dẫn thông tin liên quan
-4. Trả lời bằng tiếng Việt, thân thiện, ngắn gọn
-5. KHÔNG bịa đặt thông tin không có trong dữ liệu
-6. SỬ DỤNG LỊCH SỬ HỘI THOẠI để hiểu ngữ cảnh và trả lời phù hợp
+3. **KHUYẾN MÃI:**
+   - Nếu khách hỏi về khuyến mãi, giảm giá, sale → ƯU TIÊN giới thiệu sản phẩm từ danh sách ĐANG KHUYẾN MÃI
+   - Khi giới thiệu sản phẩm khuyến mãi, PHẢI nêu rõ: giá gốc, mức giảm, giá sau giảm
+   - Ví dụ: "Áo ABC đang giảm 30%! Giá gốc 500.000đ → Chỉ còn 350.000đ"
+4. Nếu hỏi về cửa hàng/chính sách → trích dẫn thông tin liên quan
+5. Trả lời bằng tiếng Việt, thân thiện, ngắn gọn
+6. KHÔNG bịa đặt thông tin không có trong dữ liệu
+7. SỬ DỤNG LỊCH SỬ HỘI THOẠI để hiểu ngữ cảnh và trả lời phù hợp
 
 **BẮT BUỘC:** Ở DÒNG CUỐI CÙNG của câu trả lời, PHẢI ghi CHÍNH XÁC theo format:
 [PRODUCTS: id1,id2] - chỉ ghi ID của sản phẩm bạn ĐÃ ĐỀ CẬP trong câu trả lời
@@ -338,6 +434,15 @@ def ask_chatbot():
     try:
         products = []
         store_infos = []
+        promotional_products = []
+        
+        # Check if query is about promotions/sales
+        promo_keywords = ['khuyến mãi', 'giảm giá', 'sale', 'ưu đãi', 'khuyến mại', 'giảm', 'rẻ', 'tiết kiệm', 'deal', 'hot']
+        is_promo_query = any(kw in ql for kw in promo_keywords)
+        
+        # Get promotional products
+        promotional_products = get_promotional_products()
+        print(f"[CHAT] Found {len(promotional_products)} promotional products")
         
         # Try RAG search with embeddings
         try:
@@ -356,15 +461,40 @@ def ask_chatbot():
             store_infos = get_all_store_info_simple()
             print(f"[CHAT] Fallback: {len(store_infos)} store_infos")
         
+        # Add promotion info to regular products
+        for p in products:
+            promo_info = get_product_promotion_info(p['id'])
+            if promo_info:
+                original_price = p['gia_ban']
+                if promo_info['discount_type'] == 'percent':
+                    p['gia_khuyen_mai'] = original_price * (1 - promo_info['discount_value'] / 100)
+                    p['discount_text'] = f"Giảm {int(promo_info['discount_value'])}%"
+                else:
+                    p['gia_khuyen_mai'] = original_price - promo_info['discount_value']
+                    p['discount_text'] = f"Giảm {promo_info['discount_value']:,.0f}đ"
+                p['is_promotional'] = True
+        
         # Build context
         product_context = ""
         if products:
             for p in products[:10]:
-                product_context += f"- [ID:{p['id']}] {p['ten_san_pham']}: {p['gia_ban']:,.0f}đ, Loại: {p['loai']}, Size: {p.get('size', 'N/A')}, Chất liệu: {p.get('chat_lieu', 'N/A')}\n"
+                if p.get('is_promotional') and p.get('gia_khuyen_mai'):
+                    product_context += f"- [ID:{p['id']}] {p['ten_san_pham']}: Giá gốc {p['gia_ban']:,.0f}đ → {p['discount_text']} → Còn {p['gia_khuyen_mai']:,.0f}đ, Loại: {p['loai']}, Size: {p.get('size', 'N/A')}\n"
+                else:
+                    product_context += f"- [ID:{p['id']}] {p['ten_san_pham']}: {p['gia_ban']:,.0f}đ, Loại: {p['loai']}, Size: {p.get('size', 'N/A')}, Chất liệu: {p.get('chat_lieu', 'N/A')}\n"
             print(f"[CHAT] Product context built with {len(products)} products")
         else:
             product_context = "Không có sản phẩm"
             print("[CHAT] No products found!")
+        
+        # Build promotion context
+        promotion_context = ""
+        if promotional_products:
+            for p in promotional_products[:5]:
+                promotion_context += f"- [ID:{p['id']}] {p['ten_san_pham']}: Giá gốc {p['gia_ban']:,.0f}đ → {p['discount_text']} → Chỉ còn {p['gia_khuyen_mai']:,.0f}đ, Loại: {p['loai']}, Size: {p.get('size', 'N/A')}\n"
+            print(f"[CHAT] Promotion context built with {len(promotional_products)} products")
+        else:
+            promotion_context = "Hiện không có sản phẩm khuyến mãi"
         
         store_context = ""
         if store_infos:
@@ -388,6 +518,7 @@ def ask_chatbot():
         # Build prompt and call Gemini
         prompt = CHATBOT_PROMPT.format(
             product_context=product_context,
+            promotion_context=promotion_context,
             store_context=store_context,
             chat_history=history_context,
             query=query
@@ -425,9 +556,14 @@ def ask_chatbot():
             
             # Filter products to ONLY those mentioned in response
             filtered_products = []
-            if mentioned_ids and products:
-                # Create a dict for quick lookup
+            if mentioned_ids:
+                # Create a dict for quick lookup - include both regular and promotional products
                 products_dict = {p['id']: p for p in products}
+                # Also add promotional products to dict
+                for p in promotional_products:
+                    if p['id'] not in products_dict:
+                        products_dict[p['id']] = p
+                
                 # Keep order of mentioned_ids
                 for pid in mentioned_ids:
                     if pid in products_dict:
