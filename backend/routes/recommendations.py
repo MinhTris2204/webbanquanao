@@ -104,8 +104,11 @@ def get_recommendations():
         viewed_product_ids = [p[0] for p in viewed_products]
         
         if not viewed_product_ids:
-            # No viewing history - return trending products
-            return get_trending_products(limit)
+            # No viewing history - return empty (không fallback)
+            return jsonify({
+                'products': [],
+                'based_on': 'no_data'
+            })
         
         # Get categories and gender from viewed products
         viewed_product_details = Product.query.filter(
