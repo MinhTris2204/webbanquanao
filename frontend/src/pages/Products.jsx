@@ -37,21 +37,36 @@ export default function Products() {
     } else {
       setOnSaleOnly(false)
     }
+    
+    // Reset về trang 1 khi URL params thay đổi
+    setCurrentPage(1)
   }, [searchParams])
 
   useEffect(() => {
     fetchProducts()
-  }, [currentPage])
+  }, [currentPage, onSaleOnly, selectedCategory])
 
   const fetchProducts = async () => {
     setLoading(true)
     try {
-      const res = await api.get('/api/products', { 
-        params: { 
-          page: currentPage,
-          per_page: itemsPerPage
-        } 
-      })
+      let res
+      if (onSaleOnly) {
+        // Gọi API riêng cho sản phẩm khuyến mãi
+        res = await api.get('/api/products/on-sale', { 
+          params: { 
+            page: currentPage,
+            per_page: itemsPerPage,
+            category: selectedCategory || undefined
+          } 
+        })
+      } else {
+        res = await api.get('/api/products', { 
+          params: { 
+            page: currentPage,
+            per_page: itemsPerPage
+          } 
+        })
+      }
       setProducts(res.data.products)
       setTotalPages(res.data.pages)
       setTotalProducts(res.data.total)
@@ -63,22 +78,20 @@ export default function Products() {
   }
 
   const filteredProducts = products.filter(product => {
-    const matchCategory = !selectedCategory || product.loai === selectedCategory
+    // Nếu đang lọc khuyến mãi, category đã được lọc từ API
+    const matchCategory = onSaleOnly || !selectedCategory || product.loai === selectedCategory
     const matchGender = !selectedGender || product.gioi_tinh === selectedGender
     
     // Lọc theo size
     const matchSize = !selectedSize || (product.size && product.size.includes(selectedSize))
     
-    // Lọc theo khuyến mãi
-    const matchSale = !onSaleOnly || (product.promotion && product.promotion.promotional_price)
-    
-    // Lọc theo khoảng giá
-    const price = parseFloat(product.gia_ban)
+    // Lọc theo khoảng giá (dùng giá khuyến mãi nếu có)
+    const price = product.promotion?.promotional_price || parseFloat(product.gia_ban)
     const minPrice = priceRange.min ? parseFloat(priceRange.min) : 0
     const maxPrice = priceRange.max ? parseFloat(priceRange.max) : Infinity
     const matchPrice = price >= minPrice && price <= maxPrice
     
-    return matchCategory && matchGender && matchSize && matchSale && matchPrice
+    return matchCategory && matchGender && matchSize && matchPrice
   })
 
   const formatPrice = (value) => {
