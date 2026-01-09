@@ -7,6 +7,9 @@ export default function AdminProducts() {
   const [editingProduct, setEditingProduct] = useState(null)
   const [imagePreview, setImagePreview] = useState('')
   const [selectedSizes, setSelectedSizes] = useState([])
+  const [imageInputMode, setImageInputMode] = useState('file') // 'file' hoặc 'url'
+  const [imageUrl, setImageUrl] = useState('')
+  const [imageUrlError, setImageUrlError] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [sortBy, setSortBy] = useState('newest')
   const [currentPage, setCurrentPage] = useState(1)
@@ -24,6 +27,7 @@ export default function AdminProducts() {
     trang_thai: 'Con_hang'
   })
   const [submitting, setSubmitting] = useState(false)
+  const [selectedProducts, setSelectedProducts] = useState([]) // Danh sách ID sản phẩm được chọn
 
   const letterSizes = ['S', 'M', 'L', 'XL', 'XXL']
   const numberSizes = ['26', '27', '28', '29', '30', '31', '32', '33', '34', '36']
@@ -59,6 +63,27 @@ export default function AdminProducts() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (submitting) return // Ngăn submit nhiều lần
+    
+    // Validation - kiểm tra các trường bắt buộc
+    const requiredFields = [
+      { field: 'ten_san_pham', label: 'Tên sản phẩm' },
+      { field: 'gia_ban', label: 'Giá bán' },
+      { field: 'loai', label: 'Loại sản phẩm' },
+      { field: 'chat_lieu', label: 'Chất liệu' },
+      { field: 'hinh_anh', label: 'Hình ảnh' }
+    ]
+    
+    const missingFields = requiredFields.filter(item => !formData[item.field] || formData[item.field].toString().trim() === '')
+    
+    if (missingFields.length > 0) {
+      alert(`Vui lòng nhập đầy đủ thông tin:\n- ${missingFields.map(f => f.label).join('\n- ')}`)
+      return
+    }
+    
+    if (selectedSizes.length === 0) {
+      alert('Vui lòng chọn ít nhất một size')
+      return
+    }
     
     setSubmitting(true)
     try {
@@ -100,7 +125,20 @@ export default function AdminProducts() {
     // Chuyển size từ chuỗi sang mảng (hỗ trợ cả ", " và ",")
     const sizes = product.size ? product.size.split(/,\s*/).map(s => s.trim()).filter(s => s) : []
     setSelectedSizes(sizes)
-    setImagePreview(getImageUrl(product.hinh_anh) || '')
+    
+    // Kiểm tra xem ảnh là URL hay file upload
+    const imgUrl = product.hinh_anh || ''
+    if (imgUrl.startsWith('http://') || imgUrl.startsWith('https://')) {
+      setImageInputMode('url')
+      setImageUrl(imgUrl)
+      setImagePreview(imgUrl)
+      setImageUrlError(false)
+    } else {
+      setImageInputMode('file')
+      setImageUrl('')
+      setImagePreview(getImageUrl(imgUrl) || '')
+      setImageUrlError(false)
+    }
     setShowForm(true)
   }
 
@@ -114,6 +152,19 @@ export default function AdminProducts() {
         setFormData({ ...formData, hinh_anh: reader.result, hinh_anh_filename: file.name })
       }
       reader.readAsDataURL(file)
+    }
+  }
+
+  const handleImageUrlChange = (e) => {
+    const url = e.target.value || ''
+    setImageUrl(url)
+    setImageUrlError(false)
+    if (url) {
+      setImagePreview(url)
+      setFormData(prev => ({ ...prev, hinh_anh: url }))
+    } else {
+      setImagePreview('')
+      setFormData(prev => ({ ...prev, hinh_anh: '' }))
     }
   }
 
@@ -131,10 +182,50 @@ export default function AdminProducts() {
     if (confirm('Bạn có chắc muốn xóa sản phẩm này?')) {
       try {
         await api.delete(`/api/admin/products/${id}`)
+        setSelectedProducts(prev => prev.filter(pid => pid !== id))
         fetchProducts()
       } catch (err) {
         alert('Có lỗi xảy ra')
       }
+    }
+  }
+
+  // Xóa nhiều sản phẩm
+  const handleDeleteMultiple = async () => {
+    if (selectedProducts.length === 0) {
+      alert('Vui lòng chọn ít nhất một sản phẩm để xóa')
+      return
+    }
+    
+    if (confirm(`Bạn có chắc muốn xóa ${selectedProducts.length} sản phẩm đã chọn?`)) {
+      try {
+        await Promise.all(selectedProducts.map(id => api.delete(`/api/admin/products/${id}`)))
+        setSelectedProducts([])
+        fetchProducts()
+      } catch (err) {
+        alert('Có lỗi xảy ra khi xóa sản phẩm')
+      }
+    }
+  }
+
+  // Toggle chọn một sản phẩm
+  const handleSelectProduct = (id) => {
+    setSelectedProducts(prev => 
+      prev.includes(id) 
+        ? prev.filter(pid => pid !== id)
+        : [...prev, id]
+    )
+  }
+
+  // Chọn/bỏ chọn tất cả sản phẩm trên trang hiện tại
+  const handleSelectAll = () => {
+    const allProductIds = products.map(p => p.products_id)
+    const allSelected = allProductIds.every(id => selectedProducts.includes(id))
+    
+    if (allSelected) {
+      setSelectedProducts(prev => prev.filter(id => !allProductIds.includes(id)))
+    } else {
+      setSelectedProducts(prev => [...new Set([...prev, ...allProductIds])])
     }
   }
 
@@ -160,11 +251,25 @@ export default function AdminProducts() {
     })
     setSelectedSizes([])
     setImagePreview('')
+    setImageInputMode('file')
+    setImageUrl('')
+    setImageUrlError(false)
   }
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
-      <div className="flex justify-end items-center mb-6">
+      <div className="flex justify-end items-center mb-6 gap-3">
+        {selectedProducts.length > 0 && (
+          <button
+            onClick={handleDeleteMultiple}
+            className="bg-gradient-to-r from-red-500 to-red-600 text-white px-6 py-2.5 rounded-lg hover:from-red-600 hover:to-red-700 transition-all shadow-md hover:shadow-lg flex items-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            Xóa {selectedProducts.length} sản phẩm
+          </button>
+        )}
         <button
           onClick={() => {
             setShowForm(true)
@@ -317,7 +422,9 @@ export default function AdminProducts() {
 
                 {/* Size */}
                 <div className="md:col-span-2">
-                  <label className="block text-gray-700 mb-2 font-semibold text-sm">Size (có thể chọn nhiều)</label>
+                  <label className="block text-gray-700 mb-2 font-semibold text-sm">
+                    Size (có thể chọn nhiều) <span className="text-red-500">*</span>
+                  </label>
                   <div className="p-4 border border-gray-300 rounded-lg bg-gray-50 space-y-4">
                     {/* Size chữ - cho Áo, Váy, Đầm, Áo khoác */}
                     <div>
@@ -382,11 +489,14 @@ export default function AdminProducts() {
 
                 {/* Chất liệu */}
                 <div>
-                  <label className="block text-gray-700 mb-2 font-semibold text-sm">Chất liệu</label>
+                  <label className="block text-gray-700 mb-2 font-semibold text-sm">
+                    Chất liệu <span className="text-red-500">*</span>
+                  </label>
                   <select
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                     value={formData.chat_lieu}
                     onChange={(e) => setFormData({ ...formData, chat_lieu: e.target.value })}
+                    required
                   >
                     <option value="">-- Chọn chất liệu --</option>
                     <option value="Cotton">Cotton</option>
@@ -418,29 +528,95 @@ export default function AdminProducts() {
 
                 {/* Hình ảnh */}
                 <div className="md:col-span-2">
-                  <label className="block text-gray-700 mb-2 font-semibold text-sm">Hình ảnh sản phẩm</label>
+                  <label className="block text-gray-700 mb-2 font-semibold text-sm">
+                    Hình ảnh sản phẩm <span className="text-red-500">*</span>
+                  </label>
+                  
+                  {/* Toggle giữa upload file và nhập link */}
+                  <div className="flex gap-2 mb-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setImageInputMode('file')
+                        setImageUrl('')
+                        setImagePreview('')
+                        setImageUrlError(false)
+                        setFormData(prev => ({ ...prev, hinh_anh: '' }))
+                      }}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                        imageInputMode === 'file'
+                          ? 'bg-blue-500 text-white shadow-md'
+                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      }`}
+                    >
+                      📁 Upload file
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setImageInputMode('url')
+                        setImagePreview('')
+                        setImageUrlError(false)
+                        setFormData(prev => ({ ...prev, hinh_anh: '' }))
+                      }}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                        imageInputMode === 'url'
+                          ? 'bg-blue-500 text-white shadow-md'
+                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      }`}
+                    >
+                      🔗 Nhập link URL
+                    </button>
+                  </div>
+
                   <div className="flex items-start gap-4">
                     <div className="flex-1">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageChange}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                      />
-                      <p className="text-xs text-gray-500 mt-2">Chọn file ảnh từ máy tính (JPG, PNG, GIF)</p>
+                      {imageInputMode === 'file' ? (
+                        <>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageChange}
+                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                          />
+                          <p className="text-xs text-gray-500 mt-2">Chọn file ảnh từ máy tính (JPG, PNG, GIF)</p>
+                        </>
+                      ) : (
+                        <>
+                          <input
+                            type="url"
+                            placeholder="https://example.com/image.jpg"
+                            value={imageUrl}
+                            onChange={handleImageUrlChange}
+                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                          />
+                          <p className="text-xs text-gray-500 mt-2">Nhập đường dẫn URL của ảnh (bắt đầu bằng http:// hoặc https://)</p>
+                        </>
+                      )}
                     </div>
                     {imagePreview && (
                       <div className="relative">
                         <img 
                           src={imagePreview} 
                           alt="Preview" 
-                          className="w-32 h-32 object-cover rounded-lg border-2 border-gray-200 shadow-md"
+                          className={`w-32 h-32 object-cover rounded-lg border-2 shadow-md ${imageUrlError ? 'hidden' : 'border-gray-200'}`}
+                          onError={() => setImageUrlError(true)}
+                          onLoad={() => setImageUrlError(false)}
                         />
+                        {imageUrlError && (
+                          <div 
+                            className="w-32 h-32 bg-red-100 rounded-lg border-2 border-red-300 flex items-center justify-center text-red-500 text-xs text-center p-2"
+                          >
+                            ⚠️ Không thể tải ảnh
+                          </div>
+                        )}
                         <button
                           type="button"
                           onClick={() => {
                             setImagePreview('')
-                            setFormData({ ...formData, hinh_anh: '' })
+                            setImageUrl('')
+                            setImageUrlError(false)
+                            setFormData(prev => ({ ...prev, hinh_anh: '' }))
                           }}
                           className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition"
                         >
@@ -514,6 +690,14 @@ export default function AdminProducts() {
           <table className="w-full">
             <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
               <tr>
+                <th className="px-4 py-4 text-center">
+                  <input
+                    type="checkbox"
+                    checked={products.length > 0 && products.every(p => selectedProducts.includes(p.products_id))}
+                    onChange={handleSelectAll}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                  />
+                </th>
                 <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">ID</th>
                 <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Hình ảnh</th>
                 <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Tên sản phẩm</th>
@@ -527,7 +711,15 @@ export default function AdminProducts() {
             </thead>
             <tbody className="divide-y divide-gray-200">
               {products.map((product) => (
-                <tr key={product.products_id} className="hover:bg-blue-50 transition-colors">
+                <tr key={product.products_id} className={`hover:bg-blue-50 transition-colors ${selectedProducts.includes(product.products_id) ? 'bg-blue-50' : ''}`}>
+                  <td className="px-4 py-4 text-center">
+                    <input
+                      type="checkbox"
+                      checked={selectedProducts.includes(product.products_id)}
+                      onChange={() => handleSelectProduct(product.products_id)}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                    />
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="text-sm font-medium text-gray-900">#{product.products_id}</span>
                   </td>

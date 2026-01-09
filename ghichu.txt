@@ -13,3 +13,5 @@ Thêm package mới (requirements.txt hoặc package.json):
 
 docker-compose up --build
 Thêm migration database: docker-compose exec backend flask db upgrade
+
+docker-compose exec backend python seed_data.py
