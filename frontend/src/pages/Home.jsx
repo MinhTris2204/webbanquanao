@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import api, { getImageUrl } from '../utils/api'
 import RecommendedProducts from '../components/RecommendedProducts'
 import ProductRating from '../components/ProductRating'
+import FlashVoucher from '../components/FlashVoucher'
 
 export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0)
