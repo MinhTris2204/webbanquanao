@@ -9,13 +9,17 @@ export default function AdminDashboard() {
     totalUsers: 0,
     totalRevenue: 0,
     pendingOrders: 0,
+    processingOrders: 0,
+    shippingOrders: 0,
     completedOrders: 0,
     cancelledOrders: 0,
     activePromotions: 0,
-    activeVouchers: 0
+    activeVouchers: 0,
+    todayOrders: 0,
+    todayRevenue: 0
   })
   const [recentOrders, setRecentOrders] = useState([])
-  const [ordersByStatus, setOrdersByStatus] = useState([])
+  const [topProducts, setTopProducts] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -57,28 +61,38 @@ export default function AdminDashboard() {
         .reduce((sum, o) => sum + parseFloat(o.tongtien || 0), 0)
       
       const pendingOrders = ordersData.filter(o => o.trangthai === 'cho_xac_nhan').length
+      const processingOrders = ordersData.filter(o => o.trangthai === 'dang_xu_ly').length
+      const shippingOrders = ordersData.filter(o => o.trangthai === 'dang_giao').length
       const completedOrders = ordersData.filter(o => o.trangthai === 'hoan_thanh').length
       const cancelledOrders = ordersData.filter(o => o.trangthai === 'huy').length
+      
+      // Today stats
+      const today = new Date().toDateString()
+      const todayOrders = ordersData.filter(o => new Date(o.created_at).toDateString() === today).length
+      const todayRevenue = ordersData
+        .filter(o => new Date(o.created_at).toDateString() === today && o.trangthai === 'hoan_thanh')
+        .reduce((sum, o) => sum + parseFloat(o.tongtien || 0), 0)
       
       setStats({
         totalProducts: productsData.length,
         totalOrders: ordersData.length,
         totalUsers: usersData.length,
-        totalRevenue: totalRevenue,
+        totalRevenue,
         pendingOrders,
+        processingOrders,
+        shippingOrders,
         completedOrders,
         cancelledOrders,
         activePromotions,
-        activeVouchers
+        activeVouchers,
+        todayOrders,
+        todayRevenue
       })
       
-      setOrdersByStatus([
-        { label: 'Chờ xác nhận', value: pendingOrders, color: 'bg-yellow-500' },
-        { label: 'Hoàn thành', value: completedOrders, color: 'bg-green-500' },
-        { label: 'Đã hủy', value: cancelledOrders, color: 'bg-red-500' }
-      ])
-      
       setRecentOrders(ordersData.slice(0, 5))
+      
+      // Top products by sales (mock - would need backend support)
+      setTopProducts(productsData.slice(0, 5))
       
     } catch (err) {
       console.error('Error fetching dashboard data:', err)
@@ -89,14 +103,16 @@ export default function AdminDashboard() {
 
   const getStatusBadge = (status) => {
     const statusMap = {
-      'cho_xac_nhan': { label: 'Chờ xác nhận', color: 'bg-yellow-100 text-yellow-800' },
-      'hoan_thanh': { label: 'Hoàn thành', color: 'bg-green-100 text-green-800' },
-      'huy': { label: 'Đã hủy', color: 'bg-red-100 text-red-800' }
+      'cho_xac_nhan': { label: 'Chờ xác nhận', color: 'bg-yellow-100 text-yellow-800', icon: '⏳' },
+      'dang_xu_ly': { label: 'Đang xử lý', color: 'bg-blue-100 text-blue-800', icon: '🔄' },
+      'dang_giao': { label: 'Đang giao', color: 'bg-purple-100 text-purple-800', icon: '🚚' },
+      'hoan_thanh': { label: 'Hoàn thành', color: 'bg-green-100 text-green-800', icon: '✅' },
+      'huy': { label: 'Đã hủy', color: 'bg-red-100 text-red-800', icon: '❌' }
     }
-    const statusInfo = statusMap[status] || { label: status, color: 'bg-gray-100 text-gray-800' }
+    const statusInfo = statusMap[status] || { label: status, color: 'bg-gray-100 text-gray-800', icon: '📋' }
     return (
-      <span className={`px-2 py-1 text-xs rounded-full font-semibold ${statusInfo.color}`}>
-        {statusInfo.label}
+      <span className={`px-3 py-1 text-xs rounded-full font-bold ${statusInfo.color}`}>
+        {statusInfo.icon} {statusInfo.label}
       </span>
     )
   }
@@ -106,154 +122,159 @@ export default function AdminDashboard() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Đang tải dữ liệu...</p>
+          <p className="text-gray-600 font-medium">Đang tải dữ liệu...</p>
         </div>
       </div>
     )
   }
 
-  const maxOrderValue = Math.max(...ordersByStatus.map(s => s.value), 1)
-
   return (
-    <div className="space-y-6">
-      {/* Stats Cards */}
+    <div className="space-y-6 p-6">
+      {/* Main Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white">
-          <div className="flex items-center justify-between mb-4">
-            <div className="bg-white bg-opacity-20 p-3 rounded-lg">
-              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+        {/* Revenue Card */}
+        <div className="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-green-500">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-500 text-sm font-medium mb-1">TỔNG DOANH THU</p>
+              <p className="text-3xl font-bold text-gray-800">{stats.totalRevenue.toLocaleString()}₫</p>
+              <p className="text-sm text-green-600 mt-2 font-medium">
+                Hôm nay: {stats.todayRevenue.toLocaleString()}₫
+              </p>
             </div>
-            <div className="text-right">
-              <p className="text-sm opacity-90">Doanh thu</p>
-              <p className="text-2xl font-bold">{stats.totalRevenue.toLocaleString()}₫</p>
+            <div className="bg-green-100 p-4 rounded-full">
+              <span className="text-4xl">💰</span>
             </div>
-          </div>
-          <div className="flex items-center text-sm opacity-90">
-            <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clipRule="evenodd" />
-            </svg>
-            Từ {stats.completedOrders} đơn hoàn thành
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white">
-          <div className="flex items-center justify-between mb-4">
-            <div className="bg-white bg-opacity-20 p-3 rounded-lg">
-              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-              </svg>
+        {/* Orders Card */}
+        <div className="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-blue-500">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-500 text-sm font-medium mb-1">TỔNG ĐƠN HÀNG</p>
+              <p className="text-3xl font-bold text-gray-800">{stats.totalOrders}</p>
+              <p className="text-sm text-blue-600 mt-2 font-medium">
+                Hôm nay: {stats.todayOrders} đơn
+              </p>
             </div>
-            <div className="text-right">
-              <p className="text-sm opacity-90">Đơn hàng</p>
-              <p className="text-2xl font-bold">{stats.totalOrders}</p>
+            <div className="bg-blue-100 p-4 rounded-full">
+              <span className="text-4xl">📦</span>
             </div>
-          </div>
-          <div className="flex items-center justify-between text-sm">
-            <span className="opacity-90">Chờ xử lý:</span>
-            <span className="font-semibold">{stats.pendingOrders}</span>
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl shadow-lg p-6 text-white">
-          <div className="flex items-center justify-between mb-4">
-            <div className="bg-white bg-opacity-20 p-3 rounded-lg">
-              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-              </svg>
+        {/* Products Card */}
+        <div className="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-teal-500">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-500 text-sm font-medium mb-1">SẢN PHẨM</p>
+              <p className="text-3xl font-bold text-gray-800">{stats.totalProducts}</p>
+              <p className="text-sm text-teal-600 mt-2 font-medium">
+                Đang khuyến mãi: {stats.activePromotions}
+              </p>
             </div>
-            <div className="text-right">
-              <p className="text-sm opacity-90">Sản phẩm</p>
-              <p className="text-2xl font-bold">{stats.totalProducts}</p>
+            <div className="bg-teal-100 p-4 rounded-full">
+              <span className="text-4xl">👕</span>
             </div>
-          </div>
-          <div className="flex items-center justify-between text-sm">
-            <span className="opacity-90">Khuyến mãi:</span>
-            <span className="font-semibold">{stats.activePromotions}</span>
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg p-6 text-white">
-          <div className="flex items-center justify-between mb-4">
-            <div className="bg-white bg-opacity-20 p-3 rounded-lg">
-              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-              </svg>
+        {/* Users Card */}
+        <div className="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-orange-500">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-500 text-sm font-medium mb-1">KHÁCH HÀNG</p>
+              <p className="text-3xl font-bold text-gray-800">{stats.totalUsers}</p>
+              <p className="text-sm text-orange-600 mt-2 font-medium">
+                Voucher active: {stats.activeVouchers}
+              </p>
             </div>
-            <div className="text-right">
-              <p className="text-sm opacity-90">Người dùng</p>
-              <p className="text-2xl font-bold">{stats.totalUsers}</p>
+            <div className="bg-orange-100 p-4 rounded-full">
+              <span className="text-4xl">👥</span>
             </div>
-          </div>
-          <div className="flex items-center justify-between text-sm">
-            <span className="opacity-90">Voucher:</span>
-            <span className="font-semibold">{stats.activeVouchers}</span>
           </div>
         </div>
       </div>
 
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Order Status Chart */}
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <h3 className="text-xl font-bold text-gray-800 mb-6">📊 Thống kê đơn hàng theo trạng thái</h3>
-          <div className="space-y-4">
-            {ordersByStatus.map((item, index) => (
-              <div key={index}>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-semibold text-gray-700">{item.label}</span>
-                  <span className="text-sm font-bold text-gray-900">{item.value} đơn</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                  <div
-                    className={`h-full ${item.color} rounded-full transition-all duration-500 ease-out`}
-                    style={{ width: `${(item.value / maxOrderValue) * 100}%` }}
-                  ></div>
-                </div>
-              </div>
-            ))}
+      {/* Order Status Section */}
+      <div className="bg-white rounded-2xl shadow-lg p-6">
+        <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+          📋 Trạng thái đơn hàng
+        </h2>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div className="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-4 text-center">
+            <span className="text-3xl">⏳</span>
+            <p className="text-3xl font-bold text-yellow-600 mt-2">{stats.pendingOrders}</p>
+            <p className="text-sm text-gray-600 font-medium">Chờ xác nhận</p>
           </div>
-          
-          {/* Summary */}
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="text-center p-3 bg-green-50 rounded-lg">
-                <p className="text-sm text-gray-600">Tỷ lệ hoàn thành</p>
-                <p className="text-2xl font-bold text-green-600">
-                  {stats.totalOrders > 0 ? Math.round((stats.completedOrders / stats.totalOrders) * 100) : 0}%
-                </p>
-              </div>
-              <div className="text-center p-3 bg-red-50 rounded-lg">
-                <p className="text-sm text-gray-600">Tỷ lệ hủy</p>
-                <p className="text-2xl font-bold text-red-600">
-                  {stats.totalOrders > 0 ? Math.round((stats.cancelledOrders / stats.totalOrders) * 100) : 0}%
-                </p>
-              </div>
-            </div>
+          <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 text-center">
+            <span className="text-3xl">🔄</span>
+            <p className="text-3xl font-bold text-blue-600 mt-2">{stats.processingOrders}</p>
+            <p className="text-sm text-gray-600 font-medium">Đang xử lý</p>
+          </div>
+          <div className="bg-purple-50 border-2 border-purple-200 rounded-xl p-4 text-center">
+            <span className="text-3xl">🚚</span>
+            <p className="text-3xl font-bold text-purple-600 mt-2">{stats.shippingOrders}</p>
+            <p className="text-sm text-gray-600 font-medium">Đang giao</p>
+          </div>
+          <div className="bg-green-50 border-2 border-green-200 rounded-xl p-4 text-center">
+            <span className="text-3xl">✅</span>
+            <p className="text-3xl font-bold text-green-600 mt-2">{stats.completedOrders}</p>
+            <p className="text-sm text-gray-600 font-medium">Hoàn thành</p>
+          </div>
+          <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4 text-center">
+            <span className="text-3xl">❌</span>
+            <p className="text-3xl font-bold text-red-600 mt-2">{stats.cancelledOrders}</p>
+            <p className="text-sm text-gray-600 font-medium">Đã hủy</p>
           </div>
         </div>
+        
+        {/* Progress bar */}
+        <div className="mt-6">
+          <div className="flex justify-between text-sm text-gray-600 mb-2">
+            <span>Tỷ lệ hoàn thành</span>
+            <span className="font-bold text-green-600">
+              {stats.totalOrders > 0 ? Math.round((stats.completedOrders / stats.totalOrders) * 100) : 0}%
+            </span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
+            <div 
+              className="bg-gradient-to-r from-green-400 to-green-600 h-full rounded-full transition-all duration-500"
+              style={{ width: `${stats.totalOrders > 0 ? (stats.completedOrders / stats.totalOrders) * 100 : 0}%` }}
+            ></div>
+          </div>
+        </div>
+      </div>
 
+      {/* Two Column Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Orders */}
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-bold text-gray-800">📋 Đơn hàng gần đây</h3>
-            <Link to="/orders" className="text-blue-600 hover:text-blue-700 text-sm font-semibold">
+        <div className="bg-white rounded-2xl shadow-lg p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+              🕐 Đơn hàng gần đây
+            </h2>
+            <Link to="/orders" className="text-blue-600 hover:text-blue-700 text-sm font-bold">
               Xem tất cả →
             </Link>
           </div>
           <div className="space-y-3">
             {recentOrders.length === 0 ? (
-              <p className="text-gray-500 text-center py-8">Chưa có đơn hàng nào</p>
+              <div className="text-center py-8">
+                <span className="text-5xl">📭</span>
+                <p className="text-gray-500 mt-2">Chưa có đơn hàng nào</p>
+              </div>
             ) : (
               recentOrders.map((order) => (
-                <div key={order.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                <div key={order.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition">
                   <div className="flex-1">
-                    <p className="font-semibold text-gray-800">#{order.id} - {order.hoten}</p>
-                    <p className="text-sm text-gray-500">{new Date(order.created_at).toLocaleDateString('vi-VN')}</p>
+                    <p className="font-bold text-gray-800">Đơn #{order.id}</p>
+                    <p className="text-sm text-gray-500">{order.hoten}</p>
+                    <p className="text-xs text-gray-400">{new Date(order.created_at).toLocaleString('vi-VN')}</p>
                   </div>
                   <div className="text-right mr-4">
-                    <p className="font-bold text-gray-800">{parseFloat(order.tongtien).toLocaleString()}₫</p>
+                    <p className="font-bold text-lg text-gray-800">{parseFloat(order.tongtien).toLocaleString()}₫</p>
                   </div>
                   <div>
                     {getStatusBadge(order.trangthai)}
@@ -263,153 +284,82 @@ export default function AdminDashboard() {
             )}
           </div>
         </div>
-      </div>
 
-      {/* Marketing Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h4 className="font-bold text-gray-800">📈 Trạng thái đơn hàng</h4>
-            <span className="text-2xl">📊</span>
-          </div>
-          <div className="space-y-3">
-            <div className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
-              <span className="text-sm font-semibold text-gray-700">Chờ xác nhận</span>
-              <span className="text-xl font-bold text-yellow-600">{stats.pendingOrders}</span>
+        {/* Marketing Overview */}
+        <div className="bg-white rounded-2xl shadow-lg p-6">
+          <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+            🎯 Marketing & Khuyến mãi
+          </h2>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-red-50 to-orange-50 rounded-xl border border-red-100">
+              <div className="flex items-center gap-3">
+                <span className="text-3xl">🏷️</span>
+                <div>
+                  <p className="font-bold text-gray-800">Khuyến mãi sản phẩm</p>
+                  <p className="text-sm text-gray-500">Đang hoạt động</p>
+                </div>
+              </div>
+              <span className="text-3xl font-bold text-red-600">{stats.activePromotions}</span>
             </div>
-            <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
-              <span className="text-sm font-semibold text-gray-700">Hoàn thành</span>
-              <span className="text-xl font-bold text-green-600">{stats.completedOrders}</span>
+            
+            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-teal-50 to-cyan-50 rounded-xl border border-teal-100">
+              <div className="flex items-center gap-3">
+                <span className="text-3xl">🎫</span>
+                <div>
+                  <p className="font-bold text-gray-800">Voucher giảm giá</p>
+                  <p className="text-sm text-gray-500">Đang hoạt động</p>
+                </div>
+              </div>
+              <span className="text-3xl font-bold text-teal-600">{stats.activeVouchers}</span>
             </div>
-            <div className="flex justify-between items-center p-3 bg-red-50 rounded-lg">
-              <span className="text-sm font-semibold text-gray-700">Đã hủy</span>
-              <span className="text-xl font-bold text-red-600">{stats.cancelledOrders}</span>
+            
+            <div className="grid grid-cols-2 gap-3 mt-4">
+              <Link 
+                to="/promotions"
+                className="flex items-center justify-center gap-2 p-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition font-bold"
+              >
+                🏷️ Khuyến mãi
+              </Link>
+              <Link 
+                to="/vouchers"
+                className="flex items-center justify-center gap-2 p-3 bg-teal-500 text-white rounded-xl hover:bg-teal-600 transition font-bold"
+              >
+                🎫 Voucher
+              </Link>
             </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h4 className="font-bold text-gray-800">🎯 Marketing</h4>
-            <span className="text-2xl">🎁</span>
-          </div>
-          <div className="space-y-3">
-            <div className="flex justify-between items-center p-3 bg-red-50 rounded-lg">
-              <span className="text-sm font-semibold text-gray-700">Khuyến mãi active</span>
-              <span className="text-xl font-bold text-red-600">{stats.activePromotions}</span>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-teal-50 rounded-lg">
-              <span className="text-sm font-semibold text-gray-700">Voucher active</span>
-              <span className="text-xl font-bold text-teal-600">{stats.activeVouchers}</span>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
-              <span className="text-sm font-semibold text-gray-700">Tổng cộng</span>
-              <span className="text-xl font-bold text-blue-600">{stats.activePromotions + stats.activeVouchers}</span>
-            </div>
-            <Link 
-              to="/promotions"
-              className="block text-center p-3 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-lg hover:from-red-600 hover:to-orange-600 transition font-semibold"
-            >
-              Quản lý Marketing →
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      {/* Customer Insights Quick View */}
-      <div className="bg-white rounded-xl shadow-lg p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-bold text-gray-800">📈 Phân tích nhanh</h3>
-          <Link to="/customer-insights" className="text-blue-600 hover:text-blue-700 text-sm font-semibold">
-            Xem chi tiết →
-          </Link>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-gradient-to-br from-yellow-100 to-orange-100 p-4 rounded-lg text-center">
-            <span className="text-3xl">👑</span>
-            <p className="text-sm text-gray-600 mt-2">Top khách hàng</p>
-            <p className="font-semibold text-gray-800">Xem danh sách VIP</p>
-          </div>
-          <div className="bg-gradient-to-br from-red-100 to-orange-100 p-4 rounded-lg text-center">
-            <span className="text-3xl">🔥</span>
-            <p className="text-sm text-gray-600 mt-2">Sản phẩm hot</p>
-            <p className="font-semibold text-gray-800">Xu hướng bán chạy</p>
-          </div>
-          <div className="bg-gradient-to-br from-green-100 to-teal-100 p-4 rounded-lg text-center">
-            <span className="text-3xl">💡</span>
-            <p className="text-sm text-gray-600 mt-2">Gợi ý khuyến mãi</p>
-            <p className="font-semibold text-gray-800">AI đề xuất</p>
-          </div>
-          <div className="bg-gradient-to-br from-blue-100 to-teal-100 p-4 rounded-lg text-center">
-            <span className="text-3xl">👁️</span>
-            <p className="text-sm text-gray-600 mt-2">Tỷ lệ chuyển đổi</p>
-            <p className="font-semibold text-gray-800">Xem → Mua</p>
           </div>
         </div>
       </div>
 
       {/* Quick Actions */}
-      <div className="bg-white rounded-xl shadow-lg p-6">
-        <h3 className="text-xl font-bold text-gray-800 mb-4">⚡ Quản lý nhanh</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Link
-            to="/products"
-            className="group p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:shadow-md transition"
-          >
-            <div className="flex items-center mb-2">
-              <div className="bg-blue-100 p-2 rounded-lg mr-3 group-hover:bg-blue-500 transition">
-                <svg className="w-6 h-6 text-blue-600 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                </svg>
-              </div>
-              <h4 className="font-bold text-gray-800">Sản phẩm</h4>
-            </div>
-            <p className="spxt-sm text-gray-600">Quản lý kho hàng</p>
+      <div className="bg-white rounded-2xl shadow-lg p-6">
+        <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+          ⚡ Truy cập nhanh
+        </h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          <Link to="/products" className="flex flex-col items-center p-4 bg-blue-50 rounded-xl hover:bg-blue-100 transition group">
+            <span className="text-4xl mb-2 group-hover:scale-110 transition">👕</span>
+            <span className="font-bold text-gray-700">Sản phẩm</span>
           </Link>
-
-          <Link
-            to="/orders"
-            className="group p-4 border-2 border-gray-200 rounded-lg hover:border-green-500 hover:shadow-md transition"
-          >
-            <div className="flex items-center mb-2">
-              <div className="bg-green-100 p-2 rounded-lg mr-3 group-hover:bg-green-500 transition">
-                <svg className="w-6 h-6 text-green-600 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-              </div>
-              <h4 className="font-bold text-gray-800">Đơn hàng</h4>
-            </div>
-            <p className="text-sm text-gray-600">Xử lý đơn hàng</p>
+          <Link to="/orders" className="flex flex-col items-center p-4 bg-green-50 rounded-xl hover:bg-green-100 transition group">
+            <span className="text-4xl mb-2 group-hover:scale-110 transition">📦</span>
+            <span className="font-bold text-gray-700">Đơn hàng</span>
           </Link>
-
-          <Link
-            to="/promotions"
-            className="group p-4 border-2 border-gray-200 rounded-lg hover:border-red-500 hover:shadow-md transition"
-          >
-            <div className="flex items-center mb-2">
-              <div className="bg-red-100 p-2 rounded-lg mr-3 group-hover:bg-red-500 transition">
-                <svg className="w-6 h-6 text-red-600 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
-                </svg>
-              </div>
-              <h4 className="font-bold text-gray-800">Khuyến mãi</h4>
-            </div>
-            <p className="text-sm text-gray-600">Tạo chương trình sale</p>
+          <Link to="/users" className="flex flex-col items-center p-4 bg-orange-50 rounded-xl hover:bg-orange-100 transition group">
+            <span className="text-4xl mb-2 group-hover:scale-110 transition">👥</span>
+            <span className="font-bold text-gray-700">Khách hàng</span>
           </Link>
-
-          <Link
-            to="/vouchers"
-            className="group p-4 border-2 border-gray-200 rounded-lg hover:border-teal-500 hover:shadow-md transition"
-          >
-            <div className="flex items-center mb-2">
-              <div className="bg-teal-100 p-2 rounded-lg mr-3 group-hover:bg-teal-500 transition">
-                <svg className="w-6 h-6 text-teal-600 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
-                </svg>
-              </div>
-              <h4 className="font-bold text-gray-800">Voucher</h4>
-            </div>
-            <p className="text-sm text-gray-600">Quản lý mã giảm giá</p>
+          <Link to="/reviews" className="flex flex-col items-center p-4 bg-yellow-50 rounded-xl hover:bg-yellow-100 transition group">
+            <span className="text-4xl mb-2 group-hover:scale-110 transition">⭐</span>
+            <span className="font-bold text-gray-700">Đánh giá</span>
+          </Link>
+          <Link to="/customer-insights" className="flex flex-col items-center p-4 bg-purple-50 rounded-xl hover:bg-purple-100 transition group">
+            <span className="text-4xl mb-2 group-hover:scale-110 transition">📈</span>
+            <span className="font-bold text-gray-700">Phân tích</span>
+          </Link>
+          <Link to="/store-info" className="flex flex-col items-center p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition group">
+            <span className="text-4xl mb-2 group-hover:scale-110 transition">🏪</span>
+            <span className="font-bold text-gray-700">Cửa hàng</span>
           </Link>
         </div>
       </div>
