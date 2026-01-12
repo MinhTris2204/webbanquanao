@@ -177,11 +177,17 @@ export default function ProductDetail() {
   const handleBuyNow = async () => {
     if (!isAuthenticated) { navigate('/login'); return }
     if (product.size && !selectedSize) { setMessage({ text: 'Vui lòng chọn size!', type: 'error' }); return }
-    try {
-      await api.post('/api/cart/add', { product_id: product.products_id, quantity, selected_size: selectedSize })
-      fetchCartCount()
-      navigate('/checkout')
-    } catch (err) { setMessage({ text: 'Có lỗi xảy ra', type: 'error' }) }
+    // Chuyển thẳng đến checkout với thông tin sản phẩm (không thêm vào giỏ hàng)
+    navigate('/checkout', { 
+      state: { 
+        buyNowItem: {
+          product_id: product.products_id,
+          product: product,
+          quantity: quantity,
+          selected_size: selectedSize
+        }
+      }
+    })
   }
 
   if (loading) return (

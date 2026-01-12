@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import api, { getImageUrl } from '../utils/api'
 import { useAuth } from '../context/AuthContext'
 
 export default function Checkout() {
   const { user, isAuthenticated, loading: authLoading } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+  const buyNowItem = location.state?.buyNowItem // Sản phẩm từ "Mua ngay"
   const [cart, setCart] = useState({ cart_items: [], total: 0 })
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -26,11 +28,28 @@ export default function Checkout() {
     if (!authLoading) {
       if (!isAuthenticated) {
         navigate('/login')
+      } else if (buyNowItem) {
+        // Mua ngay - tính toán từ sản phẩm được chọn
+        const product = buyNowItem.product
+        const unitPrice = product.promotion?.promotional_price || product.gia_ban
+        const itemTotal = unitPrice * buyNowItem.quantity
+        setCart({
+          cart_items: [{
+            cart_item_id: 'buy_now',
+            product: product,
+            quantity: buyNowItem.quantity,
+            selected_size: buyNowItem.selected_size,
+            unit_price: unitPrice,
+            item_total: itemTotal
+          }],
+          total: itemTotal
+        })
+        setLoading(false)
       } else {
         fetchCart()
       }
     }
-  }, [isAuthenticated, authLoading, navigate])
+  }, [isAuthenticated, authLoading, navigate, buyNowItem])
 
   const fetchCart = async () => {
     setLoading(true)
@@ -104,10 +123,20 @@ export default function Checkout() {
     setError('')
 
     try {
-      const orderData = {
+      let orderData = {
         ...formData,
         ma_voucher: appliedVoucher?.code || null
       }
+
+      // Nếu là "Mua ngay", gửi thông tin sản phẩm trực tiếp
+      if (buyNowItem) {
+        orderData.buy_now_item = {
+          product_id: buyNowItem.product_id,
+          quantity: buyNowItem.quantity,
+          selected_size: buyNowItem.selected_size
+        }
+      }
+
       const orderRes = await api.post('/api/orders/create', orderData)
       const orderId = orderRes.data.order?.id
 
@@ -283,7 +312,10 @@ export default function Checkout() {
                       <p className="font-semibold text-sm text-gray-800 line-clamp-2">
                         {item.product.ten_san_pham}
                       </p>
-                      <p className="text-sm text-gray-500">SL: {item.quantity}</p>
+                      <p className="text-sm text-gray-500">
+                        SL: {item.quantity}
+                        {item.selected_size && ` | Size: ${item.selected_size}`}
+                      </p>
                       
                       {/* Show promotion info if product has promotion */}
                       {item.product.promotion ? (
@@ -406,10 +438,10 @@ export default function Checkout() {
 
               <button
                 type="button"
-                onClick={() => navigate('/cart')}
+                onClick={() => buyNowItem ? navigate(-1) : navigate('/cart')}
                 className="w-full mt-3 text-blue-600 hover:text-blue-700 font-semibold"
               >
-                ← Quay lại giỏ hàng
+                ← {buyNowItem ? 'Quay lại sản phẩm' : 'Quay lại giỏ hàng'}
               </button>
             </div>
           </div>
