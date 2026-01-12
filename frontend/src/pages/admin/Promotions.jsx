@@ -27,6 +27,7 @@ export default function Promotions() {
     end_date: '',
     is_active: true
   });
+  const [submitting, setSubmitting] = useState(false);
   
   // Product search in modal
   const [productSearch, setProductSearch] = useState('');
@@ -101,6 +102,7 @@ export default function Promotions() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitting(true);
     try {
       // Convert local datetime to ISO string (UTC)
       const submitData = {
@@ -122,6 +124,8 @@ export default function Promotions() {
       fetchStats();
     } catch (error) {
       alert(error.response?.data?.error || 'Có lỗi xảy ra');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -132,6 +136,7 @@ export default function Promotions() {
       return;
     }
     
+    setSubmitting(true);
     try {
       // Convert local datetime to ISO string (UTC)
       const submitData = {
@@ -148,6 +153,8 @@ export default function Promotions() {
       fetchStats();
     } catch (error) {
       alert(error.response?.data?.error || 'Có lỗi xảy ra');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -617,16 +624,17 @@ export default function Promotions() {
                 <button
                   type="button"
                   onClick={() => { setShowModal(false); resetForm(); }}
-                  className="px-6 py-3 border-2 border-gray-300 rounded-lg hover:bg-gray-50 font-medium transition"
+                  disabled={submitting}
+                  className="px-6 py-3 border-2 border-gray-300 rounded-lg hover:bg-gray-50 font-medium transition disabled:opacity-50"
                 >
                   ❌ Hủy
                 </button>
                 <button
                   type="submit"
-                  disabled={!formData.product_id}
+                  disabled={!formData.product_id || submitting}
                   className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 font-medium shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition"
                 >
-                  {editingPromotion ? '✏️ Cập nhật' : '✨ Tạo khuyến mãi'}
+                  {submitting ? '⏳ Đang xử lý...' : (editingPromotion ? '✏️ Cập nhật' : '✨ Tạo khuyến mãi')}
                 </button>
               </div>
             </form>
@@ -720,15 +728,17 @@ export default function Promotions() {
                 <button
                   type="button"
                   onClick={() => { setShowBulkModal(false); resetBulkForm(); }}
-                  className="px-4 py-2 border rounded hover:bg-gray-50"
+                  disabled={submitting}
+                  className="px-4 py-2 border rounded hover:bg-gray-50 disabled:opacity-50"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-teal-600 text-white rounded hover:bg-teal-700"
+                  disabled={submitting}
+                  className="px-4 py-2 bg-teal-600 text-white rounded hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Tạo hàng loạt
+                  {submitting ? '⏳ Đang xử lý...' : 'Tạo hàng loạt'}
                 </button>
               </div>
             </form>

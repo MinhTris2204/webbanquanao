@@ -16,6 +16,7 @@ export default function AdminVouchers() {
     end_date: '',
     is_active: true
   })
+  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     fetchVouchers()
@@ -32,6 +33,7 @@ export default function AdminVouchers() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    setSubmitting(true)
     try {
       if (editingVoucher) {
         await api.put(`/api/vouchers/admin/${editingVoucher.id}`, formData)
@@ -43,7 +45,9 @@ export default function AdminVouchers() {
       resetForm()
       fetchVouchers()
     } catch (err) {
-      alert('Có lỗi xảy ra')
+      alert(err.response?.data?.error || 'Có lỗi xảy ra')
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -234,18 +238,20 @@ export default function AdminVouchers() {
               <div className="flex gap-3 pt-4 border-t">
                 <button
                   type="submit"
-                  className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg font-semibold"
+                  disabled={submitting}
+                  className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {editingVoucher ? '💾 Cập nhật' : '➕ Thêm'}
+                  {submitting ? '⏳ Đang xử lý...' : (editingVoucher ? '💾 Cập nhật' : '➕ Thêm')}
                 </button>
                 <button
                   type="button"
+                  disabled={submitting}
                   onClick={() => {
                     setShowForm(false)
                     setEditingVoucher(null)
                     resetForm()
                   }}
-                  className="flex-1 bg-gray-500 text-white px-6 py-3 rounded-lg hover:bg-gray-600 transition-all shadow-md hover:shadow-lg font-semibold"
+                  className="flex-1 bg-gray-500 text-white px-6 py-3 rounded-lg hover:bg-gray-600 transition-all shadow-md hover:shadow-lg font-semibold disabled:opacity-50"
                 >
                   ❌ Hủy
                 </button>

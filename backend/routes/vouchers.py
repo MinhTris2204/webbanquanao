@@ -60,15 +60,15 @@ def create_voucher():
     if end_date.tzinfo is not None:
         end_date = end_date.replace(tzinfo=None)
     
-    # Validate dates - không cho phép đặt thời gian trong quá khứ
-    now = datetime.utcnow()
+    # Validate dates - chỉ so sánh ngày, không so sánh giờ
+    today = datetime.utcnow().date()
     
-    if start_date < now:
-        return jsonify({'error': 'Thời gian bắt đầu không được trong quá khứ'}), 400
-    if end_date < now:
-        return jsonify({'error': 'Thời gian kết thúc không được trong quá khứ'}), 400
+    if start_date.date() < today:
+        return jsonify({'error': 'Ngày bắt đầu không được trong quá khứ'}), 400
+    if end_date.date() < today:
+        return jsonify({'error': 'Ngày kết thúc không được trong quá khứ'}), 400
     if end_date <= start_date:
-        return jsonify({'error': 'Thời gian kết thúc phải sau thời gian bắt đầu'}), 400
+        return jsonify({'error': 'Ngày kết thúc phải sau ngày bắt đầu'}), 400
     
     voucher = Voucher(
         code=data.get('code').upper(),
@@ -93,7 +93,7 @@ def update_voucher(voucher_id):
     voucher = Voucher.query.get_or_404(voucher_id)
     data = request.get_json()
     
-    now = datetime.utcnow()
+    today = datetime.utcnow().date()
     
     if 'code' in data:
         voucher.code = data['code'].upper()
@@ -116,8 +116,8 @@ def update_voucher(voucher_id):
         new_start_date = datetime.fromisoformat(start_date_str)
         if new_start_date.tzinfo is not None:
             new_start_date = new_start_date.replace(tzinfo=None)
-        if new_start_date < now:
-            return jsonify({'error': 'Thời gian bắt đầu không được trong quá khứ'}), 400
+        if new_start_date.date() < today:
+            return jsonify({'error': 'Ngày bắt đầu không được trong quá khứ'}), 400
         voucher.start_date = new_start_date
     if 'end_date' in data:
         end_date_str = data['end_date']
@@ -126,8 +126,8 @@ def update_voucher(voucher_id):
         new_end_date = datetime.fromisoformat(end_date_str)
         if new_end_date.tzinfo is not None:
             new_end_date = new_end_date.replace(tzinfo=None)
-        if new_end_date < now:
-            return jsonify({'error': 'Thời gian kết thúc không được trong quá khứ'}), 400
+        if new_end_date.date() < today:
+            return jsonify({'error': 'Ngày kết thúc không được trong quá khứ'}), 400
         voucher.end_date = new_end_date
     if 'is_active' in data:
         voucher.is_active = data['is_active']
