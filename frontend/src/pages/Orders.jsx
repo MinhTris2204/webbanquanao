@@ -244,17 +244,22 @@ export default function Orders() {
                     {order.order_details?.map((detail, index) => (
                       <div 
                         key={index} 
-                        className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition cursor-pointer"
-                        onClick={() => navigate(`/products/${detail.product?.products_id}`)}
+                        className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
                       >
                         <img
                           src={getImageUrl(detail.product?.hinh_anh) || 'https://via.placeholder.com/80'}
                           alt={detail.product?.ten_san_pham}
-                          className="w-20 h-20 object-cover rounded-lg"
+                          className="w-20 h-20 object-cover rounded-lg cursor-pointer"
+                          onClick={() => navigate(`/products/${detail.product?.products_id}`)}
                         />
                         <div className="flex-1">
                           <p className="text-xs text-gray-400">ID: #{detail.product?.products_id}</p>
-                          <p className="font-semibold text-gray-800 hover:text-blue-600 transition">{detail.product?.ten_san_pham}</p>
+                          <p 
+                            className="font-semibold text-gray-800 hover:text-blue-600 transition cursor-pointer"
+                            onClick={() => navigate(`/products/${detail.product?.products_id}`)}
+                          >
+                            {detail.product?.ten_san_pham}
+                          </p>
                           {detail.selected_size && (
                             <p className="text-xs text-blue-600 font-semibold">Size: {detail.selected_size}</p>
                           )}
@@ -280,10 +285,22 @@ export default function Orders() {
                             </p>
                           )}
                         </div>
-                        <div className="text-right">
+                        <div className="text-right flex flex-col items-end gap-2">
                           <p className="font-bold text-blue-600">
                             {detail.line_total?.toLocaleString('vi-VN')}₫
                           </p>
+                          {/* Nút đánh giá - chỉ hiện khi đơn hàng hoàn thành */}
+                          {order.trangthai === 'hoan_thanh' && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                navigate(`/products/${detail.product?.products_id}?review=true#reviews`)
+                              }}
+                              className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-orange-600 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition"
+                            >
+                              ⭐ Đánh giá
+                            </button>
+                          )}
                         </div>
                       </div>
                     ))}

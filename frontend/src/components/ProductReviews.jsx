@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../utils/api'
 
 export default function ProductReviews({ productId }) {
   const { isAuthenticated, user } = useAuth()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [reviews, setReviews] = useState([])
   const [averageRating, setAverageRating] = useState(0)
   const [totalReviews, setTotalReviews] = useState(0)
@@ -24,6 +26,20 @@ export default function ProductReviews({ productId }) {
       checkCanReview()
     }
   }, [productId, isAuthenticated])
+
+  // Auto open review form when coming from orders page
+  useEffect(() => {
+    if (searchParams.get('review') === 'true' && isAuthenticated && canReview) {
+      setShowReviewForm(true)
+      // Remove query param after opening form
+      searchParams.delete('review')
+      setSearchParams(searchParams, { replace: true })
+      // Scroll to reviews section
+      setTimeout(() => {
+        document.getElementById('reviews')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 100)
+    }
+  }, [searchParams, isAuthenticated, canReview])
 
   const fetchReviews = async () => {
     try {
@@ -146,7 +162,7 @@ export default function ProductReviews({ productId }) {
   }
 
   return (
-    <div className="mt-8">
+    <div id="reviews" className="mt-8 scroll-mt-4">
       {/* Rating Summary */}
       <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
         <h3 className="text-2xl font-bold text-gray-800 mb-4">⭐ Đánh giá sản phẩm</h3>
