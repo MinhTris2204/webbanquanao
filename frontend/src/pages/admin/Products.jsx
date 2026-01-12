@@ -723,15 +723,15 @@ export default function AdminProducts() {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="text-sm font-medium text-gray-900">#{product.products_id}</span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-6 py-4">
                     {product.hinh_anh ? (
                       <img 
                         src={getImageUrl(product.hinh_anh)} 
                         alt={product.ten_san_pham} 
-                        className="w-20 h-20 object-cover rounded-lg shadow-md border-2 border-gray-100"
+                        className="w-56 h-auto max-h-56 object-contain rounded-lg shadow-md border border-gray-200"
                       />
                     ) : (
-                      <div className="w-20 h-20 bg-gradient-to-br from-gray-200 to-gray-300 rounded-lg flex items-center justify-center text-gray-400 text-xs font-semibold shadow-md">
+                      <div className="w-56 h-44 bg-gradient-to-br from-gray-200 to-gray-300 rounded-lg flex items-center justify-center text-gray-400 text-xs font-semibold shadow-md">
                         No Image
                       </div>
                     )}
