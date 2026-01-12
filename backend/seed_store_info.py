@@ -91,7 +91,7 @@ Nếu có thắc mắc về chính sách bảo mật, vui lòng liên hệ:
 """
     },
     {
-        "key": "terms",
+        "key": "terms_conditions",
         "title": "Điều khoản và điều kiện",
         "content": """**Điều khoản và điều kiện sử dụng**
 
@@ -139,7 +139,7 @@ Chúng tôi có quyền cập nhật điều khoản bất cứ lúc nào. Việ
 """
     },
     {
-        "key": "shipping",
+        "key": "shipping_policy",
         "title": "Chính sách vận chuyển",
         "content": """**Chính sách vận chuyển**
 
@@ -237,7 +237,7 @@ Sản phẩm được chấp nhận đổi trả khi:
 """
     },
     {
-        "key": "contact",
+        "key": "contact_info",
         "title": "Thông tin liên hệ",
         "content": """**Thông tin liên hệ Fashion Store**
 
@@ -289,7 +289,7 @@ Chúng tôi luôn sẵn sàng lắng nghe và hỗ trợ bạn!
 """
     },
     {
-        "key": "payment",
+        "key": "payment_methods",
         "title": "Phương thức thanh toán",
         "content": """**Các phương thức thanh toán**
 
@@ -342,7 +342,7 @@ Ví dụ: DH123456 - 0901234567
 """
     },
     {
-        "key": "warranty",
+        "key": "warranty_policy",
         "title": "Chính sách bảo hành",
         "content": """**Chính sách bảo hành sản phẩm**
 
