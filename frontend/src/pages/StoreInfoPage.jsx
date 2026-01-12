@@ -83,9 +83,14 @@ export default function StoreInfoPage() {
       {/* Content */}
       <div className="bg-white rounded-xl shadow-lg p-8">
         <div className="prose max-w-none">
-          <div className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-            {info.content}
-          </div>
+          <div 
+            className="text-gray-700 leading-relaxed whitespace-pre-wrap store-info-content"
+            dangerouslySetInnerHTML={{ 
+              __html: info.content
+                .replace(/\*\*(.*?)\*\*/g, '<strong class="text-gray-900 font-bold">$1</strong>')
+                .replace(/\n/g, '<br/>')
+            }}
+          />
         </div>
       </div>
 
