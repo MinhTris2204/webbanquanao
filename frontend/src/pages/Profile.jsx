@@ -55,7 +55,6 @@ export default function Profile() {
     try {
       await api.put('/api/auth/profile', {
         hoten: infoForm.hoten,
-        email: infoForm.email,
         sdt: infoForm.sdt,
         diachi: infoForm.diachi
       })
@@ -218,14 +217,13 @@ export default function Profile() {
 
                     <div>
                       <label className="block text-gray-700 mb-2 font-semibold">
-                        Email <span className="text-red-500">*</span>
+                        Email
                       </label>
                       <input
                         type="email"
-                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg bg-gray-100 text-gray-500"
                         value={infoForm.email}
-                        onChange={(e) => setInfoForm({ ...infoForm, email: e.target.value })}
-                        required
+                        disabled
                       />
                     </div>
 
