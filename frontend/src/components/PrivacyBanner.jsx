@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 
-export default function CookieConsent() {
+export default function PrivacyBanner() {
   const [showBanner, setShowBanner] = useState(false)
 
   useEffect(() => {

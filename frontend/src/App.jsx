@@ -3,7 +3,7 @@ import { useEffect } from 'react'
 import { CartProvider } from './context/CartContext'
 import { SocketProvider } from './context/SocketContext'
 import { ToastProvider } from './components/Toast'
-import CookieConsent from './components/CookieConsent'
+import PrivacyBanner from './components/PrivacyBanner'
 import ChatWidget from './components/ChatWidget'
 import CustomerLayout from './layouts/CustomerLayout'
 import Home from './pages/Home'
@@ -40,7 +40,7 @@ function App() {
         <SocketProvider>
         <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <ScrollToTop />
-        <CookieConsent />
+        <PrivacyBanner />
         <ChatWidget />
         <Routes>
         {/* Customer Routes */}

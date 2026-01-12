@@ -171,27 +171,28 @@ def get_similar_products(product_id):
         if not product:
             return jsonify({'error': 'Product not found'}), 404
         
-        # Find similar products based on category, gender, and price range
-        price_min = float(product.gia_ban) * 0.7  # 30% lower
-        price_max = float(product.gia_ban) * 1.3  # 30% higher
+        # Find similar products - MUST have same category (loai)
+        # Priority: same loai + same gioi_tinh > same loai only
+        price_min = float(product.gia_ban) * 0.5  # 50% lower
+        price_max = float(product.gia_ban) * 1.5  # 50% higher
         
-        # Build query with proper SQLAlchemy syntax
+        # First, get products with same category (loai) - this is required
         similar = Product.query.filter(
             Product.products_id != product_id,
             Product.trang_thai == 'Con_hang',
-            Product.gia_ban.between(price_min, price_max)
-        ).filter(
-            db.or_(
-                Product.loai == product.loai,
-                Product.gioi_tinh == product.gioi_tinh
-            )
+            Product.loai == product.loai  # Must be same category (áo -> áo, quần -> quần)
         ).order_by(
-            # Prioritize same category using case
-            func.coalesce(
-                func.nullif(Product.loai == product.loai, False).cast(db.Integer),
-                0
+            # Prioritize same gender
+            db.case(
+                (Product.gioi_tinh == product.gioi_tinh, 1),
+                else_=0
             ).desc(),
-            # Then random
+            # Then by price similarity
+            db.case(
+                (Product.gia_ban.between(price_min, price_max), 1),
+                else_=0
+            ).desc(),
+            # Then random for variety
             func.random()
         ).limit(limit).all()
         
