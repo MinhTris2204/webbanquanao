@@ -9,6 +9,7 @@ export default function Orders() {
   const [loading, setLoading] = useState(true)
   const [searchParams, setSearchParams] = useSearchParams()
   const [showSuccess, setShowSuccess] = useState(false)
+  const [reviewedProducts, setReviewedProducts] = useState({}) // Track reviewed products
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -70,6 +71,29 @@ export default function Orders() {
     try {
       const res = await api.get('/api/orders')
       setOrders(res.data)
+      
+      // Check review status for completed orders
+      const completedOrders = res.data.filter(o => o.trangthai === 'hoan_thanh')
+      const productIds = new Set()
+      completedOrders.forEach(order => {
+        order.order_details?.forEach(detail => {
+          if (detail.product?.products_id) {
+            productIds.add(detail.product.products_id)
+          }
+        })
+      })
+      
+      // Check each product's review status
+      const reviewStatus = {}
+      for (const productId of productIds) {
+        try {
+          const reviewRes = await api.get(`/api/reviews/user/can-review/${productId}`)
+          reviewStatus[productId] = !reviewRes.data.can_review && reviewRes.data.reason === 'already_reviewed'
+        } catch {
+          reviewStatus[productId] = false
+        }
+      }
+      setReviewedProducts(reviewStatus)
     } catch (err) {
       console.error(err)
     } finally {
@@ -291,15 +315,21 @@ export default function Orders() {
                           </p>
                           {/* Nút đánh giá - chỉ hiện khi đơn hàng hoàn thành */}
                           {order.trangthai === 'hoan_thanh' && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                navigate(`/products/${detail.product?.products_id}?review=true#reviews`)
-                              }}
-                              className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-orange-600 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition"
-                            >
-                              ⭐ Đánh giá
-                            </button>
+                            reviewedProducts[detail.product?.products_id] ? (
+                              <span className="flex items-center gap-1 px-3 py-1.5 text-sm font-semibold text-green-600 bg-green-50 border border-green-200 rounded-lg">
+                                ✅ Đã đánh giá
+                              </span>
+                            ) : (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  navigate(`/products/${detail.product?.products_id}?review=true#reviews`)
+                                }}
+                                className="flex items-center gap-1 px-4 py-2 text-sm font-bold text-white bg-orange-500 rounded-lg hover:bg-orange-600 transition shadow-md"
+                              >
+                                ⭐ HÃY ĐÁNH GIÁ
+                              </button>
+                            )
                           )}
                         </div>
                       </div>
