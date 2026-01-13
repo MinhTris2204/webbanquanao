@@ -29,6 +29,12 @@ def get_all_vouchers():
 def create_voucher():
     data = request.get_json()
     
+    # Check if voucher code already exists
+    code = data.get('code', '').upper()
+    existing_voucher = Voucher.query.filter_by(code=code).first()
+    if existing_voucher:
+        return jsonify({'error': f'Mã voucher "{code}" đã tồn tại'}), 400
+    
     # Handle empty strings for numeric fields
     max_discount = data.get('max_discount')
     if max_discount == '' or max_discount is None:
@@ -71,7 +77,7 @@ def create_voucher():
         return jsonify({'error': 'Ngày kết thúc phải sau ngày bắt đầu'}), 400
     
     voucher = Voucher(
-        code=data.get('code').upper(),
+        code=code,
         discount_type=data.get('discount_type'),
         discount_value=float(data.get('discount_value')),
         min_order_value=float(data.get('min_order_value', 0)),
@@ -96,7 +102,12 @@ def update_voucher(voucher_id):
     today = datetime.utcnow().date()
     
     if 'code' in data:
-        voucher.code = data['code'].upper()
+        new_code = data['code'].upper()
+        # Check if new code already exists (excluding current voucher)
+        existing = Voucher.query.filter(Voucher.code == new_code, Voucher.id != voucher_id).first()
+        if existing:
+            return jsonify({'error': f'Mã voucher "{new_code}" đã tồn tại'}), 400
+        voucher.code = new_code
     if 'discount_type' in data:
         voucher.discount_type = data['discount_type']
     if 'discount_value' in data:
