@@ -89,12 +89,55 @@ export default function AddressSelector({
         }
     }, [selectedProvince])
 
-    // Set initial value
+    // Xử lý giá trị ban đầu: Tự động phân tích chuỗi địa chỉ để fill vào dropdown
     useEffect(() => {
-        if (initialValue.detail) {
+        if (provinces.length > 0 && initialValue.detail && !selectedProvince) {
+            const fullAddress = initialValue.detail
+            const parts = fullAddress.split(',').map(p => p.trim())
+
+            if (parts.length >= 2) {
+                // Thử khớp phần cuối với danh sách Tỉnh/Thành
+                const potentialProvince = parts[parts.length - 1]
+                const foundProvince = provinces.find(p =>
+                    p.name.toLowerCase() === potentialProvince.toLowerCase() ||
+                    p.name.toLowerCase().includes(potentialProvince.toLowerCase())
+                )
+
+                if (foundProvince) {
+                    setSelectedProvince(foundProvince)
+                    setProvinceSearch(foundProvince.name)
+
+                    // Thử khớp phần áp chót với danh sách Phường/Xã của tỉnh đó
+                    const potentialWard = parts[parts.length - 2]
+                    const foundWard = foundProvince.wards?.find(w =>
+                        w.name.toLowerCase() === potentialWard.toLowerCase() ||
+                        w.name.toLowerCase().includes(potentialWard.toLowerCase())
+                    )
+
+                    if (foundWard) {
+                        setSelectedWard(foundWard)
+                        setWardSearch(foundWard.name)
+                        // Phần còn lại là địa chỉ chi tiết
+                        // Loại bỏ 2 phần cuối (Xã, Tỉnh)
+                        const detailParts = parts.slice(0, parts.length - 2)
+                        setAddressDetail(detailParts.join(', '))
+                    } else {
+                        // Tìm thấy tỉnh nhưng không thấy xã -> Lấy hết phần trước làm chi tiết
+                        const detailParts = parts.slice(0, parts.length - 1)
+                        setAddressDetail(detailParts.join(', '))
+                    }
+                } else {
+                    // Không khớp tỉnh nào -> Coi tất cả là chi tiết
+                    setAddressDetail(fullAddress)
+                }
+            } else {
+                setAddressDetail(fullAddress)
+            }
+        } else if (initialValue.detail && !selectedProvince) {
+            // Fallback nếu chưa load xong province hoặc format không khớp
             setAddressDetail(initialValue.detail)
         }
-    }, [initialValue.detail])
+    }, [provinces, initialValue.detail])
 
     // Gọi onChange khi giá trị thay đổi
     useEffect(() => {
@@ -132,7 +175,7 @@ export default function AddressSelector({
     const handleSelectProvince = (province) => {
         setSelectedProvince(province)
         setSelectedWard(null)
-        setProvinceSearch('')
+        setProvinceSearch(province.name) // Cập nhật ô input thành tên tỉnh đã chọn
         setWardSearch('')
         setShowProvinceDropdown(false)
     }
@@ -140,7 +183,7 @@ export default function AddressSelector({
     // Xử lý chọn phường/xã
     const handleSelectWard = (ward) => {
         setSelectedWard(ward)
-        setWardSearch('')
+        setWardSearch(ward.name) // Cập nhật ô input thành tên phường đã chọn
         setShowWardDropdown(false)
     }
 

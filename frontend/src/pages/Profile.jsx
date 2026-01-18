@@ -5,7 +5,7 @@ import api from '../utils/api'
 import AddressSelector from '../components/AddressSelector'
 
 export default function Profile() {
-  const { user, isAuthenticated, loading: authLoading, logout } = useAuth()
+  const { user, isAuthenticated, loading: authLoading, logout, updateUser } = useAuth()
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('info')
 
@@ -54,11 +54,12 @@ export default function Profile() {
     setLoading(true)
 
     try {
-      await api.put('/api/auth/profile', {
+      const res = await api.put('/api/auth/profile', {
         hoten: infoForm.hoten,
         sdt: infoForm.sdt,
         diachi: infoForm.diachi
       })
+      updateUser(res.data.user)
       setMessage('Cập nhật thông tin thành công!')
       setTimeout(() => setMessage(''), 3000)
     } catch (err) {
@@ -255,6 +256,7 @@ export default function Profile() {
                       Địa chỉ
                     </label>
                     <AddressSelector
+                      initialValue={{ detail: user?.diachi || '' }}
                       onChange={(data) => {
                         if (data.fullAddress) {
                           setInfoForm(prev => ({ ...prev, diachi: data.fullAddress }))

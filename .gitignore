@@ -35,3 +35,7 @@ dist/
 # Uploads (keep .gitkeep)
 backend/uploads/*
 !backend/uploads/.gitkeep
+README.md
+
+*.md
+*.puml

@@ -27,6 +27,17 @@ export default function Checkout() {
   })
 
   useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        hoten: user.hoten || '',
+        sdt: user.sdt || '',
+        diachi_giaohang: user.diachi || ''
+      }))
+    }
+  }, [user])
+
+  useEffect(() => {
     if (!authLoading) {
       if (!isAuthenticated) {
         navigate('/login')
@@ -224,6 +235,7 @@ export default function Checkout() {
                   </label>
                   <AddressSelector
                     required={true}
+                    initialValue={{ detail: user?.diachi || '' }}
                     onChange={(data) => {
                       setAddressData(data)
                       if (data.fullAddress) {
