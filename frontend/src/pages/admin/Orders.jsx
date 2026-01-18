@@ -23,6 +23,15 @@ export default function AdminOrders() {
     trangthai: ''
   })
 
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmText: 'Xác nhận',
+    confirmColor: 'blue',
+    onConfirm: null
+  })
+
   useEffect(() => {
     fetchOrders()
   }, [currentPage, statusFilter, searchTerm])
@@ -92,17 +101,25 @@ export default function AdminOrders() {
     }
   }
 
-  const deleteOrder = async (orderId) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa đơn hàng này?')) return
-
-    try {
-      await api.delete(`/api/admin/orders/${orderId}`)
-      toast.success('Xóa đơn hàng thành công!')
-      fetchOrders()
-    } catch (err) {
-      console.error(err)
-      toast.error('Lỗi khi xóa đơn hàng')
-    }
+  const deleteOrder = (orderId) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Xóa đơn hàng',
+      message: 'Bạn có chắc chắn muốn xóa đơn hàng này?',
+      confirmText: 'Xóa đơn hàng',
+      confirmColor: 'red',
+      onConfirm: async () => {
+        try {
+          await api.delete(`/api/admin/orders/${orderId}`)
+          toast.success('Xóa đơn hàng thành công!')
+          fetchOrders()
+        } catch (err) {
+          console.error(err)
+          toast.error('Lỗi khi xóa đơn hàng')
+        }
+        setConfirmModal(prev => ({ ...prev, isOpen: false }))
+      }
+    })
   }
 
   const getStatusBadge = (status) => {
@@ -400,6 +417,8 @@ export default function AdminOrders() {
                   <label className="block text-sm font-semibold text-gray-700 mb-2">Địa chỉ giao hàng</label>
                   <AddressSelector
                     required={true}
+                    initialValue={{ detail: editForm.diachi_giaohang }}
+                    key={selectedOrder.id}
                     onChange={(data) => {
                       if (data.fullAddress) {
                         setEditForm(prev => ({ ...prev, diachi_giaohang: data.fullAddress }))
@@ -612,6 +631,42 @@ export default function AdminOrders() {
           </div>
         </div>
       )}
+
+      {/* Confirm Modal */}
+      {confirmModal.isOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+            <div className={`px-6 py-4 rounded-t-xl ${confirmModal.confirmColor === 'red' ? 'bg-red-500' : 'bg-blue-600'}`}>
+              <h3 className="text-xl font-bold text-white mb-0">{confirmModal.title}</h3>
+            </div>
+
+            <div className="p-6">
+              <p className="text-gray-700 text-lg mb-4">
+                {confirmModal.message}
+              </p>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={confirmModal.onConfirm}
+                  className={`flex-1 text-white px-4 py-2 rounded-lg font-semibold transition shadow-md ${confirmModal.confirmColor === 'red'
+                    ? 'bg-red-600 hover:bg-red-700'
+                    : 'bg-blue-600 hover:bg-blue-700'
+                    }`}
+                >
+                  {confirmModal.confirmText}
+                </button>
+                <button
+                  onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                  className="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-semibold hover:bg-gray-300 transition"
+                >
+                  Hủy
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
+

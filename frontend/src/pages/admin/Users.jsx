@@ -471,6 +471,8 @@ export default function AdminUsers() {
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">Địa chỉ</label>
                   <AddressSelector
+                    initialValue={{ detail: editForm.diachi }}
+                    key={selectedUser.user_id} // Force re-render when changing user
                     onChange={(data) => {
                       if (data.fullAddress) {
                         setEditForm(prev => ({ ...prev, diachi: data.fullAddress }))

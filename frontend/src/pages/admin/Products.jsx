@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
 import api, { getImageUrl } from '../../utils/api'
+import { useToast } from '../../components/Toast'
 
 export default function AdminProducts() {
+  const toast = useToast()
   const [products, setProducts] = useState([])
   const [showForm, setShowForm] = useState(false)
   const [editingProduct, setEditingProduct] = useState(null)
@@ -31,6 +33,14 @@ export default function AdminProducts() {
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [deleteProduct, setDeleteProduct] = useState(null)
   const [deleteInfo, setDeleteInfo] = useState(null)
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmText: 'Xác nhận',
+    confirmColor: 'blue',
+    onConfirm: null
+  })
 
   const letterSizes = ['S', 'M', 'L', 'XL', 'XXL']
   const numberSizes = ['26', '27', '28', '29', '30', '31', '32', '33', '34', '36']
@@ -79,12 +89,12 @@ export default function AdminProducts() {
     const missingFields = requiredFields.filter(item => !formData[item.field] || formData[item.field].toString().trim() === '')
 
     if (missingFields.length > 0) {
-      alert(`Vui lòng nhập đầy đủ thông tin:\n- ${missingFields.map(f => f.label).join('\n- ')}`)
+      toast.warning(`Vui lòng nhập đầy đủ: ${missingFields.map(f => f.label).join(', ')}`)
       return
     }
 
     if (selectedSizes.length === 0) {
-      alert('Vui lòng chọn ít nhất một size')
+      toast.warning('Vui lòng chọn ít nhất một size')
       return
     }
 
@@ -98,15 +108,17 @@ export default function AdminProducts() {
 
       if (editingProduct) {
         await api.put(`/api/admin/products/${editingProduct.products_id}`, dataToSubmit)
+        toast.success('Cập nhật sản phẩm thành công!')
       } else {
         await api.post('/api/admin/products', dataToSubmit)
+        toast.success('Thêm sản phẩm thành công!')
       }
       setShowForm(false)
       setEditingProduct(null)
       resetForm()
       fetchProducts()
     } catch (err) {
-      alert('Có lỗi xảy ra')
+      toast.error('Có lỗi xảy ra khi lưu sản phẩm')
     } finally {
       setSubmitting(false)
     }
@@ -206,44 +218,52 @@ export default function AdminProducts() {
       setDeleteProduct(null)
       setDeleteInfo(null)
       fetchProducts()
-      alert('Xóa sản phẩm thành công!')
+      toast.success('Xóa sản phẩm thành công!')
     } catch (err) {
       const errorMsg = err.response?.data?.error || 'Có lỗi xảy ra'
-      alert(errorMsg)
+      toast.error(errorMsg)
     }
   }
 
   // Xóa nhiều sản phẩm
   const handleDeleteMultiple = async () => {
     if (selectedProducts.length === 0) {
-      alert('Vui lòng chọn ít nhất một sản phẩm để xóa')
+      toast.warning('Vui lòng chọn ít nhất một sản phẩm để xóa')
       return
     }
 
-    if (confirm(`Bạn có chắc muốn xóa ${selectedProducts.length} sản phẩm đã chọn?`)) {
-      try {
-        const results = await Promise.allSettled(
-          selectedProducts.map(id => api.delete(`/api/admin/products/${id}`))
-        )
+    setConfirmModal({
+      isOpen: true,
+      title: 'Xóa nhiều sản phẩm',
+      message: `Bạn có chắc muốn xóa ${selectedProducts.length} sản phẩm đã chọn?`,
+      confirmText: 'Xóa vĩnh viễn',
+      confirmColor: 'red',
+      onConfirm: async () => {
+        try {
+          const results = await Promise.allSettled(
+            selectedProducts.map(id => api.delete(`/api/admin/products/${id}`))
+          )
 
-        // Kiểm tra kết quả
-        const failed = results.filter(r => r.status === 'rejected')
-        const succeeded = results.filter(r => r.status === 'fulfilled')
+          // Kiểm tra kết quả
+          const failed = results.filter(r => r.status === 'rejected')
+          const succeeded = results.filter(r => r.status === 'fulfilled')
 
-        if (failed.length > 0) {
-          // Lấy thông báo lỗi từ response đầu tiên bị lỗi
-          const firstError = failed[0].reason?.response?.data?.error || 'Có lỗi xảy ra khi xóa sản phẩm'
-          alert(`Đã xóa ${succeeded.length} sản phẩm thành công.\n${failed.length} sản phẩm không thể xóa:\n${firstError}`)
-        } else {
-          alert(`Đã xóa thành công ${succeeded.length} sản phẩm!`)
+          if (failed.length > 0) {
+            // Lấy thông báo lỗi từ response đầu tiên bị lỗi
+            const firstError = failed[0].reason?.response?.data?.error || 'Có lỗi xảy ra'
+            toast.warning(`Đã xóa ${succeeded.length} sản phẩm. ${failed.length} lỗi: ${firstError}`)
+          } else {
+            toast.success(`Đã xóa thành công ${succeeded.length} sản phẩm!`)
+          }
+
+          setSelectedProducts([])
+          fetchProducts()
+        } catch (err) {
+          toast.error('Có lỗi hệ thống xảy ra')
         }
-
-        setSelectedProducts([])
-        fetchProducts()
-      } catch (err) {
-        alert('Có lỗi xảy ra khi xóa sản phẩm')
+        setConfirmModal(prev => ({ ...prev, isOpen: false }))
       }
-    }
+    })
   }
 
   // Toggle chọn một sản phẩm
@@ -966,6 +986,41 @@ export default function AdminProducts() {
                     setDeleteInfo(null)
                   }}
                   className="flex-1 bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-300 transition"
+                >
+                  Hủy
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Generic Confirmation Modal */}
+      {confirmModal.isOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+            <div className={`px-6 py-4 rounded-t-xl ${confirmModal.confirmColor === 'red' ? 'bg-red-500' : 'bg-blue-600'}`}>
+              <h3 className="text-xl font-bold text-white mb-0">{confirmModal.title}</h3>
+            </div>
+
+            <div className="p-6">
+              <p className="text-gray-700 text-lg mb-6">
+                {confirmModal.message}
+              </p>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={confirmModal.onConfirm}
+                  className={`flex-1 text-white px-4 py-2 rounded-lg font-semibold transition shadow-md ${confirmModal.confirmColor === 'red'
+                      ? 'bg-red-600 hover:bg-red-700'
+                      : 'bg-blue-600 hover:bg-blue-700'
+                    }`}
+                >
+                  {confirmModal.confirmText}
+                </button>
+                <button
+                  onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                  className="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-semibold hover:bg-gray-300 transition"
                 >
                   Hủy
                 </button>

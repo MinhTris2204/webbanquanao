@@ -20,7 +20,7 @@ def get_conversations():
         ChatConversation.id.in_(
             db.session.query(ChatMessage.conversation_id).distinct()
         )
-    ).order_by(ChatConversation.updated_at.desc()).all()
+    ).order_by(ChatConversation.status.asc(), ChatConversation.updated_at.desc()).all()
     
     return jsonify([conv.to_dict() for conv in conversations])
 
@@ -233,6 +233,28 @@ def close_conversation(conversation_id):
             'conversation_id': conversation_id,
             'message': 'Cuộc trò chuyện đã được kết thúc bởi admin. Cảm ơn bạn đã liên hệ!'
         }, room=f'guest_{guest_session_id}')
+    
+    return jsonify({'success': True})
+
+
+@chat_bp.route('/<int:conversation_id>', methods=['DELETE'])
+@jwt_required()
+def delete_conversation(conversation_id):
+    """Delete a conversation permanently - admin only"""
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+    
+    if not user or user.role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    conversation = ChatConversation.query.get_or_404(conversation_id)
+    
+    # Delete all messages first
+    ChatMessage.query.filter_by(conversation_id=conversation_id).delete()
+    
+    # Delete conversation
+    db.session.delete(conversation)
+    db.session.commit()
     
     return jsonify({'success': True})
 

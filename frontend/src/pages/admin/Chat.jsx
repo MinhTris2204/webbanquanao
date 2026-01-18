@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
 import { useSocket } from '../../context/SocketContext'
 import api from '../../utils/api'
+import { useToast } from '../../components/Toast'
 
 export default function AdminChat() {
   const { socket, isConnected, joinConversation, leaveConversation, sendMessage, sendTyping, markAsRead } = useSocket()
-  
+  const toast = useToast()
+
   const [conversations, setConversations] = useState([])
   const [selectedConversation, setSelectedConversation] = useState(null)
   const [messages, setMessages] = useState([])
@@ -13,7 +15,16 @@ export default function AdminChat() {
   const [typing, setTyping] = useState(null)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
-  
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    warning: '',
+    confirmText: 'Xác nhận',
+    confirmColor: 'blue',
+    onConfirm: null
+  })
+
   const messagesEndRef = useRef(null)
   const typingTimeoutRef = useRef(null)
   const fileInputRef = useRef(null)
@@ -95,6 +106,11 @@ export default function AdminChat() {
       setConversations(prev => prev.map(c => c.id === conversation.id ? { ...c, unread_count: 0 } : c))
     } catch (error) {
       console.error('Error loading messages:', error)
+      if (error.response?.status === 404) {
+        toast.error('Cuộc trò chuyện không tồn tại (có thể đã bị xóa).')
+        setConversations(prev => prev.filter(c => c.id !== conversation.id))
+        setSelectedConversation(null)
+      }
     }
   }
 
@@ -118,7 +134,7 @@ export default function AdminChat() {
   const handleImageSelect = (e) => {
     const file = e.target.files?.[0]
     if (!file || !selectedConversation) return
-    
+
     // Danh sách các định dạng ảnh được hỗ trợ
     const allowedTypes = [
       'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
@@ -126,32 +142,87 @@ export default function AdminChat() {
       'image/heic', 'image/heif', 'image/avif'
     ]
     const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg', '.tiff', '.tif', '.ico', '.heic', '.heif', '.avif']
-    
+
     const fileExtension = '.' + file.name.split('.').pop().toLowerCase()
     const isValidType = allowedTypes.includes(file.type) || allowedExtensions.includes(fileExtension)
-    
+
     if (!isValidType) {
-      return alert('Định dạng ảnh không được hỗ trợ. Vui lòng chọn file: ' + allowedExtensions.join(', '))
+      return toast.warning('Định dạng ảnh không được hỗ trợ. Vui lòng chọn file: ' + allowedExtensions.join(', '))
     }
-    if (file.size > 5 * 1024 * 1024) return alert('Ảnh không được vượt quá 5MB')
-    
+    if (file.size > 5 * 1024 * 1024) return toast.warning('Ảnh không được vượt quá 5MB')
+
     setUploadingImage(true)
     const reader = new FileReader()
     reader.onload = () => { sendMessage(selectedConversation.id, '', 'image', reader.result); setUploadingImage(false) }
-    reader.onerror = () => { alert('Lỗi khi đọc file ảnh'); setUploadingImage(false) }
+    reader.onerror = () => { toast.error('Lỗi khi đọc file ảnh'); setUploadingImage(false) }
     reader.readAsDataURL(file)
     e.target.value = ''
   }
 
-  const closeConversation = async (conversationId) => {
-    if (!confirm('Bạn có chắc muốn kết thúc và xóa cuộc trò chuyện này? Khách hàng sẽ được thông báo.')) return
-    try {
-      await api.post(`/api/chat/${conversationId}/close`)
-      setConversations(prev => prev.filter(c => c.id !== conversationId))
-      if (selectedConversation?.id === conversationId) { setSelectedConversation(null); setMessages([]) }
-    } catch (error) {
-      console.error('Error closing conversation:', error)
+  const closeConversation = (conversationId) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Kết thúc cuộc trò chuyện',
+      message: 'Bạn có chắc chắn muốn kết thúc cuộc trò chuyện này?',
+      warning: 'Khách hàng sẽ nhận được thông báo kết thúc.',
+      confirmText: 'Kết thúc',
+      confirmColor: 'orange',
+      onConfirm: async () => {
+        try {
+          await api.post(`/api/chat/${conversationId}/close`)
+          setConversations(prev => prev.map(c =>
+            c.id === conversationId ? { ...c, status: 'closed' } : c
+          ))
+          if (selectedConversation?.id === conversationId) {
+            setSelectedConversation(prev => ({ ...prev, status: 'closed' }))
+          }
+          toast.success('Đã kết thúc cuộc trò chuyện')
+        } catch (error) {
+          console.error('Error closing conversation:', error)
+          if (error.response?.status === 404) {
+            setConversations(prev => prev.filter(c => c.id !== conversationId))
+            setSelectedConversation(null)
+          }
+        }
+        setConfirmModal(prev => ({ ...prev, isOpen: false }))
+      }
+    })
+  }
+
+  const handleDeleteConversation = (conversationId) => {
+    // Kiểm tra trạng thái cuộc trò chuyện
+    const conversation = conversations.find(c => c.id === conversationId) || selectedConversation
+    if (conversation && conversation.status !== 'closed') {
+      toast.warning('Vui lòng KẾT THÚC cuộc trò chuyện trước khi xóa!')
+      return
     }
+
+    setConfirmModal({
+      isOpen: true,
+      title: 'Xóa cuộc trò chuyện',
+      message: 'Bạn có chắc chắn muốn XÓA VĨNH VIỄN cuộc trò chuyện này?',
+      warning: 'Hành động này không thể hoàn tác! Tất cả tin nhắn sẽ bị xóa.',
+      confirmText: 'Xóa vĩnh viễn',
+      confirmColor: 'red',
+      onConfirm: async () => {
+        try {
+          await api.delete(`/api/chat/${conversationId}`)
+          setConversations(prev => prev.filter(c => c.id !== conversationId))
+          if (selectedConversation?.id === conversationId) { setSelectedConversation(null); setMessages([]) }
+          toast.success('Đã xóa cuộc trò chuyện')
+        } catch (error) {
+          console.error('Error deleting conversation:', error)
+          if (error.response?.status === 404) {
+            toast.error('Cuộc trò chuyện đã không còn tồn tại.')
+            setConversations(prev => prev.filter(c => c.id !== conversationId))
+            setSelectedConversation(null)
+          } else {
+            toast.error(error.response?.data?.error || 'Lỗi khi xóa cuộc trò chuyện')
+          }
+        }
+        setConfirmModal(prev => ({ ...prev, isOpen: false }))
+      }
+    })
   }
 
   const formatTime = (dateStr) => new Date(dateStr).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
@@ -163,7 +234,7 @@ export default function AdminChat() {
   }
 
   const totalUnread = conversations.reduce((sum, c) => sum + (c.unread_count || 0), 0)
-  const filteredConversations = conversations.filter(c => 
+  const filteredConversations = conversations.filter(c =>
     c.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.customer_email?.toLowerCase().includes(searchTerm.toLowerCase())
   )
@@ -205,14 +276,14 @@ export default function AdminChat() {
             />
           </div>
         </div>
-        
+
         <div className="flex-1 overflow-y-auto">
           {loading ? (
             <div className="flex justify-center items-center h-32">
               <div className="flex space-x-2">
                 <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
-                <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
               </div>
             </div>
           ) : filteredConversations.length === 0 ? (
@@ -227,22 +298,26 @@ export default function AdminChat() {
               <div
                 key={conv.id}
                 onClick={() => selectConversation(conv)}
-                className={`p-4 cursor-pointer transition-all hover:bg-white ${
-                  selectedConversation?.id === conv.id ? 'bg-white border-l-4 border-l-blue-600 shadow-sm' : 'border-l-4 border-l-transparent'
-                }`}
+                className={`p-4 cursor-pointer transition-all hover:bg-white ${selectedConversation?.id === conv.id ? 'bg-white border-l-4 border-l-blue-600 shadow-sm' : 'border-l-4 border-l-transparent'
+                  } ${conv.status === 'closed' ? 'opacity-75 bg-gray-50' : ''}`}
               >
                 <div className="flex items-start space-x-3">
                   <div className="relative">
-                    <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold ${conv.status === 'closed' ? 'bg-gray-400' : 'bg-blue-600'}`}>
                       {conv.customer_name?.charAt(0).toUpperCase() || 'K'}
                     </div>
                     {conv.status === 'active' && (
                       <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
                     )}
+                    {conv.status === 'closed' && (
+                      <span className="absolute bottom-0 right-0 w-3 h-3 bg-gray-500 border-2 border-white rounded-full"></span>
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
-                      <p className="font-semibold text-gray-800 truncate">{conv.customer_name}</p>
+                      <p className={`font-semibold truncate ${conv.status === 'closed' ? 'text-gray-500' : 'text-gray-800'}`}>
+                        {conv.customer_name} {conv.status === 'closed' && '(Đã kết thúc)'}
+                      </p>
                       <span className="text-xs text-gray-400">{conv.last_message ? formatDate(conv.last_message.created_at) : ''}</span>
                     </div>
                     <p className="text-xs text-gray-500 truncate">{conv.customer_email}</p>
@@ -269,23 +344,41 @@ export default function AdminChat() {
           <>
             <div className="px-6 py-4 bg-white border-b border-gray-200 flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                <div className="w-11 h-11 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-lg">
+                <div className={`w-11 h-11 rounded-full flex items-center justify-center text-white font-semibold text-lg ${selectedConversation.status === 'closed' ? 'bg-gray-400' : 'bg-blue-600'}`}>
                   {selectedConversation.customer_name?.charAt(0).toUpperCase() || 'K'}
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-800">{selectedConversation.customer_name}</h3>
+                  <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+                    {selectedConversation.customer_name}
+                    {selectedConversation.status === 'closed' && <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full">Đã kết thúc</span>}
+                  </h3>
                   <p className="text-sm text-gray-500">{selectedConversation.customer_email}</p>
                 </div>
               </div>
-              <button
-                onClick={() => closeConversation(selectedConversation.id)}
-                className="flex items-center space-x-2 text-red-500 hover:text-red-600 hover:bg-red-50 px-4 py-2 rounded-lg transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-                <span className="text-sm font-medium">Đóng</span>
-              </button>
+              <div className="flex space-x-2">
+                {selectedConversation.status !== 'closed' && (
+                  <button
+                    onClick={() => closeConversation(selectedConversation.id)}
+                    className="flex items-center space-x-2 text-orange-500 hover:text-orange-600 hover:bg-orange-50 px-4 py-2 rounded-lg transition-colors"
+                    title="Kết thúc cuộc trò chuyện"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span className="text-sm font-medium">Kết thúc</span>
+                  </button>
+                )}
+                <button
+                  onClick={() => handleDeleteConversation(selectedConversation.id)}
+                  className="flex items-center space-x-2 text-red-500 hover:text-red-600 hover:bg-red-50 px-4 py-2 rounded-lg transition-colors"
+                  title="Xóa vĩnh viễn"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  <span className="text-sm font-medium">Xóa</span>
+                </button>
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
@@ -297,11 +390,10 @@ export default function AdminChat() {
                     </div>
                   )}
                   <div className="max-w-[65%]">
-                    <div className={`rounded-2xl px-4 py-3 ${
-                      msg.sender_type === 'admin'
-                        ? 'bg-blue-600 text-white rounded-br-md'
-                        : 'bg-white text-gray-800 shadow-sm rounded-bl-md'
-                    }`}>
+                    <div className={`rounded-2xl px-4 py-3 ${msg.sender_type === 'admin'
+                      ? 'bg-blue-600 text-white rounded-br-md'
+                      : 'bg-white text-gray-800 shadow-sm rounded-bl-md'
+                      }`}>
                       {msg.message_type === 'image' && msg.image_url ? (
                         <img src={msg.image_url} alt="Ảnh" className="max-w-full max-h-72 rounded-lg cursor-pointer hover:opacity-90 transition-opacity" onClick={() => window.open(msg.image_url, '_blank')} />
                       ) : (
@@ -327,8 +419,8 @@ export default function AdminChat() {
                   <div className="bg-white rounded-2xl px-4 py-3 shadow-sm">
                     <div className="flex space-x-1">
                       <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                     </div>
                   </div>
                 </div>
@@ -336,36 +428,43 @@ export default function AdminChat() {
               <div ref={messagesEndRef} />
             </div>
 
-            <form onSubmit={handleSendMessage} className="p-4 bg-white border-t border-gray-200">
-              <div className="flex items-center space-x-3 bg-gray-100 rounded-2xl px-4 py-3">
-                <input type="file" ref={fileInputRef} onChange={handleImageSelect} accept=".jpg,.jpeg,.png,.gif,.webp,.bmp,.svg,.tiff,.tif,.ico,.heic,.heif,.avif,image/*" className="hidden" />
-                <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploadingImage} className="text-gray-400 hover:text-blue-600 transition-colors disabled:opacity-50">
-                  {uploadingImage ? (
-                    <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                  ) : (
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                  )}
-                </button>
-                <input
-                  type="text"
-                  value={newMessage}
-                  onChange={handleInputChange}
-                  placeholder="Nhập tin nhắn..."
-                  className="flex-1 bg-transparent text-sm focus:outline-none placeholder-gray-400"
-                />
-                <button
-                  type="submit"
-                  disabled={!newMessage.trim()}
-                  className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white disabled:opacity-50 hover:bg-blue-700 transition-all"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                  </svg>
-                </button>
+            {selectedConversation.status === 'closed' ? (
+              <div className="p-4 bg-gray-100 border-t border-gray-200 text-center">
+                <p className="text-gray-500 font-medium">Cuộc trò chuyện này đã kết thúc</p>
+                <p className="text-xs text-gray-400 mt-1">Bạn chỉ có thể xem lại nội dung tin nhắn</p>
               </div>
-            </form>
+            ) : (
+              <form onSubmit={handleSendMessage} className="p-4 bg-white border-t border-gray-200">
+                <div className="flex items-center space-x-3 bg-gray-100 rounded-2xl px-4 py-3">
+                  <input type="file" ref={fileInputRef} onChange={handleImageSelect} accept=".jpg,.jpeg,.png,.gif,.webp,.bmp,.svg,.tiff,.tif,.ico,.heic,.heif,.avif,image/*" className="hidden" />
+                  <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploadingImage} className="text-gray-400 hover:text-blue-600 transition-colors disabled:opacity-50">
+                    {uploadingImage ? (
+                      <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                    ) : (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    )}
+                  </button>
+                  <input
+                    type="text"
+                    value={newMessage}
+                    onChange={handleInputChange}
+                    placeholder="Nhập tin nhắn..."
+                    className="flex-1 bg-transparent text-sm focus:outline-none placeholder-gray-400"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!newMessage.trim()}
+                    className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white disabled:opacity-50 hover:bg-blue-700 transition-all"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                    </svg>
+                  </button>
+                </div>
+              </form>
+            )}
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center">
@@ -381,6 +480,49 @@ export default function AdminChat() {
           </div>
         )}
       </div>
+
+      {/* Custom Confirmation Modal */}
+      {confirmModal.isOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+            <div className={`px-6 py-4 rounded-t-xl ${confirmModal.confirmColor === 'red' ? 'bg-red-500' : 'bg-orange-500'}`}>
+              <h3 className="text-xl font-bold text-white mb-0">{confirmModal.title}</h3>
+            </div>
+
+            <div className="p-6">
+              <p className="text-gray-700 text-lg mb-4">
+                {confirmModal.message}
+              </p>
+
+              {confirmModal.warning && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-6">
+                  <p className="text-yellow-800 text-sm font-semibold">
+                    ⚠️ {confirmModal.warning}
+                  </p>
+                </div>
+              )}
+
+              <div className="flex gap-3 mt-4">
+                <button
+                  onClick={confirmModal.onConfirm}
+                  className={`flex-1 text-white px-4 py-2 rounded-lg font-semibold transition shadow-md ${confirmModal.confirmColor === 'red'
+                      ? 'bg-red-600 hover:bg-red-700'
+                      : 'bg-orange-500 hover:bg-orange-600'
+                    }`}
+                >
+                  {confirmModal.confirmText}
+                </button>
+                <button
+                  onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                  className="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-semibold hover:bg-gray-300 transition"
+                >
+                  Hủy
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
