@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import api, { getImageUrl } from '../../utils/api'
 import { useToast } from '../../components/Toast'
+import AddressSelector from '../../components/AddressSelector'
 
 export default function AdminOrders() {
   const toast = useToast()
@@ -55,7 +56,8 @@ export default function AdminOrders() {
       fetchOrders()
     } catch (err) {
       console.error(err)
-      toast.error('Lỗi khi cập nhật trạng thái')
+      const errorMsg = err.response?.data?.error || 'Lỗi khi cập nhật trạng thái'
+      toast.error(errorMsg)
     }
   }
 
@@ -85,13 +87,14 @@ export default function AdminOrders() {
       fetchOrders()
     } catch (err) {
       console.error(err)
-      toast.error('Lỗi khi cập nhật đơn hàng')
+      const errorMsg = err.response?.data?.error || 'Lỗi khi cập nhật đơn hàng'
+      toast.error(errorMsg)
     }
   }
 
   const deleteOrder = async (orderId) => {
     if (!window.confirm('Bạn có chắc chắn muốn xóa đơn hàng này?')) return
-    
+
     try {
       await api.delete(`/api/admin/orders/${orderId}`)
       toast.success('Xóa đơn hàng thành công!')
@@ -108,7 +111,7 @@ export default function AdminOrders() {
       hoan_thanh: 'bg-green-100 text-green-800',
       huy: 'bg-red-100 text-red-800'
     }
-    
+
     const labels = {
       cho_xac_nhan: '⏳ Chờ xác nhận',
       hoan_thanh: '✅ Hoàn thành',
@@ -168,41 +171,37 @@ export default function AdminOrders() {
           <div className="flex gap-2 flex-wrap">
             <button
               onClick={() => handleStatusFilter('')}
-              className={`px-4 py-2 rounded-lg font-semibold transition ${
-                statusFilter === '' 
-                  ? 'bg-blue-600 text-white shadow-lg' 
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+              className={`px-4 py-2 rounded-lg font-semibold transition ${statusFilter === ''
+                ? 'bg-blue-600 text-white shadow-lg'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
             >
               Tất cả
             </button>
             <button
               onClick={() => handleStatusFilter('cho_xac_nhan')}
-              className={`px-4 py-2 rounded-lg font-semibold transition ${
-                statusFilter === 'cho_xac_nhan' 
-                  ? 'bg-yellow-600 text-white shadow-lg' 
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+              className={`px-4 py-2 rounded-lg font-semibold transition ${statusFilter === 'cho_xac_nhan'
+                ? 'bg-yellow-600 text-white shadow-lg'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
             >
               Chờ xác nhận
             </button>
             <button
               onClick={() => handleStatusFilter('hoan_thanh')}
-              className={`px-4 py-2 rounded-lg font-semibold transition ${
-                statusFilter === 'hoan_thanh' 
-                  ? 'bg-green-600 text-white shadow-lg' 
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+              className={`px-4 py-2 rounded-lg font-semibold transition ${statusFilter === 'hoan_thanh'
+                ? 'bg-green-600 text-white shadow-lg'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
             >
               Hoàn thành
             </button>
             <button
               onClick={() => handleStatusFilter('huy')}
-              className={`px-4 py-2 rounded-lg font-semibold transition ${
-                statusFilter === 'huy' 
-                  ? 'bg-red-600 text-white shadow-lg' 
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+              className={`px-4 py-2 rounded-lg font-semibold transition ${statusFilter === 'huy'
+                ? 'bg-red-600 text-white shadow-lg'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
             >
               Đã hủy
             </button>
@@ -303,20 +302,19 @@ export default function AdminOrders() {
           <div className="text-sm text-gray-600">
             Trang <span className="font-bold text-blue-600">{currentPage}</span> / {totalPages}
           </div>
-          
+
           <div className="flex gap-2">
             <button
               onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
               disabled={currentPage === 1}
-              className={`px-4 py-2 rounded-lg font-semibold transition ${
-                currentPage === 1
-                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                  : 'bg-blue-500 text-white hover:bg-blue-600 shadow-md'
-              }`}
+              className={`px-4 py-2 rounded-lg font-semibold transition ${currentPage === 1
+                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                : 'bg-blue-500 text-white hover:bg-blue-600 shadow-md'
+                }`}
             >
               ← Trước
             </button>
-            
+
             <div className="flex gap-1">
               {[...Array(totalPages)].map((_, index) => {
                 const page = index + 1
@@ -329,11 +327,10 @@ export default function AdminOrders() {
                     <button
                       key={page}
                       onClick={() => setCurrentPage(page)}
-                      className={`w-10 h-10 rounded-lg font-semibold transition ${
-                        currentPage === page
-                          ? 'bg-blue-600 text-white shadow-lg'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
+                      className={`w-10 h-10 rounded-lg font-semibold transition ${currentPage === page
+                        ? 'bg-blue-600 text-white shadow-lg'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
                     >
                       {page}
                     </button>
@@ -344,15 +341,14 @@ export default function AdminOrders() {
                 return null
               })}
             </div>
-            
+
             <button
               onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
               disabled={currentPage === totalPages}
-              className={`px-4 py-2 rounded-lg font-semibold transition ${
-                currentPage === totalPages
-                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                  : 'bg-blue-500 text-white hover:bg-blue-600 shadow-md'
-              }`}
+              className={`px-4 py-2 rounded-lg font-semibold transition ${currentPage === totalPages
+                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                : 'bg-blue-500 text-white hover:bg-blue-600 shadow-md'
+                }`}
             >
               Sau →
             </button>
@@ -363,7 +359,7 @@ export default function AdminOrders() {
       {/* Edit Modal */}
       {showEditModal && selectedOrder && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="bg-gradient-to-r from-green-500 to-green-600 px-6 py-4 flex items-center justify-between">
               <h3 className="text-xl font-bold text-white">✏️ Sửa đơn hàng #{selectedOrder.id}</h3>
               <button
@@ -375,7 +371,7 @@ export default function AdminOrders() {
                 </svg>
               </button>
             </div>
-            
+
             <form onSubmit={handleEditSubmit} className="p-6">
               <div className="space-y-4">
                 <div>
@@ -402,12 +398,13 @@ export default function AdminOrders() {
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">Địa chỉ giao hàng</label>
-                  <textarea
-                    value={editForm.diachi_giaohang}
-                    onChange={(e) => setEditForm({ ...editForm, diachi_giaohang: e.target.value })}
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    rows="3"
-                    required
+                  <AddressSelector
+                    required={true}
+                    onChange={(data) => {
+                      if (data.fullAddress) {
+                        setEditForm(prev => ({ ...prev, diachi_giaohang: data.fullAddress }))
+                      }
+                    }}
                   />
                 </div>
 
@@ -432,11 +429,28 @@ export default function AdminOrders() {
                     onChange={(e) => setEditForm({ ...editForm, trangthai: e.target.value })}
                     className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     required
+                    disabled={selectedOrder.trangthai === 'huy' || selectedOrder.trangthai === 'hoan_thanh'}
                   >
-                    <option value="cho_xac_nhan">Chờ xác nhận</option>
-                    <option value="hoan_thanh">Hoàn thành</option>
-                    <option value="huy">Đã hủy</option>
+                    <option value="cho_xac_nhan" disabled={selectedOrder.trangthai === 'huy' || selectedOrder.trangthai === 'hoan_thanh'}>
+                      Chờ xác nhận
+                    </option>
+                    <option value="hoan_thanh" disabled={selectedOrder.trangthai === 'huy'}>
+                      Hoàn thành
+                    </option>
+                    <option value="huy" disabled={selectedOrder.trangthai === 'hoan_thanh'}>
+                      Đã hủy
+                    </option>
                   </select>
+                  {selectedOrder.trangthai === 'huy' && (
+                    <p className="text-sm text-red-600 mt-2">
+                      ⚠️ Đơn hàng đã hủy không thể chuyển sang trạng thái khác
+                    </p>
+                  )}
+                  {selectedOrder.trangthai === 'hoan_thanh' && (
+                    <p className="text-sm text-amber-600 mt-2">
+                      ⚠️ Đơn hàng đã hoàn thành không thể chuyển sang trạng thái khác
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -475,7 +489,7 @@ export default function AdminOrders() {
                 </svg>
               </button>
             </div>
-            
+
             <div className="p-6">
               {/* Customer Info */}
               <div className="mb-6">
@@ -514,8 +528,8 @@ export default function AdminOrders() {
                         <tr key={index}>
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-3">
-                              <img 
-                                src={getImageUrl(item.product?.hinh_anh) || 'https://via.placeholder.com/50'} 
+                              <img
+                                src={getImageUrl(item.product?.hinh_anh) || 'https://via.placeholder.com/50'}
                                 alt={item.product?.ten_san_pham}
                                 className="w-12 h-12 object-cover rounded"
                               />
@@ -564,11 +578,28 @@ export default function AdminOrders() {
                     setSelectedOrder({ ...selectedOrder, trangthai: e.target.value })
                   }}
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  disabled={selectedOrder.trangthai === 'huy' || selectedOrder.trangthai === 'hoan_thanh'}
                 >
-                  <option value="cho_xac_nhan">Chờ xác nhận</option>
-                  <option value="hoan_thanh">Hoàn thành</option>
-                  <option value="huy">Đã hủy</option>
+                  <option value="cho_xac_nhan" disabled={selectedOrder.trangthai === 'huy' || selectedOrder.trangthai === 'hoan_thanh'}>
+                    Chờ xác nhận
+                  </option>
+                  <option value="hoan_thanh" disabled={selectedOrder.trangthai === 'huy'}>
+                    Hoàn thành
+                  </option>
+                  <option value="huy" disabled={selectedOrder.trangthai === 'hoan_thanh'}>
+                    Đã hủy
+                  </option>
                 </select>
+                {selectedOrder.trangthai === 'huy' && (
+                  <p className="text-sm text-red-600 mt-2">
+                    ⚠️ Đơn hàng đã hủy không thể chuyển sang trạng thái khác
+                  </p>
+                )}
+                {selectedOrder.trangthai === 'hoan_thanh' && (
+                  <p className="text-sm text-amber-600 mt-2">
+                    ⚠️ Đơn hàng đã hoàn thành không thể chuyển sang trạng thái khác
+                  </p>
+                )}
               </div>
 
               <button

@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../utils/api'
+import AddressSelector from '../components/AddressSelector'
 
 export default function Profile() {
   const { user, isAuthenticated, loading: authLoading, logout } = useAuth()
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('info')
-  
+
   // Form thông tin
   const [infoForm, setInfoForm] = useState({
     hoten: '',
@@ -15,18 +16,18 @@ export default function Profile() {
     sdt: '',
     diachi: ''
   })
-  
+
   // Form mật khẩu
   const [passwordForm, setPasswordForm] = useState({
     current_password: '',
     new_password: '',
     confirm_password: ''
   })
-  
+
   // Xóa tài khoản
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
-  
+
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -147,31 +148,28 @@ export default function Profile() {
             <div className="space-y-2">
               <button
                 onClick={() => setActiveTab('info')}
-                className={`w-full text-left px-4 py-3 rounded-lg font-semibold transition ${
-                  activeTab === 'info'
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
+                className={`w-full text-left px-4 py-3 rounded-lg font-semibold transition ${activeTab === 'info'
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
               >
                 📋 Thông tin cá nhân
               </button>
               <button
                 onClick={() => setActiveTab('password')}
-                className={`w-full text-left px-4 py-3 rounded-lg font-semibold transition ${
-                  activeTab === 'password'
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
+                className={`w-full text-left px-4 py-3 rounded-lg font-semibold transition ${activeTab === 'password'
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
               >
                 🔒 Đổi mật khẩu
               </button>
               <button
                 onClick={() => setActiveTab('delete')}
-                className={`w-full text-left px-4 py-3 rounded-lg font-semibold transition ${
-                  activeTab === 'delete'
-                    ? 'bg-red-500 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
+                className={`w-full text-left px-4 py-3 rounded-lg font-semibold transition ${activeTab === 'delete'
+                  ? 'bg-red-500 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
               >
                 🗑️ Xóa tài khoản
               </button>
@@ -256,23 +254,22 @@ export default function Profile() {
                     <label className="block text-gray-700 mb-2 font-semibold">
                       Địa chỉ
                     </label>
-                    <textarea
-                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                      rows="3"
-                      value={infoForm.diachi}
-                      onChange={(e) => setInfoForm({ ...infoForm, diachi: e.target.value })}
-                      placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố"
+                    <AddressSelector
+                      onChange={(data) => {
+                        if (data.fullAddress) {
+                          setInfoForm(prev => ({ ...prev, diachi: data.fullAddress }))
+                        }
+                      }}
                     />
                   </div>
 
                   <button
                     type="submit"
                     disabled={loading}
-                    className={`mt-6 w-full py-4 rounded-lg font-bold text-lg shadow-lg transition ${
-                      loading
-                        ? 'bg-gray-400 cursor-not-allowed'
-                        : 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white hover:shadow-xl'
-                    }`}
+                    className={`mt-6 w-full py-4 rounded-lg font-bold text-lg shadow-lg transition ${loading
+                      ? 'bg-gray-400 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white hover:shadow-xl'
+                      }`}
                   >
                     {loading ? '⏳ Đang cập nhật...' : '💾 Lưu thay đổi'}
                   </button>
@@ -331,11 +328,10 @@ export default function Profile() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className={`mt-6 w-full py-4 rounded-lg font-bold text-lg shadow-lg transition ${
-                      loading
-                        ? 'bg-gray-400 cursor-not-allowed'
-                        : 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white hover:shadow-xl'
-                    }`}
+                    className={`mt-6 w-full py-4 rounded-lg font-bold text-lg shadow-lg transition ${loading
+                      ? 'bg-gray-400 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white hover:shadow-xl'
+                      }`}
                   >
                     {loading ? '⏳ Đang xử lý...' : '🔐 Đổi mật khẩu'}
                   </button>
@@ -373,11 +369,10 @@ export default function Profile() {
                     type="button"
                     onClick={() => setShowDeleteModal(true)}
                     disabled={deleteConfirmText !== 'XOA TAI KHOAN' || loading}
-                    className={`w-full py-4 rounded-lg font-bold text-lg shadow-lg transition ${
-                      deleteConfirmText !== 'XOA TAI KHOAN' || loading
-                        ? 'bg-gray-400 cursor-not-allowed'
-                        : 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white hover:shadow-xl'
-                    }`}
+                    className={`w-full py-4 rounded-lg font-bold text-lg shadow-lg transition ${deleteConfirmText !== 'XOA TAI KHOAN' || loading
+                      ? 'bg-gray-400 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white hover:shadow-xl'
+                      }`}
                   >
                     {loading ? '⏳ Đang xử lý...' : '🗑️ Xóa tài khoản vĩnh viễn'}
                   </button>

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import api from '../utils/api'
+import AddressSelector from '../components/AddressSelector'
 
 export default function Register() {
   const [step, setStep] = useState(1) // 1: Form đăng ký, 2: Nhập OTP
@@ -74,7 +75,7 @@ export default function Register() {
     try {
       const { confirm_matkhau, ...registerData } = formData
       const res = await api.post('/api/auth/register', registerData)
-      
+
       if (res.data.need_verification) {
         setStep(2)
         startResendCooldown()
@@ -116,7 +117,7 @@ export default function Register() {
 
   const handleResendOTP = async () => {
     if (resendCooldown > 0) return
-    
+
     setError('')
     setLoading(true)
     try {
@@ -146,7 +147,7 @@ export default function Register() {
             </div>
             <h2 className="text-2xl font-bold text-gray-800">Xác nhận Email</h2>
             <p className="text-gray-600 text-sm mt-2">
-              Mã OTP đã được gửi đến<br/>
+              Mã OTP đã được gửi đến<br />
               <span className="font-semibold text-blue-600">{formData.email}</span>
             </p>
             {otpExpiry > 0 && (
@@ -252,7 +253,7 @@ export default function Register() {
           <h2 className="text-3xl font-bold text-gray-800">Đăng ký tài khoản</h2>
           <p className="text-gray-600 text-sm mt-2">Tạo tài khoản mới để bắt đầu mua sắm</p>
         </div>
-        
+
         {error && (
           <div className="bg-red-100 border-2 border-red-400 text-red-700 px-4 py-3 rounded-lg mb-4 flex items-center">
             <span className="text-xl mr-2">❌</span>
@@ -351,12 +352,12 @@ export default function Register() {
             <label className="block text-gray-700 mb-2 font-semibold">
               Địa chỉ
             </label>
-            <textarea
-              className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-              placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố"
-              rows="2"
-              value={formData.diachi}
-              onChange={(e) => setFormData({ ...formData, diachi: e.target.value })}
+            <AddressSelector
+              onChange={(data) => {
+                if (data.fullAddress) {
+                  setFormData(prev => ({ ...prev, diachi: data.fullAddress }))
+                }
+              }}
             />
           </div>
 

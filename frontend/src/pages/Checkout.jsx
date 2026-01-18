@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import api, { getImageUrl } from '../utils/api'
 import { useAuth } from '../context/AuthContext'
+import AddressSelector from '../components/AddressSelector'
 
 export default function Checkout() {
   const { user, isAuthenticated, loading: authLoading } = useAuth()
@@ -16,6 +17,7 @@ export default function Checkout() {
   const [appliedVoucher, setAppliedVoucher] = useState(null)
   const [voucherError, setVoucherError] = useState('')
   const [applyingVoucher, setApplyingVoucher] = useState(false)
+  const [addressData, setAddressData] = useState(null) // Dữ liệu địa chỉ từ AddressSelector
   const [formData, setFormData] = useState({
     hoten: user?.hoten || '',
     sdt: user?.sdt || '',
@@ -104,7 +106,7 @@ export default function Checkout() {
 
   const calculateDiscount = () => {
     if (!appliedVoucher) return 0
-    
+
     if (appliedVoucher.discount_type === 'percent') {
       const discount = (cart.total * appliedVoucher.discount_value) / 100
       return Math.min(discount, appliedVoucher.max_discount || discount)
@@ -186,7 +188,7 @@ export default function Checkout() {
             {/* Customer Info */}
             <div className="bg-white rounded-xl shadow-lg p-6">
               <h2 className="text-2xl font-bold mb-6 text-gray-800">📋 Thông tin người nhận</h2>
-              
+
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -220,13 +222,14 @@ export default function Checkout() {
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Địa chỉ giao hàng <span className="text-red-500">*</span>
                   </label>
-                  <textarea
-                    required
-                    rows="3"
-                    value={formData.diachi_giaohang}
-                    onChange={(e) => setFormData({ ...formData, diachi_giaohang: e.target.value })}
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                    placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố"
+                  <AddressSelector
+                    required={true}
+                    onChange={(data) => {
+                      setAddressData(data)
+                      if (data.fullAddress) {
+                        setFormData(prev => ({ ...prev, diachi_giaohang: data.fullAddress }))
+                      }
+                    }}
                   />
                 </div>
 
@@ -248,7 +251,7 @@ export default function Checkout() {
             {/* Payment Method */}
             <div className="bg-white rounded-xl shadow-lg p-6">
               <h2 className="text-2xl font-bold mb-6 text-gray-800">💰 Phương thức thanh toán</h2>
-              
+
               <div className="space-y-3">
                 <label className="flex items-center p-4 border-2 border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 transition">
                   <input
@@ -265,11 +268,10 @@ export default function Checkout() {
                   </div>
                 </label>
 
-                <label className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition ${
-                  formData.payment_method === 'VNPAY' 
-                    ? 'border-blue-500 bg-blue-50' 
-                    : 'border-gray-300 hover:border-blue-500'
-                }`}>
+                <label className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition ${formData.payment_method === 'VNPAY'
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-gray-300 hover:border-blue-500'
+                  }`}>
                   <input
                     type="radio"
                     name="payment_method"
@@ -279,9 +281,9 @@ export default function Checkout() {
                     className="w-5 h-5 text-blue-600"
                   />
                   <div className="ml-4 flex items-center gap-3">
-                    <img 
-                      src="https://cdn.haitrieu.com/wp-content/uploads/2022/10/Icon-VNPAY-QR.png" 
-                      alt="VNPay" 
+                    <img
+                      src="https://cdn.haitrieu.com/wp-content/uploads/2022/10/Icon-VNPAY-QR.png"
+                      alt="VNPay"
                       className="h-8 w-auto"
                     />
                     <div>
@@ -298,7 +300,7 @@ export default function Checkout() {
           <div className="lg:col-span-1">
             <div className="bg-white rounded-xl shadow-lg p-6 sticky top-4">
               <h2 className="text-2xl font-bold mb-6 text-gray-800">📦 Đơn hàng</h2>
-              
+
               {/* Products */}
               <div className="space-y-4 mb-6 max-h-64 overflow-y-auto">
                 {cart.cart_items.map((item) => (
@@ -316,7 +318,7 @@ export default function Checkout() {
                         SL: {item.quantity}
                         {item.selected_size && ` | Size: ${item.selected_size}`}
                       </p>
-                      
+
                       {/* Show promotion info if product has promotion */}
                       {item.product.promotion ? (
                         <div className="mt-1">
@@ -345,7 +347,7 @@ export default function Checkout() {
               {/* Voucher Section */}
               <div className="border-t pt-4 mb-4">
                 <h3 className="font-bold text-gray-800 mb-3">🎟️ Mã giảm giá</h3>
-                
+
                 {!appliedVoucher ? (
                   <div>
                     <div className="flex gap-2">
@@ -375,8 +377,8 @@ export default function Checkout() {
                       <div>
                         <p className="font-bold text-green-700">{appliedVoucher.code}</p>
                         <p className="text-sm text-green-600">
-                          Giảm {appliedVoucher.discount_type === 'percent' 
-                            ? `${appliedVoucher.discount_value}%` 
+                          Giảm {appliedVoucher.discount_type === 'percent'
+                            ? `${appliedVoucher.discount_value}%`
                             : `${appliedVoucher.discount_value.toLocaleString('vi-VN')}₫`}
                         </p>
                       </div>
@@ -427,11 +429,10 @@ export default function Checkout() {
               <button
                 type="submit"
                 disabled={submitting}
-                className={`w-full mt-6 py-4 rounded-xl font-bold text-lg shadow-lg transition ${
-                  submitting
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white hover:shadow-xl'
-                }`}
+                className={`w-full mt-6 py-4 rounded-xl font-bold text-lg shadow-lg transition ${submitting
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white hover:shadow-xl'
+                  }`}
               >
                 {submitting ? '⏳ Đang xử lý...' : '✅ Đặt hàng'}
               </button>

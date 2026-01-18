@@ -28,6 +28,9 @@ export default function AdminProducts() {
   })
   const [submitting, setSubmitting] = useState(false)
   const [selectedProducts, setSelectedProducts] = useState([]) // Danh sách ID sản phẩm được chọn
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [deleteProduct, setDeleteProduct] = useState(null)
+  const [deleteInfo, setDeleteInfo] = useState(null)
 
   const letterSizes = ['S', 'M', 'L', 'XL', 'XXL']
   const numberSizes = ['26', '27', '28', '29', '30', '31', '32', '33', '34', '36']
@@ -63,7 +66,7 @@ export default function AdminProducts() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (submitting) return // Ngăn submit nhiều lần
-    
+
     // Validation - kiểm tra các trường bắt buộc
     const requiredFields = [
       { field: 'ten_san_pham', label: 'Tên sản phẩm' },
@@ -72,19 +75,19 @@ export default function AdminProducts() {
       { field: 'chat_lieu', label: 'Chất liệu' },
       { field: 'hinh_anh', label: 'Hình ảnh' }
     ]
-    
+
     const missingFields = requiredFields.filter(item => !formData[item.field] || formData[item.field].toString().trim() === '')
-    
+
     if (missingFields.length > 0) {
       alert(`Vui lòng nhập đầy đủ thông tin:\n- ${missingFields.map(f => f.label).join('\n- ')}`)
       return
     }
-    
+
     if (selectedSizes.length === 0) {
       alert('Vui lòng chọn ít nhất một size')
       return
     }
-    
+
     setSubmitting(true)
     try {
       // Convert selected sizes array to string (use comma without space for consistency)
@@ -92,7 +95,7 @@ export default function AdminProducts() {
         ...formData,
         size: selectedSizes.join(',')
       }
-      
+
       if (editingProduct) {
         await api.put(`/api/admin/products/${editingProduct.products_id}`, dataToSubmit)
       } else {
@@ -125,7 +128,7 @@ export default function AdminProducts() {
     // Chuyển size từ chuỗi sang mảng (hỗ trợ cả ", " và ",")
     const sizes = product.size ? product.size.split(/,\s*/).map(s => s.trim()).filter(s => s) : []
     setSelectedSizes(sizes)
-    
+
     // Kiểm tra xem ảnh là URL hay file upload
     const imgUrl = product.hinh_anh || ''
     if (imgUrl.startsWith('http://') || imgUrl.startsWith('https://')) {
@@ -179,14 +182,34 @@ export default function AdminProducts() {
   }
 
   const handleDelete = async (id) => {
-    if (confirm('Bạn có chắc muốn xóa sản phẩm này?')) {
-      try {
-        await api.delete(`/api/admin/products/${id}`)
-        setSelectedProducts(prev => prev.filter(pid => pid !== id))
-        fetchProducts()
-      } catch (err) {
-        alert('Có lỗi xảy ra')
-      }
+    // Kiểm tra dữ liệu liên quan trước khi hiển thị modal
+    try {
+      const res = await api.get(`/api/admin/products/${id}/check-delete`)
+      setDeleteInfo(res.data)
+      setDeleteProduct(res.data.product)
+    } catch (err) {
+      console.error(err)
+      setDeleteInfo(null)
+      // Vẫn hiển thị modal với thông tin cơ bản
+      const product = products.find(p => p.products_id === id)
+      setDeleteProduct(product)
+    }
+    setShowDeleteModal(true)
+  }
+
+  const confirmDeleteProduct = async () => {
+    if (!deleteProduct) return
+    try {
+      await api.delete(`/api/admin/products/${deleteProduct.products_id}`)
+      setSelectedProducts(prev => prev.filter(pid => pid !== deleteProduct.products_id))
+      setShowDeleteModal(false)
+      setDeleteProduct(null)
+      setDeleteInfo(null)
+      fetchProducts()
+      alert('Xóa sản phẩm thành công!')
+    } catch (err) {
+      const errorMsg = err.response?.data?.error || 'Có lỗi xảy ra'
+      alert(errorMsg)
     }
   }
 
@@ -196,10 +219,25 @@ export default function AdminProducts() {
       alert('Vui lòng chọn ít nhất một sản phẩm để xóa')
       return
     }
-    
+
     if (confirm(`Bạn có chắc muốn xóa ${selectedProducts.length} sản phẩm đã chọn?`)) {
       try {
-        await Promise.all(selectedProducts.map(id => api.delete(`/api/admin/products/${id}`)))
+        const results = await Promise.allSettled(
+          selectedProducts.map(id => api.delete(`/api/admin/products/${id}`))
+        )
+
+        // Kiểm tra kết quả
+        const failed = results.filter(r => r.status === 'rejected')
+        const succeeded = results.filter(r => r.status === 'fulfilled')
+
+        if (failed.length > 0) {
+          // Lấy thông báo lỗi từ response đầu tiên bị lỗi
+          const firstError = failed[0].reason?.response?.data?.error || 'Có lỗi xảy ra khi xóa sản phẩm'
+          alert(`Đã xóa ${succeeded.length} sản phẩm thành công.\n${failed.length} sản phẩm không thể xóa:\n${firstError}`)
+        } else {
+          alert(`Đã xóa thành công ${succeeded.length} sản phẩm!`)
+        }
+
         setSelectedProducts([])
         fetchProducts()
       } catch (err) {
@@ -210,8 +248,8 @@ export default function AdminProducts() {
 
   // Toggle chọn một sản phẩm
   const handleSelectProduct = (id) => {
-    setSelectedProducts(prev => 
-      prev.includes(id) 
+    setSelectedProducts(prev =>
+      prev.includes(id)
         ? prev.filter(pid => pid !== id)
         : [...prev, id]
     )
@@ -221,7 +259,7 @@ export default function AdminProducts() {
   const handleSelectAll = () => {
     const allProductIds = products.map(p => p.products_id)
     const allSelected = allProductIds.every(id => selectedProducts.includes(id))
-    
+
     if (allSelected) {
       setSelectedProducts(prev => prev.filter(id => !allProductIds.includes(id)))
     } else {
@@ -230,8 +268,8 @@ export default function AdminProducts() {
   }
 
   const handleSizeToggle = (size) => {
-    setSelectedSizes(prev => 
-      prev.includes(size) 
+    setSelectedSizes(prev =>
+      prev.includes(size)
         ? prev.filter(s => s !== size)
         : [...prev, size]
     )
@@ -295,16 +333,16 @@ export default function AdminProducts() {
             onChange={handleSearch}
             className="w-full px-4 py-3 pl-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
           />
-          <svg 
-            className="w-5 h-5 text-gray-400 absolute left-4 top-1/2 transform -translate-y-1/2" 
-            fill="none" 
-            stroke="currentColor" 
+          <svg
+            className="w-5 h-5 text-gray-400 absolute left-4 top-1/2 transform -translate-y-1/2"
+            fill="none"
+            stroke="currentColor"
             viewBox="0 0 24 24"
           >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
         </div>
-        
+
         {/* Sort Dropdown */}
         <div className="flex items-center gap-2">
           <span className="text-sm text-gray-600 font-medium">Sắp xếp:</span>
@@ -323,7 +361,7 @@ export default function AdminProducts() {
             <option value="price_desc">💎 Giá cao → thấp</option>
           </select>
         </div>
-        
+
         <div className="text-sm text-gray-600 bg-gray-100 px-4 py-3 rounded-lg">
           Tổng: <span className="font-bold text-blue-600">{totalProducts}</span> sản phẩm
         </div>
@@ -443,7 +481,7 @@ export default function AdminProducts() {
                         ))}
                       </div>
                     </div>
-                    
+
                     {/* Size số - cho Quần */}
                     <div>
                       <p className="text-xs text-gray-500 mb-2 font-medium">Size số (Quần):</p>
@@ -461,7 +499,7 @@ export default function AdminProducts() {
                         ))}
                       </div>
                     </div>
-                    
+
                     {/* Free size - cho Phụ kiện */}
                     <div>
                       <p className="text-xs text-gray-500 mb-2 font-medium">Khác (Phụ kiện):</p>
@@ -531,7 +569,7 @@ export default function AdminProducts() {
                   <label className="block text-gray-700 mb-2 font-semibold text-sm">
                     Hình ảnh sản phẩm <span className="text-red-500">*</span>
                   </label>
-                  
+
                   {/* Toggle giữa upload file và nhập link */}
                   <div className="flex gap-2 mb-3">
                     <button
@@ -543,11 +581,10 @@ export default function AdminProducts() {
                         setImageUrlError(false)
                         setFormData(prev => ({ ...prev, hinh_anh: '' }))
                       }}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                        imageInputMode === 'file'
-                          ? 'bg-blue-500 text-white shadow-md'
-                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                      }`}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${imageInputMode === 'file'
+                        ? 'bg-blue-500 text-white shadow-md'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        }`}
                     >
                       📁 Upload file
                     </button>
@@ -559,11 +596,10 @@ export default function AdminProducts() {
                         setImageUrlError(false)
                         setFormData(prev => ({ ...prev, hinh_anh: '' }))
                       }}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                        imageInputMode === 'url'
-                          ? 'bg-blue-500 text-white shadow-md'
-                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                      }`}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${imageInputMode === 'url'
+                        ? 'bg-blue-500 text-white shadow-md'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        }`}
                     >
                       🔗 Nhập link URL
                     </button>
@@ -596,15 +632,15 @@ export default function AdminProducts() {
                     </div>
                     {imagePreview && (
                       <div className="relative">
-                        <img 
-                          src={imagePreview} 
-                          alt="Preview" 
+                        <img
+                          src={imagePreview}
+                          alt="Preview"
                           className={`w-32 h-32 object-cover rounded-lg border-2 shadow-md ${imageUrlError ? 'hidden' : 'border-gray-200'}`}
                           onError={() => setImageUrlError(true)}
                           onLoad={() => setImageUrlError(false)}
                         />
                         {imageUrlError && (
-                          <div 
+                          <div
                             className="w-32 h-32 bg-red-100 rounded-lg border-2 border-red-300 flex items-center justify-center text-red-500 text-xs text-center p-2"
                           >
                             ⚠️ Không thể tải ảnh
@@ -645,11 +681,10 @@ export default function AdminProducts() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className={`flex-1 px-6 py-3 rounded-lg transition-all shadow-md hover:shadow-lg font-semibold flex items-center justify-center gap-2 ${
-                    submitting 
-                      ? 'bg-gray-400 cursor-not-allowed' 
-                      : 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700'
-                  } text-white`}
+                  className={`flex-1 px-6 py-3 rounded-lg transition-all shadow-md hover:shadow-lg font-semibold flex items-center justify-center gap-2 ${submitting
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700'
+                    } text-white`}
                 >
                   {submitting ? (
                     <>
@@ -671,11 +706,10 @@ export default function AdminProducts() {
                     setEditingProduct(null)
                     resetForm()
                   }}
-                  className={`flex-1 px-6 py-3 rounded-lg transition-all shadow-md hover:shadow-lg font-semibold ${
-                    submitting 
-                      ? 'bg-gray-300 cursor-not-allowed text-gray-500' 
-                      : 'bg-gray-500 hover:bg-gray-600 text-white'
-                  }`}
+                  className={`flex-1 px-6 py-3 rounded-lg transition-all shadow-md hover:shadow-lg font-semibold ${submitting
+                    ? 'bg-gray-300 cursor-not-allowed text-gray-500'
+                    : 'bg-gray-500 hover:bg-gray-600 text-white'
+                    }`}
                 >
                   ❌ Hủy
                 </button>
@@ -725,9 +759,9 @@ export default function AdminProducts() {
                   </td>
                   <td className="px-6 py-4">
                     {product.hinh_anh ? (
-                      <img 
-                        src={getImageUrl(product.hinh_anh)} 
-                        alt={product.ten_san_pham} 
+                      <img
+                        src={getImageUrl(product.hinh_anh)}
+                        alt={product.ten_san_pham}
                         className="w-56 h-auto max-h-56 object-contain rounded-lg shadow-md border border-gray-200"
                       />
                     ) : (
@@ -756,23 +790,21 @@ export default function AdminProducts() {
                     <span className="text-sm text-gray-700 font-medium">{product.size || '-'}</span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
-                      product.gioi_tinh === 'Nam' ? 'bg-blue-100 text-blue-800' :
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${product.gioi_tinh === 'Nam' ? 'bg-blue-100 text-blue-800' :
                       product.gioi_tinh === 'Nữ' ? 'bg-rose-100 text-rose-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
+                        'bg-gray-100 text-gray-800'
+                      }`}>
                       {product.gioi_tinh === 'Nam' ? '👨 Nam' :
-                       product.gioi_tinh === 'Nữ' ? '👩 Nữ' : '🚻 Unisex'}
+                        product.gioi_tinh === 'Nữ' ? '👩 Nữ' : '🚻 Unisex'}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold ${
-                      product.trang_thai === 'Con_hang' ? 'bg-green-100 text-green-800' :
+                    <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold ${product.trang_thai === 'Con_hang' ? 'bg-green-100 text-green-800' :
                       product.trang_thai === 'Het_hang' ? 'bg-red-100 text-red-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
+                        'bg-gray-100 text-gray-800'
+                      }`}>
                       {product.trang_thai === 'Con_hang' ? '✅ Còn hàng' :
-                       product.trang_thai === 'Het_hang' ? '❌ Hết hàng' : '⛔ Ngừng bán'}
+                        product.trang_thai === 'Het_hang' ? '❌ Hết hàng' : '⛔ Ngừng bán'}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center">
@@ -796,7 +828,7 @@ export default function AdminProducts() {
             </tbody>
           </table>
         </div>
-        
+
         {products.length === 0 && (
           <div className="text-center py-16">
             <div className="text-6xl mb-4">📦</div>
@@ -816,20 +848,19 @@ export default function AdminProducts() {
           <div className="text-sm text-gray-600">
             Trang <span className="font-bold text-blue-600">{currentPage}</span> / {totalPages}
           </div>
-          
+
           <div className="flex gap-2">
             <button
               onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
               disabled={currentPage === 1}
-              className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-                currentPage === 1
-                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                  : 'bg-blue-500 text-white hover:bg-blue-600 shadow-md hover:shadow-lg'
-              }`}
+              className={`px-4 py-2 rounded-lg font-semibold transition-all ${currentPage === 1
+                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                : 'bg-blue-500 text-white hover:bg-blue-600 shadow-md hover:shadow-lg'
+                }`}
             >
               ← Trước
             </button>
-            
+
             <div className="flex gap-1">
               {[...Array(totalPages)].map((_, index) => {
                 const page = index + 1
@@ -843,11 +874,10 @@ export default function AdminProducts() {
                     <button
                       key={page}
                       onClick={() => setCurrentPage(page)}
-                      className={`w-10 h-10 rounded-lg font-semibold transition-all ${
-                        currentPage === page
-                          ? 'bg-blue-600 text-white shadow-lg'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
+                      className={`w-10 h-10 rounded-lg font-semibold transition-all ${currentPage === page
+                        ? 'bg-blue-600 text-white shadow-lg'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
                     >
                       {page}
                     </button>
@@ -861,18 +891,86 @@ export default function AdminProducts() {
                 return null
               })}
             </div>
-            
+
             <button
               onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
               disabled={currentPage === totalPages}
-              className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-                currentPage === totalPages
-                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                  : 'bg-blue-500 text-white hover:bg-blue-600 shadow-md hover:shadow-lg'
-              }`}
+              className={`px-4 py-2 rounded-lg font-semibold transition-all ${currentPage === totalPages
+                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                : 'bg-blue-500 text-white hover:bg-blue-600 shadow-md hover:shadow-lg'
+                }`}
             >
               Sau →
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full">
+            <div className="bg-gradient-to-r from-red-500 to-red-600 px-6 py-4 rounded-t-xl">
+              <h3 className="text-xl font-bold text-white">⚠️ Xác nhận xóa sản phẩm</h3>
+            </div>
+
+            <div className="p-6">
+              <p className="text-gray-700 mb-4">
+                Bạn có chắc chắn muốn xóa sản phẩm <span className="font-bold text-red-600">"{deleteProduct?.ten_san_pham}"</span>?
+              </p>
+
+              {deleteInfo?.has_related_data && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                  <p className="text-yellow-800 font-semibold mb-2">⚠️ Cảnh báo: Sản phẩm này có dữ liệu liên quan!</p>
+                  <ul className="text-sm text-yellow-700 space-y-1">
+                    {deleteInfo.order_count > 0 && (
+                      <li>📦 Xuất hiện trong <strong>{deleteInfo.order_count}</strong> đơn hàng {deleteInfo.sold_quantity > 0 && `(đã bán ${deleteInfo.sold_quantity} sản phẩm)`}</li>
+                    )}
+                    {deleteInfo.review_count > 0 && (
+                      <li>⭐ Có <strong>{deleteInfo.review_count}</strong> đánh giá</li>
+                    )}
+                    {deleteInfo.cart_count > 0 && (
+                      <li>🛒 Đang trong <strong>{deleteInfo.cart_count}</strong> giỏ hàng</li>
+                    )}
+                    {deleteInfo.promotion_count > 0 && (
+                      <li>🎁 Có <strong>{deleteInfo.promotion_count}</strong> khuyến mãi</li>
+                    )}
+                  </ul>
+                  <p className="text-yellow-800 text-sm mt-2 font-medium">
+                    Tất cả dữ liệu này sẽ bị xóa vĩnh viễn!
+                  </p>
+                </div>
+              )}
+
+              {deleteInfo && !deleteInfo.has_related_data && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                  <p className="text-green-700">✅ Sản phẩm này không có dữ liệu liên quan nào.</p>
+                </div>
+              )}
+
+              <p className="text-sm text-red-600 mb-6 font-medium">
+                🚨 Hành động này KHÔNG THỂ hoàn tác!
+              </p>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={confirmDeleteProduct}
+                  className="flex-1 bg-red-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 transition shadow-lg"
+                >
+                  🗑️ Xác nhận xóa
+                </button>
+                <button
+                  onClick={() => {
+                    setShowDeleteModal(false)
+                    setDeleteProduct(null)
+                    setDeleteInfo(null)
+                  }}
+                  className="flex-1 bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-300 transition"
+                >
+                  Hủy
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

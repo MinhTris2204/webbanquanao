@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import api from '../../utils/api'
 import { useToast } from '../../components/Toast'
+import AddressSelector from '../../components/AddressSelector'
 
 export default function AdminUsers() {
   const toast = useToast()
@@ -36,6 +37,7 @@ export default function AdminUsers() {
     matkhau: '',
     confirmMatkhau: ''
   })
+  const [deleteInfo, setDeleteInfo] = useState(null) // Thông tin dữ liệu liên quan khi xóa
 
   useEffect(() => {
     fetchUsers()
@@ -146,8 +148,16 @@ export default function AdminUsers() {
     }
   }
 
-  const handleDelete = (user) => {
+  const handleDelete = async (user) => {
     setSelectedUser(user)
+    // Kiểm tra dữ liệu liên quan trước khi hiển thị modal
+    try {
+      const res = await api.get(`/api/admin/users/${user.user_id}/check-delete`)
+      setDeleteInfo(res.data)
+    } catch (err) {
+      console.error(err)
+      setDeleteInfo(null)
+    }
     setShowDeleteModal(true)
   }
 
@@ -156,6 +166,7 @@ export default function AdminUsers() {
       await api.delete(`/api/admin/users/${selectedUser.user_id}`)
       toast.success('Xóa người dùng thành công!')
       setShowDeleteModal(false)
+      setDeleteInfo(null)
       fetchUsers()
     } catch (err) {
       console.error(err)
@@ -222,31 +233,28 @@ export default function AdminUsers() {
           <div className="flex gap-2">
             <button
               onClick={() => handleRoleFilter('')}
-              className={`px-4 py-2 rounded-lg font-semibold transition ${
-                roleFilter === '' 
-                  ? 'bg-blue-600 text-white shadow-lg' 
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+              className={`px-4 py-2 rounded-lg font-semibold transition ${roleFilter === ''
+                ? 'bg-blue-600 text-white shadow-lg'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
             >
               Tất cả
             </button>
             <button
               onClick={() => handleRoleFilter('admin')}
-              className={`px-4 py-2 rounded-lg font-semibold transition ${
-                roleFilter === 'admin' 
-                  ? 'bg-blue-600 text-white shadow-lg' 
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+              className={`px-4 py-2 rounded-lg font-semibold transition ${roleFilter === 'admin'
+                ? 'bg-blue-600 text-white shadow-lg'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
             >
               Admin
             </button>
             <button
               onClick={() => handleRoleFilter('customer')}
-              className={`px-4 py-2 rounded-lg font-semibold transition ${
-                roleFilter === 'customer' 
-                  ? 'bg-green-600 text-white shadow-lg' 
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+              className={`px-4 py-2 rounded-lg font-semibold transition ${roleFilter === 'customer'
+                ? 'bg-green-600 text-white shadow-lg'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
             >
               Khách hàng
             </button>
@@ -296,11 +304,10 @@ export default function AdminUsers() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{user.email}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{user.sdt || '-'}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      user.role === 'admin' 
-                        ? 'bg-blue-100 text-blue-800' 
-                        : 'bg-green-100 text-green-800'
-                    }`}>
+                    <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${user.role === 'admin'
+                      ? 'bg-blue-100 text-blue-800'
+                      : 'bg-green-100 text-green-800'
+                      }`}>
                       {user.role === 'admin' ? ' Admin' : ' Khách hàng'}
                     </span>
                   </td>
@@ -358,20 +365,19 @@ export default function AdminUsers() {
           <div className="text-sm text-gray-600">
             Trang <span className="font-bold text-blue-600">{currentPage}</span> / {totalPages}
           </div>
-          
+
           <div className="flex gap-2">
             <button
               onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
               disabled={currentPage === 1}
-              className={`px-4 py-2 rounded-lg font-semibold transition ${
-                currentPage === 1
-                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                  : 'bg-blue-500 text-white hover:bg-blue-600 shadow-md'
-              }`}
+              className={`px-4 py-2 rounded-lg font-semibold transition ${currentPage === 1
+                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                : 'bg-blue-500 text-white hover:bg-blue-600 shadow-md'
+                }`}
             >
-               Trước
+              Trước
             </button>
-            
+
             <div className="flex gap-1">
               {[...Array(totalPages)].map((_, index) => {
                 const page = index + 1
@@ -384,11 +390,10 @@ export default function AdminUsers() {
                     <button
                       key={page}
                       onClick={() => setCurrentPage(page)}
-                      className={`w-10 h-10 rounded-lg font-semibold transition ${
-                        currentPage === page
-                          ? 'bg-blue-600 text-white shadow-lg'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
+                      className={`w-10 h-10 rounded-lg font-semibold transition ${currentPage === page
+                        ? 'bg-blue-600 text-white shadow-lg'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
                     >
                       {page}
                     </button>
@@ -399,17 +404,16 @@ export default function AdminUsers() {
                 return null
               })}
             </div>
-            
+
             <button
               onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
               disabled={currentPage === totalPages}
-              className={`px-4 py-2 rounded-lg font-semibold transition ${
-                currentPage === totalPages
-                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                  : 'bg-blue-500 text-white hover:bg-blue-600 shadow-md'
-              }`}
+              className={`px-4 py-2 rounded-lg font-semibold transition ${currentPage === totalPages
+                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                : 'bg-blue-500 text-white hover:bg-blue-600 shadow-md'
+                }`}
             >
-              Sau 
+              Sau
             </button>
           </div>
         </div>
@@ -429,7 +433,7 @@ export default function AdminUsers() {
                 </svg>
               </button>
             </div>
-            
+
             <form onSubmit={handleUpdate} className="p-6">
               <div className="space-y-4">
                 <div>
@@ -466,11 +470,12 @@ export default function AdminUsers() {
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">Địa chỉ</label>
-                  <textarea
-                    value={editForm.diachi}
-                    onChange={(e) => setEditForm({ ...editForm, diachi: e.target.value })}
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    rows="3"
+                  <AddressSelector
+                    onChange={(data) => {
+                      if (data.fullAddress) {
+                        setEditForm(prev => ({ ...prev, diachi: data.fullAddress }))
+                      }
+                    }}
                   />
                 </div>
 
@@ -493,7 +498,7 @@ export default function AdminUsers() {
                   type="submit"
                   className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition shadow-lg"
                 >
-                   Lưu thay đổi
+                  Lưu thay đổi
                 </button>
                 <button
                   type="button"
@@ -523,7 +528,7 @@ export default function AdminUsers() {
                 </svg>
               </button>
             </div>
-            
+
             <form onSubmit={handleCreate} className="p-6">
               <div className="space-y-4">
                 <div>
@@ -583,11 +588,12 @@ export default function AdminUsers() {
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">Địa chỉ</label>
-                  <textarea
-                    value={addForm.diachi}
-                    onChange={(e) => setAddForm({ ...addForm, diachi: e.target.value })}
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    rows="3"
+                  <AddressSelector
+                    onChange={(data) => {
+                      if (data.fullAddress) {
+                        setAddForm(prev => ({ ...prev, diachi: data.fullAddress }))
+                      }
+                    }}
                   />
                 </div>
 
@@ -610,7 +616,7 @@ export default function AdminUsers() {
                   type="submit"
                   className="flex-1 bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition shadow-lg"
                 >
-                   Tạo người dùng
+                  Tạo người dùng
                 </button>
                 <button
                   type="button"
@@ -640,7 +646,7 @@ export default function AdminUsers() {
                 </svg>
               </button>
             </div>
-            
+
             <form onSubmit={handleUpdatePassword} className="p-6">
               <p className="text-gray-700 mb-4">
                 Đổi mật khẩu cho: <span className="font-bold">{selectedUser?.hoten}</span>
@@ -677,7 +683,7 @@ export default function AdminUsers() {
                   type="submit"
                   className="flex-1 bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition shadow-lg"
                 >
-                   Đổi mật khẩu
+                  Đổi mật khẩu
                 </button>
                 <button
                   type="button"
@@ -697,15 +703,36 @@ export default function AdminUsers() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
             <div className="bg-gradient-to-r from-red-500 to-red-600 px-6 py-4">
-              <h3 className="text-xl font-bold text-white"> Xác nhận xóa</h3>
+              <h3 className="text-xl font-bold text-white">⚠️ Xác nhận xóa</h3>
             </div>
-            
+
             <div className="p-6">
               <p className="text-gray-700 mb-4">
-                Bạn có chắc chắn muốn xóa người dùng <span className="font-bold">{selectedUser?.hoten}</span>?
+                Bạn có chắc chắn muốn xóa người dùng <span className="font-bold text-red-600">{selectedUser?.hoten}</span>?
               </p>
-              <p className="text-sm text-red-600 mb-6">
-                 Hành động này không thể hoàn tác!
+
+              {deleteInfo?.has_related_data && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                  <p className="text-yellow-800 font-semibold mb-2">⚠️ Cảnh báo: Người dùng này có dữ liệu liên quan!</p>
+                  <ul className="text-sm text-yellow-700 space-y-1">
+                    {deleteInfo.order_count > 0 && (
+                      <li>📦 <strong>{deleteInfo.order_count}</strong> đơn hàng</li>
+                    )}
+                    {deleteInfo.review_count > 0 && (
+                      <li>⭐ <strong>{deleteInfo.review_count}</strong> đánh giá</li>
+                    )}
+                    {deleteInfo.chat_count > 0 && (
+                      <li>💬 <strong>{deleteInfo.chat_count}</strong> cuộc hội thoại</li>
+                    )}
+                  </ul>
+                  <p className="text-yellow-800 text-sm mt-2 font-medium">
+                    Tất cả dữ liệu này sẽ bị xóa vĩnh viễn!
+                  </p>
+                </div>
+              )}
+
+              <p className="text-sm text-red-600 mb-6 font-medium">
+                🚨 Hành động này KHÔNG THẺ hoàn tác!
               </p>
 
               <div className="flex gap-3">
@@ -713,10 +740,13 @@ export default function AdminUsers() {
                   onClick={confirmDelete}
                   className="flex-1 bg-red-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 transition shadow-lg"
                 >
-                   Xóa
+                  🗑️ Xác nhận xóa
                 </button>
                 <button
-                  onClick={() => setShowDeleteModal(false)}
+                  onClick={() => {
+                    setShowDeleteModal(false)
+                    setDeleteInfo(null)
+                  }}
                   className="flex-1 bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-300 transition"
                 >
                   Hủy

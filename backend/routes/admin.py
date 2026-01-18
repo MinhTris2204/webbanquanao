@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, send_from_directory, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from models import db, User, Product, Order
+from models import db, User, Product, Order, OrderDetail
 from functools import wraps
 from werkzeug.utils import secure_filename
 import os
@@ -187,10 +187,69 @@ def update_product(product_id):
     
     return jsonify({'message': 'Cập nhật sản phẩm thành công', 'product': product.to_dict()}), 200
 
+@admin_bp.route('/products/<int:product_id>/check-delete', methods=['GET'])
+@admin_required
+def check_delete_product(product_id):
+    """Kiểm tra thông tin liên quan trước khi xóa sản phẩm"""
+    product = Product.query.get_or_404(product_id)
+    
+    # Đếm số đơn hàng có chứa sản phẩm này
+    order_count = db.session.query(OrderDetail.order_id).filter_by(product_id=product_id).distinct().count()
+    
+    # Đếm số lượng sản phẩm đã bán (từ đơn hàng hoàn thành)
+    sold_quantity = db.session.query(db.func.sum(OrderDetail.quantity)).join(Order).filter(
+        OrderDetail.product_id == product_id,
+        Order.trangthai == 'hoan_thanh'
+    ).scalar() or 0
+    
+    # Đếm số đánh giá
+    try:
+        from models import Review, CartItem, Promotion
+        review_count = Review.query.filter_by(product_id=product_id).count()
+        cart_count = CartItem.query.filter_by(products_id=product_id).count()
+        promotion_count = Promotion.query.filter_by(product_id=product_id).count()
+    except:
+        review_count = 0
+        cart_count = 0
+        promotion_count = 0
+    
+    return jsonify({
+        'product': product.to_dict(),
+        'order_count': order_count,
+        'sold_quantity': int(sold_quantity),
+        'review_count': review_count,
+        'cart_count': cart_count,
+        'promotion_count': promotion_count,
+        'has_related_data': order_count > 0 or review_count > 0 or cart_count > 0
+    }), 200
+
 @admin_bp.route('/products/<int:product_id>', methods=['DELETE'])
 @admin_required
 def delete_product(product_id):
     product = Product.query.get_or_404(product_id)
+    
+    # Xóa tất cả dữ liệu liên quan
+    try:
+        from models import Review, CartItem, Promotion, ProductView
+        
+        # Xóa reviews của sản phẩm
+        Review.query.filter_by(product_id=product_id).delete()
+        
+        # Xóa sản phẩm khỏi giỏ hàng
+        CartItem.query.filter_by(products_id=product_id).delete()
+        
+        # Xóa promotions của sản phẩm
+        Promotion.query.filter_by(product_id=product_id).delete()
+        
+        # Xóa lượt xem sản phẩm
+        ProductView.query.filter_by(product_id=product_id).delete()
+        
+        # Xóa chi tiết đơn hàng liên quan (hoặc set null nếu muốn giữ lại đơn hàng)
+        OrderDetail.query.filter_by(product_id=product_id).delete()
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Lỗi khi xóa dữ liệu liên quan: {str(e)}'}), 500
     
     # Delete image file if exists
     delete_image_file(product.hinh_anh)
@@ -268,7 +327,22 @@ def update_order_status(order_id):
     order = Order.query.get_or_404(order_id)
     data = request.get_json()
     
-    order.trangthai = data.get('trangthai')
+    new_status = data.get('trangthai')
+    current_status = order.trangthai
+    
+    # Validation: Đơn hàng đã hủy không thể chuyển sang trạng thái khác
+    if current_status == 'huy' and new_status != 'huy':
+        return jsonify({
+            'error': 'Không thể thay đổi trạng thái của đơn hàng đã hủy'
+        }), 400
+    
+    # Validation: Đơn hàng đã hoàn thành không thể chuyển sang trạng thái khác
+    if current_status == 'hoan_thanh' and new_status != 'hoan_thanh':
+        return jsonify({
+            'error': 'Không thể thay đổi trạng thái của đơn hàng đã hoàn thành'
+        }), 400
+    
+    order.trangthai = new_status
     db.session.commit()
     
     return jsonify({'message': 'Cập nhật trạng thái đơn hàng thành công', 'order': order.to_dict()}), 200
@@ -289,7 +363,22 @@ def update_order(order_id):
     if 'payment_method' in data:
         order.payment_method = data['payment_method']
     if 'trangthai' in data:
-        order.trangthai = data['trangthai']
+        new_status = data['trangthai']
+        current_status = order.trangthai
+        
+        # Validation: Đơn hàng đã hủy không thể chuyển sang trạng thái khác
+        if current_status == 'huy' and new_status != 'huy':
+            return jsonify({
+                'error': 'Không thể thay đổi trạng thái của đơn hàng đã hủy'
+            }), 400
+        
+        # Validation: Đơn hàng đã hoàn thành không thể chuyển sang trạng thái khác
+        if current_status == 'hoan_thanh' and new_status != 'hoan_thanh':
+            return jsonify({
+                'error': 'Không thể thay đổi trạng thái của đơn hàng đã hoàn thành'
+            }), 400
+        
+        order.trangthai = new_status
     
     db.session.commit()
     
@@ -369,6 +458,31 @@ def update_user(user_id):
     
     return jsonify({'message': 'Cập nhật người dùng thành công', 'user': user.to_dict()}), 200
 
+@admin_bp.route('/users/<int:user_id>/check-delete', methods=['GET'])
+@admin_required
+def check_delete_user(user_id):
+    """Kiểm tra thông tin liên quan trước khi xóa user"""
+    user = User.query.get_or_404(user_id)
+    
+    order_count = Order.query.filter_by(user_id=user_id).count()
+    
+    # Import các model cần thiết
+    try:
+        from models import Review, ProductView, ChatConversation
+        review_count = Review.query.filter_by(user_id=user_id).count()
+        chat_count = ChatConversation.query.filter_by(customer_id=user_id).count()
+    except:
+        review_count = 0
+        chat_count = 0
+    
+    return jsonify({
+        'user': user.to_dict(),
+        'order_count': order_count,
+        'review_count': review_count,
+        'chat_count': chat_count,
+        'has_related_data': order_count > 0 or review_count > 0 or chat_count > 0
+    }), 200
+
 @admin_bp.route('/users/<int:user_id>', methods=['DELETE'])
 @admin_required
 def delete_user(user_id):
@@ -379,6 +493,27 @@ def delete_user(user_id):
         return jsonify({'error': 'Không thể xóa tài khoản của chính mình'}), 400
     
     user = User.query.get_or_404(user_id)
+    
+    # Xóa tất cả dữ liệu liên quan
+    try:
+        from models import Review, ProductView, ChatConversation
+        
+        # Xóa reviews của user
+        Review.query.filter_by(user_id=user_id).delete()
+        
+        # Xóa product views của user
+        ProductView.query.filter_by(user_id=user_id).delete()
+        
+        # Xóa chat conversations của user
+        ChatConversation.query.filter_by(customer_id=user_id).delete()
+        
+        # Xóa các đơn hàng của user (và order_details sẽ tự động xóa do cascade)
+        Order.query.filter_by(user_id=user_id).delete()
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Lỗi khi xóa dữ liệu liên quan: {str(e)}'}), 500
+    
     db.session.delete(user)
     db.session.commit()
     
