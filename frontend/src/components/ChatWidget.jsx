@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useSocket } from '../context/SocketContext'
+import { useCart } from '../context/CartContext'
+import { useToast } from './Toast'
 import api, { getImageUrl } from '../utils/api'
 
 // Icon paths from public folder
@@ -24,12 +26,14 @@ function getGuestSessionId() {
 export default function ChatWidget() {
   const navigate = useNavigate()
   const { isAuthenticated } = useAuth()
+  const { fetchCartCount } = useCart()
+  const toast = useToast()
   const { socket, isConnected, joinConversation, leaveConversation, sendMessage: sendSocketMessage, sendTyping, markAsRead } = useSocket()
-  
+
   const [isOpen, setIsOpen] = useState(false)
   const [chatMode, setChatMode] = useState(null)
   const [guestSessionId] = useState(getGuestSessionId())
-  
+
   const [aiMessages, setAiMessages] = useState(() => {
     const saved = sessionStorage.getItem(AI_STORAGE_KEY)
     if (saved) {
@@ -39,7 +43,7 @@ export default function ChatWidget() {
   })
   const [aiInput, setAiInput] = useState('')
   const [aiLoading, setAiLoading] = useState(false)
-  
+
   const [conversation, setConversation] = useState(null)
   const [cskhMessages, setCskhMessages] = useState([])
   const [cskhInput, setCskhInput] = useState('')
@@ -48,7 +52,7 @@ export default function ChatWidget() {
   const [unreadCount, setUnreadCount] = useState(0)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [closedMessage, setClosedMessage] = useState(null)
-  
+
   const messagesEndRef = useRef(null)
   const typingTimeoutRef = useRef(null)
   const fileInputRef = useRef(null)
@@ -129,7 +133,7 @@ export default function ChatWidget() {
   const loadConversation = async () => {
     setCskhLoading(true)
     try {
-      const url = isAuthenticated 
+      const url = isAuthenticated
         ? '/api/chat/my-conversation'
         : `/api/chat/my-conversation?session_id=${guestSessionId}`
       const res = await api.get(url)
@@ -206,9 +210,9 @@ export default function ChatWidget() {
     if (file.size > 5 * 1024 * 1024) return alert('Ảnh không được vượt quá 5MB')
     setUploadingImage(true)
     const reader = new FileReader()
-    reader.onload = () => { 
+    reader.onload = () => {
       sendSocketMessage(conversation?.id || null, '', 'image', reader.result, guestSessionId)
-      setUploadingImage(false) 
+      setUploadingImage(false)
     }
     reader.onerror = () => { alert('Lỗi khi đọc file ảnh'); setUploadingImage(false) }
     reader.readAsDataURL(file)
@@ -236,6 +240,58 @@ export default function ChatWidget() {
   const formatPrice = (price) => new Intl.NumberFormat('vi-VN').format(price) + 'đ'
   const formatTime = (dateStr) => new Date(dateStr).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
 
+  const handleAddToCart = async (e, product) => {
+    e.stopPropagation()
+    if (!isAuthenticated) {
+      toast.info('Vui lòng đăng nhập để mua hàng')
+      navigate('/login')
+      return
+    }
+
+    if (product.size && product.size.trim().length > 0) {
+      toast.info('Vui lòng chọn size cho sản phẩm này')
+      navigate(`/products/${product.id}`)
+      return
+    }
+
+    try {
+      await api.post('/api/cart/add', {
+        product_id: product.id,
+        quantity: 1
+      })
+      fetchCartCount()
+      toast.success('Đã thêm vào giỏ hàng!')
+    } catch (err) {
+      toast.error('Có lỗi xảy ra, vui lòng thử lại')
+    }
+  }
+
+  const handleBuyNow = (e, product) => {
+    e.stopPropagation()
+    if (!isAuthenticated) {
+      toast.info('Vui lòng đăng nhập để mua hàng')
+      navigate('/login')
+      return
+    }
+
+    if (product.size && product.size.trim().length > 0) {
+      toast.info('Vui lòng chọn size trước khi mua')
+      navigate(`/products/${product.id}`)
+      return
+    }
+
+    navigate('/checkout', {
+      state: {
+        buyNowItem: {
+          product_id: product.id,
+          product: { ...product, products_id: product.id },
+          quantity: 1,
+          selected_size: null
+        }
+      }
+    })
+  }
+
   return (
     <div className="fixed bottom-6 right-6 z-50">
       {!isOpen && (
@@ -245,19 +301,18 @@ export default function ChatWidget() {
           </div>
         </div>
       )}
-      
+
       {!isOpen && (
         <>
           <span className="absolute inset-0 w-14 h-14 rounded-full bg-blue-400 animate-ping opacity-75"></span>
           <span className="absolute inset-0 w-14 h-14 rounded-full bg-blue-500 animate-pulse opacity-50"></span>
         </>
       )}
-      
+
       <button
         onClick={toggleChat}
-        className={`group relative w-14 h-14 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110 ${
-          isOpen ? 'bg-gray-600' : 'bg-blue-500 hover:bg-blue-600'
-        }`}
+        className={`group relative w-14 h-14 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110 ${isOpen ? 'bg-gray-600' : 'bg-blue-500 hover:bg-blue-600'
+          }`}
       >
         {isOpen ? (
           <svg className="w-6 h-6 text-white mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -297,7 +352,7 @@ export default function ChatWidget() {
                     <p className="text-sm text-gray-500">Trả lời tự động 24/7</p>
                   </div>
                 </button>
-                
+
                 <button
                   onClick={() => selectMode('support')}
                   className="w-full flex items-center gap-4 p-4 bg-orange-50 hover:bg-orange-100 rounded-xl border border-orange-200 transition-all group relative"
@@ -358,11 +413,10 @@ export default function ChatWidget() {
                       </div>
                     )}
                     <div className="max-w-[80%]">
-                      <div className={`rounded-2xl px-4 py-2.5 ${
-                        msg.role === 'user'
-                          ? 'bg-blue-500 text-white rounded-br-md'
-                          : 'bg-white text-gray-800 shadow-sm border border-gray-100 rounded-bl-md'
-                      }`}>
+                      <div className={`rounded-2xl px-4 py-2.5 ${msg.role === 'user'
+                        ? 'bg-blue-500 text-white rounded-br-md'
+                        : 'bg-white text-gray-800 shadow-sm border border-gray-100 rounded-bl-md'
+                        }`}>
                         <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                       </div>
                       {msg.products && msg.products.length > 0 && (
@@ -380,6 +434,20 @@ export default function ChatWidget() {
                                 <p className="text-xs font-medium text-gray-800 line-clamp-2 leading-tight">{product.ten_san_pham}</p>
                                 <p className="text-sm text-blue-600 font-bold mt-1">{formatPrice(product.gia_ban)}</p>
                               </div>
+                              <div className="flex gap-1 p-2 pt-0">
+                                <button
+                                  onClick={(e) => handleAddToCart(e, product)}
+                                  className="flex-1 bg-blue-100 text-blue-700 text-[10px] py-1.5 rounded font-bold hover:bg-blue-200 transition-colors"
+                                >
+                                  Thêm
+                                </button>
+                                <button
+                                  onClick={(e) => handleBuyNow(e, product)}
+                                  className="flex-1 bg-blue-600 text-white text-[10px] py-1.5 rounded font-bold hover:bg-blue-700 transition-colors"
+                                >
+                                  Mua
+                                </button>
+                              </div>
                             </button>
                           ))}
                         </div>
@@ -395,8 +463,8 @@ export default function ChatWidget() {
                     <div className="bg-white rounded-2xl px-4 py-3 shadow-sm border">
                       <div className="flex space-x-1">
                         <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
-                        <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                        <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                        <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                        <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                       </div>
                     </div>
                   </div>
@@ -455,8 +523,8 @@ export default function ChatWidget() {
                   <div className="flex justify-center items-center h-full">
                     <div className="flex space-x-2">
                       <div className="w-3 h-3 bg-orange-500 rounded-full animate-bounce"></div>
-                      <div className="w-3 h-3 bg-orange-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                      <div className="w-3 h-3 bg-orange-300 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                      <div className="w-3 h-3 bg-orange-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                      <div className="w-3 h-3 bg-orange-300 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                     </div>
                   </div>
                 ) : cskhMessages.length === 0 ? (
@@ -478,11 +546,10 @@ export default function ChatWidget() {
                         </div>
                       )}
                       <div className="max-w-[75%]">
-                        <div className={`rounded-2xl px-4 py-2.5 ${
-                          msg.sender_type === 'customer'
-                            ? 'bg-orange-500 text-white rounded-br-md'
-                            : 'bg-white text-gray-800 shadow-sm border border-gray-100 rounded-bl-md'
-                        }`}>
+                        <div className={`rounded-2xl px-4 py-2.5 ${msg.sender_type === 'customer'
+                          ? 'bg-orange-500 text-white rounded-br-md'
+                          : 'bg-white text-gray-800 shadow-sm border border-gray-100 rounded-bl-md'
+                          }`}>
                           {msg.message_type === 'image' && msg.image_url ? (
                             <img src={msg.image_url} alt="Ảnh" className="max-w-full rounded-lg cursor-pointer hover:opacity-90" onClick={() => window.open(msg.image_url, '_blank')} />
                           ) : (
@@ -505,8 +572,8 @@ export default function ChatWidget() {
                     <div className="bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-100">
                       <div className="flex space-x-1">
                         <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                       </div>
                     </div>
                   </div>
