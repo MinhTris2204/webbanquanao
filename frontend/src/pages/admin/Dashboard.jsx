@@ -3,6 +3,20 @@ import { Link } from 'react-router-dom'
 import api from '../../utils/api'
 
 export default function AdminDashboard() {
+  // Helper to get local date string in YYYY-MM-DD format
+  const getTodayString = () => {
+    const d = new Date()
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  }
+
+  const [selectedDate, setSelectedDate] = useState(getTodayString())
+  const [data, setData] = useState({
+    products: [],
+    orders: [],
+    users: [],
+    promotions: [],
+    vouchers: []
+  })
   const [stats, setStats] = useState({
     totalProducts: 0,
     totalOrders: 0,
@@ -15,90 +29,107 @@ export default function AdminDashboard() {
     cancelledOrders: 0,
     activePromotions: 0,
     activeVouchers: 0,
-    todayOrders: 0,
-    todayRevenue: 0
+    dateOrders: 0,
+    dateRevenue: 0
   })
   const [recentOrders, setRecentOrders] = useState([])
   const [topProducts, setTopProducts] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetchDashboardData()
+    fetchData()
   }, [])
 
-  const fetchDashboardData = async () => {
+  useEffect(() => {
+    if (!loading) {
+      calculateStats()
+    }
+  }, [selectedDate, data, loading])
+
+  const fetchData = async () => {
     try {
       setLoading(true)
-      
-      const productsRes = await api.get('/api/products?per_page=1000')
-      const productsData = productsRes.data.products || []
-      
-      const ordersRes = await api.get('/api/admin/orders?per_page=1000')
-      const ordersData = ordersRes.data.orders || []
-      
-      const usersRes = await api.get('/api/admin/users?per_page=1000')
-      const usersData = usersRes.data.users || []
-      
-      let activePromotions = 0
-      try {
-        const promotionsRes = await api.get('/api/promotions/stats')
-        activePromotions = promotionsRes.data.active_count || 0
-      } catch (err) {
-        console.log('Promotions stats not available')
-      }
-      
-      let activeVouchers = 0
-      try {
-        const vouchersRes = await api.get('/api/vouchers/admin')
-        const vouchersData = vouchersRes.data || []
-        activeVouchers = vouchersData.filter(v => v.is_active).length
-      } catch (err) {
-        console.log('Vouchers not available:', err)
-      }
-      
-      const totalRevenue = ordersData
-        .filter(o => o.trangthai === 'hoan_thanh')
-        .reduce((sum, o) => sum + parseFloat(o.tongtien || 0), 0)
-      
-      const pendingOrders = ordersData.filter(o => o.trangthai === 'cho_xac_nhan').length
-      const processingOrders = ordersData.filter(o => o.trangthai === 'dang_xu_ly').length
-      const shippingOrders = ordersData.filter(o => o.trangthai === 'dang_giao').length
-      const completedOrders = ordersData.filter(o => o.trangthai === 'hoan_thanh').length
-      const cancelledOrders = ordersData.filter(o => o.trangthai === 'huy').length
-      
-      // Today stats
-      const today = new Date().toDateString()
-      const todayOrders = ordersData.filter(o => new Date(o.created_at).toDateString() === today).length
-      const todayRevenue = ordersData
-        .filter(o => new Date(o.created_at).toDateString() === today && o.trangthai === 'hoan_thanh')
-        .reduce((sum, o) => sum + parseFloat(o.tongtien || 0), 0)
-      
-      setStats({
-        totalProducts: productsData.length,
-        totalOrders: ordersData.length,
-        totalUsers: usersData.length,
-        totalRevenue,
-        pendingOrders,
-        processingOrders,
-        shippingOrders,
-        completedOrders,
-        cancelledOrders,
-        activePromotions,
-        activeVouchers,
-        todayOrders,
-        todayRevenue
+
+      const [productsRes, ordersRes, usersRes, promotionsRes, vouchersRes] = await Promise.all([
+        api.get('/api/products?per_page=1000'),
+        api.get('/api/admin/orders?per_page=1000'),
+        api.get('/api/admin/users?per_page=1000'),
+        api.get('/api/promotions/stats').catch(() => ({ data: { active_count: 0 } })),
+        api.get('/api/vouchers/admin').catch(() => ({ data: [] }))
+      ])
+
+      setData({
+        products: productsRes.data.products || [],
+        orders: ordersRes.data.orders || [],
+        users: usersRes.data.users || [],
+        activePromotions: promotionsRes.data.active_count || 0,
+        activeVouchers: (vouchersRes.data || []).filter(v => v.is_active).length
       })
-      
-      setRecentOrders(ordersData.slice(0, 5))
-      
-      // Top products by sales (mock - would need backend support)
-      setTopProducts(productsData.slice(0, 5))
-      
+
     } catch (err) {
       console.error('Error fetching dashboard data:', err)
     } finally {
       setLoading(false)
     }
+  }
+
+  const calculateStats = () => {
+    const { products, orders, users, activePromotions, activeVouchers } = data
+
+    // Filter orders by selected date
+    const dateOrdersList = orders.filter(o => {
+      const orderDate = new Date(o.created_at)
+      const orderDateString = `${orderDate.getFullYear()}-${String(orderDate.getMonth() + 1).padStart(2, '0')}-${String(orderDate.getDate()).padStart(2, '0')}`
+      return orderDateString === selectedDate
+    })
+
+    // Calculate stats based on ALL orders for totals
+    const totalRevenue = orders
+      .filter(o => o.trangthai === 'hoan_thanh')
+      .reduce((sum, o) => sum + parseFloat(o.tongtien || 0), 0)
+
+    // Calculate daily stats
+    const dateRevenue = dateOrdersList
+      .filter(o => o.trangthai === 'hoan_thanh')
+      .reduce((sum, o) => sum + parseFloat(o.tongtien || 0), 0)
+
+    // Status counts - let's make these reflect the selected date to match "View by Date" intent
+    // If the user selects a date, they probably want to see the status breakup of orders from that date
+    // Or we could keep them global. Let's keep them global as per typical dashboard behavior (current system status)
+    // BUT user asked "choose date to view", so maybe they want to drill down?
+    // Let's stick to: Totals are Global, "Today/Date" stats are filtered.
+    // Status badges typically show the Current State of the pipeline. Filtering by date created is a nice analysis feature though.
+    // Let's filtered status counts by date? No, that might be confusing if the totals don't match up.
+    // Let's keep status counts GLOBAL (Current pending orders regardless of when they were made) to ensure operational utility.
+    // AND we provide "Date Orders" and "Date Revenue".
+
+    const pendingOrders = orders.filter(o => o.trangthai === 'cho_xac_nhan').length
+    const processingOrders = orders.filter(o => o.trangthai === 'dang_xu_ly').length
+    const shippingOrders = orders.filter(o => o.trangthai === 'dang_giao').length
+    const completedOrders = orders.filter(o => o.trangthai === 'hoan_thanh').length
+    const cancelledOrders = orders.filter(o => o.trangthai === 'huy').length
+
+    setStats({
+      totalProducts: products.length,
+      totalOrders: orders.length,
+      totalUsers: users.length,
+      totalRevenue,
+      pendingOrders,
+      processingOrders,
+      shippingOrders,
+      completedOrders,
+      cancelledOrders,
+      activePromotions,
+      activeVouchers,
+      dateOrders: dateOrdersList.length,
+      dateRevenue
+    })
+
+    // Recent orders - show orders from selected date
+    setRecentOrders(dateOrdersList.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)))
+
+    // Top products (mock)
+    setTopProducts(products.slice(0, 5))
   }
 
   const getStatusBadge = (status) => {
@@ -130,6 +161,21 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-6 p-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">Tổng quan</h1>
+          <p className="text-gray-500 text-sm">Xem thống kê và báo cáo kinh doanh</p>
+        </div>
+        <div className="flex items-center space-x-2 bg-white p-2 rounded-lg shadow-sm border border-gray-100">
+          <span className="text-gray-500 text-sm font-medium">📅 Chọn ngày:</span>
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="outline-none text-gray-700 font-medium bg-transparent"
+          />
+        </div>
+      </div>
       {/* Main Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Revenue Card */}
@@ -139,7 +185,7 @@ export default function AdminDashboard() {
               <p className="text-gray-500 text-sm font-medium mb-1">TỔNG DOANH THU</p>
               <p className="text-3xl font-bold text-gray-800">{stats.totalRevenue.toLocaleString()}₫</p>
               <p className="text-sm text-green-600 mt-2 font-medium">
-                Hôm nay: {stats.todayRevenue.toLocaleString()}₫
+                {selectedDate === getTodayString() ? 'Hôm nay' : 'Ngày chọn'}: {stats.dateRevenue.toLocaleString()}₫
               </p>
             </div>
             <div className="bg-green-100 p-4 rounded-full">
@@ -155,7 +201,7 @@ export default function AdminDashboard() {
               <p className="text-gray-500 text-sm font-medium mb-1">TỔNG ĐƠN HÀNG</p>
               <p className="text-3xl font-bold text-gray-800">{stats.totalOrders}</p>
               <p className="text-sm text-blue-600 mt-2 font-medium">
-                Hôm nay: {stats.todayOrders} đơn
+                {selectedDate === getTodayString() ? 'Hôm nay' : 'Ngày chọn'}: {stats.dateOrders} đơn
               </p>
             </div>
             <div className="bg-blue-100 p-4 rounded-full">
@@ -229,7 +275,7 @@ export default function AdminDashboard() {
             <p className="text-sm text-gray-600 font-medium">Đã hủy</p>
           </div>
         </div>
-        
+
         {/* Progress bar */}
         <div className="mt-6">
           <div className="flex justify-between text-sm text-gray-600 mb-2">
@@ -239,7 +285,7 @@ export default function AdminDashboard() {
             </span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
-            <div 
+            <div
               className="bg-gradient-to-r from-green-400 to-green-600 h-full rounded-full transition-all duration-500"
               style={{ width: `${stats.totalOrders > 0 ? (stats.completedOrders / stats.totalOrders) * 100 : 0}%` }}
             ></div>
@@ -253,7 +299,7 @@ export default function AdminDashboard() {
         <div className="bg-white rounded-2xl shadow-lg p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-              🕐 Đơn hàng gần đây
+              🕐 Đơn hàng {selectedDate === getTodayString() ? 'gần đây' : 'ngày ' + new Date(selectedDate).toLocaleDateString('vi-VN')}
             </h2>
             <Link to="/orders" className="text-blue-600 hover:text-blue-700 text-sm font-bold">
               Xem tất cả →
@@ -263,7 +309,7 @@ export default function AdminDashboard() {
             {recentOrders.length === 0 ? (
               <div className="text-center py-8">
                 <span className="text-5xl">📭</span>
-                <p className="text-gray-500 mt-2">Chưa có đơn hàng nào</p>
+                <p className="text-gray-500 mt-2">Không có đơn hàng nào trong ngày này</p>
               </div>
             ) : (
               recentOrders.map((order) => (
@@ -301,7 +347,7 @@ export default function AdminDashboard() {
               </div>
               <span className="text-3xl font-bold text-red-600">{stats.activePromotions}</span>
             </div>
-            
+
             <div className="flex items-center justify-between p-4 bg-gradient-to-r from-teal-50 to-cyan-50 rounded-xl border border-teal-100">
               <div className="flex items-center gap-3">
                 <span className="text-3xl">🎫</span>
@@ -312,15 +358,15 @@ export default function AdminDashboard() {
               </div>
               <span className="text-3xl font-bold text-teal-600">{stats.activeVouchers}</span>
             </div>
-            
+
             <div className="grid grid-cols-2 gap-3 mt-4">
-              <Link 
+              <Link
                 to="/promotions"
                 className="flex items-center justify-center gap-2 p-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition font-bold"
               >
                 🏷️ Khuyến mãi
               </Link>
-              <Link 
+              <Link
                 to="/vouchers"
                 className="flex items-center justify-center gap-2 p-3 bg-teal-500 text-white rounded-xl hover:bg-teal-600 transition font-bold"
               >
