@@ -13,7 +13,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -25,6 +25,7 @@ services:
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/webbanquanao
       FLASK_ENV: development
+      PYTHONUNBUFFERED: 1
       SECRET_KEY: your-secret-key-change-in-production
       # VNPay sandbox configuration
       VNPAY_VERSION: "2.1.0"
@@ -39,6 +40,8 @@ services:
       SMTP_PORT: "587"
       SMTP_USER: "duongminhtri9311@gmail.com"
       SMTP_PASSWORD: "ggscuurcikiwcyza"
+      # OpenWeatherMap API Key
+      OPENWEATHER_API_KEY: "${OPENWEATHER_API_KEY}"
     depends_on:
       db:
         condition: service_healthy

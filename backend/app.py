@@ -95,6 +95,10 @@ def create_app():
     # Import Analytics blueprint
     from routes.analytics import analytics_bp
     app.register_blueprint(analytics_bp, url_prefix='/api/analytics')
+
+    # Import Weather blueprint
+    from routes.weather import weather_bp
+    app.register_blueprint(weather_bp, url_prefix='/api/weather')
     
     @app.route('/api/health')
     def health():

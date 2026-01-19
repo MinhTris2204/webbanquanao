@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import api, { getImageUrl } from '../utils/api'
 import RecommendedProducts from '../components/RecommendedProducts'
 import ProductRating from '../components/ProductRating'
+import WeatherWidget from '../components/WeatherWidget'
 
 export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0)
@@ -95,9 +96,8 @@ export default function Home() {
         {slides.map((slide, index) => (
           <div
             key={index}
-            className={`absolute inset-0 transition-opacity duration-1000 ${
-              index === currentSlide ? 'opacity-100' : 'opacity-0'
-            }`}
+            className={`absolute inset-0 transition-opacity duration-1000 ${index === currentSlide ? 'opacity-100' : 'opacity-0'
+              }`}
           >
             <div className={`h-full bg-gradient-to-r ${slide.bg} flex items-center`}>
               <div className="max-w-7xl mx-auto px-4 w-full">
@@ -129,9 +129,8 @@ export default function Home() {
             <button
               key={index}
               onClick={() => setCurrentSlide(index)}
-              className={`w-3 h-3 rounded-full transition ${
-                index === currentSlide ? 'bg-white w-8' : 'bg-white/50'
-              }`}
+              className={`w-3 h-3 rounded-full transition ${index === currentSlide ? 'bg-white w-8' : 'bg-white/50'
+                }`}
             />
           ))}
         </div>
@@ -153,6 +152,11 @@ export default function Home() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
         </button>
+      </div>
+
+      {/* Weather Widget */}
+      <div className="max-w-7xl mx-auto px-4 mt-8 relative z-20">
+        <WeatherWidget />
       </div>
 
       {/* Categories Section */}
@@ -224,17 +228,17 @@ export default function Home() {
                   <h3 className="font-semibold text-gray-800 mb-2 line-clamp-2">
                     {product.ten_san_pham}
                   </h3>
-                  
+
                   {/* Rating */}
                   <div className="mb-2">
-                    <ProductRating 
+                    <ProductRating
                       rating={product.rating?.average_rating || 0}
                       reviewCount={product.rating?.review_count || 0}
                       size="xs"
                       showCount={true}
                     />
                   </div>
-                  
+
                   {product.promotion ? (
                     <div className="space-y-1">
                       <p className="text-red-600 font-bold text-lg">
@@ -308,17 +312,17 @@ export default function Home() {
                     <h3 className="font-semibold text-gray-800 mb-2 line-clamp-2">
                       {product.ten_san_pham}
                     </h3>
-                    
+
                     {/* Rating */}
                     <div className="mb-2">
-                      <ProductRating 
+                      <ProductRating
                         rating={product.rating?.average_rating || 0}
                         reviewCount={product.rating?.review_count || 0}
                         size="xs"
                         showCount={true}
                       />
                     </div>
-                    
+
                     <div className="space-y-1">
                       <p className="text-red-600 font-bold text-lg">
                         {product.promotion.promotional_price?.toLocaleString('vi-VN')} đ
