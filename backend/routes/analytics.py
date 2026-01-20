@@ -30,9 +30,9 @@ def get_top_customers():
     
     query = db.session.query(
         User.user_id,
-        User.hoten,
+        User.full_name,
         User.email,
-        User.sdt,
+        User.phone,
         func.count(Order.id).label('total_orders'),
         func.sum(Order.tongtien).label('total_spent'),
         func.avg(Order.tongtien).label('avg_order_value')
@@ -44,7 +44,7 @@ def get_top_customers():
     if end_date:
         query = query.filter(Order.created_at <= datetime.fromisoformat(end_date))
     
-    results = query.group_by(User.user_id, User.hoten, User.email, User.sdt)\
+    results = query.group_by(User.user_id, User.full_name, User.email, User.phone)\
                    .order_by(desc('total_spent'))\
                    .limit(limit)\
                    .all()
@@ -53,9 +53,9 @@ def get_top_customers():
     for r in results:
         customers.append({
             'user_id': r.user_id,
-            'hoten': r.hoten,
+            'hoten': r.full_name,
             'email': r.email,
-            'sdt': r.sdt,
+            'sdt': r.phone,
             'total_orders': r.total_orders,
             'total_spent': float(r.total_spent) if r.total_spent else 0,
             'avg_order_value': float(r.avg_order_value) if r.avg_order_value else 0
