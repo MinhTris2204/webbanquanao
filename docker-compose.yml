@@ -41,7 +41,7 @@ services:
       SMTP_USER: "duongminhtri9311@gmail.com"
       SMTP_PASSWORD: "ggscuurcikiwcyza"
       # OpenWeatherMap API Key
-      OPENWEATHER_API_KEY: "${OPENWEATHER_API_KEY}"
+      OPENWEATHER_API_KEY: "88b5318004f13c1bdbbba8a221833b9c"
     depends_on:
       db:
         condition: service_healthy
