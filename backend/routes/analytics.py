@@ -28,6 +28,15 @@ def get_top_customers():
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
     
+    # Mặc định lọc theo tháng hiện tại nếu không truyền ngày
+    now = datetime.utcnow()
+    if not start_date and not end_date:
+        default_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        default_end = now
+    else:
+        default_start = datetime.fromisoformat(start_date) if start_date else None
+        default_end = datetime.fromisoformat(end_date) if end_date else None
+    
     query = db.session.query(
         User.user_id,
         User.full_name,
@@ -39,10 +48,10 @@ def get_top_customers():
     ).join(Order, User.user_id == Order.user_id)\
      .filter(Order.trangthai == 'hoan_thanh')
     
-    if start_date:
-        query = query.filter(Order.created_at >= datetime.fromisoformat(start_date))
-    if end_date:
-        query = query.filter(Order.created_at <= datetime.fromisoformat(end_date))
+    if default_start:
+        query = query.filter(Order.created_at >= default_start)
+    if default_end:
+        query = query.filter(Order.created_at <= default_end)
     
     results = query.group_by(User.user_id, User.full_name, User.email, User.phone)\
                    .order_by(desc('total_spent'))\

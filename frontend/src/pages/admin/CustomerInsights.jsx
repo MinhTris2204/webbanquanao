@@ -37,9 +37,19 @@ export default function CustomerInsights() {
   const [viewAnalytics, setViewAnalytics] = useState({ analytics: [], summary: {} })
   const [customerSegments, setCustomerSegments] = useState({ segments: [], total_customers: 0 })
   const [categories, setCategories] = useState([])
-  const [dateRange, setDateRange] = useState({ start: '', end: '' })
   const [selectedCategory, setSelectedCategory] = useState('')
   const [limit, setLimit] = useState(10)
+
+  // Mặc định: từ đầu tháng hiện tại đến hôm nay
+  const getDefaultDateRange = () => {
+    const now = new Date()
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
+    return {
+      start: firstDay.toISOString().split('T')[0],
+      end: now.toISOString().split('T')[0]
+    }
+  }
+  const [dateRange, setDateRange] = useState(getDefaultDateRange)
 
   useEffect(() => {
     loadCategories()
@@ -106,6 +116,25 @@ export default function CustomerInsights() {
 
   const handleFilter = () => loadData()
 
+  // Chuyển tháng nhanh
+  const goToMonth = (offset) => {
+    const now = new Date()
+    const target = new Date(now.getFullYear(), now.getMonth() + offset, 1)
+    const firstDay = new Date(target.getFullYear(), target.getMonth(), 1)
+    const lastDay = new Date(target.getFullYear(), target.getMonth() + 1, 0)
+    const isCurrentMonth = offset === 0
+    setDateRange({
+      start: firstDay.toISOString().split('T')[0],
+      end: isCurrentMonth ? now.toISOString().split('T')[0] : lastDay.toISOString().split('T')[0]
+    })
+  }
+
+  const currentMonthLabel = () => {
+    if (!dateRange.start) return ''
+    const d = new Date(dateRange.start)
+    return `Tháng ${d.getMonth() + 1}/${d.getFullYear()}`
+  }
+
   const tabs = [
     { id: 'top-customers', label: `${ICONS.crown} Top Kh\u00E1ch h\u00E0ng` },
     { id: 'top-products', label: `${ICONS.fire} S\u1EA3n ph\u1EA9m b\u00E1n ch\u1EA1y` },
@@ -128,6 +157,12 @@ export default function CustomerInsights() {
 
         {(activeTab === 'top-customers' || activeTab === 'top-products') && (
           <div className="p-4 bg-gray-50 border-b flex flex-wrap gap-4 items-end">
+            {/* Nút chuyển tháng nhanh */}
+            <div className="w-full flex items-center gap-2 mb-1">
+              <button onClick={() => goToMonth(-1)} className="px-3 py-1 text-sm bg-white border rounded-lg hover:bg-gray-100 transition">← Tháng trước</button>
+              <span className="font-semibold text-blue-600 text-sm px-2">{currentMonthLabel()}</span>
+              <button onClick={() => goToMonth(0)} className="px-3 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">Tháng này</button>
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">{`T\u1EEB ng\u00E0y`}</label>
               <input type="date" value={dateRange.start} onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })} className="border rounded-lg px-3 py-2" />
