@@ -1,15 +1,3 @@
-
-###############################################################################
-# HỆ THỐNG GỢI Ý SẢN PHẨM - RECOMMENDATION SYSTEM
-###############################################################################
-# Các thuật toán sử dụng:
-# 1. COLLABORATIVE FILTERING - Lọc cộng tác dựa trên hành vi người dùng
-# 2. CONTENT-BASED FILTERING - Lọc dựa trên thuộc tính sản phẩm
-# 3. TRENDING ALGORITHM - Thuật toán xu hướng (time-based popularity)
-# 4. MARKET BASKET ANALYSIS - Phân tích giỏ hàng (association rules)
-# 5. HYBRID APPROACH - Kết hợp nhiều phương pháp
-###############################################################################
-
 from flask import Blueprint, jsonify, request
 from models import db, Product, ProductView, Order, OrderDetail
 from flask_jwt_extended import jwt_required, get_jwt_identity, verify_jwt_in_request
@@ -124,10 +112,11 @@ def get_recommendations():
         viewed_product_ids = [p[0] for p in viewed_products]
         
         if not viewed_product_ids:
-            # Không có lịch sử xem - trả về rỗng
+            # Không có lịch sử xem - fallback về trending
+            trending = get_trending_products_query(limit)
             return jsonify({
-                'products': [],
-                'based_on': 'no_data'
+                'products': [p.to_dict() for p in trending],
+                'based_on': 'trending'
             })
         
         # Trích xuất categories và gender từ sản phẩm đã xem
@@ -138,15 +127,21 @@ def get_recommendations():
         categories = list(set([p.loai for p in viewed_product_details if p.loai]))
         genders = list(set([p.gioi_tinh for p in viewed_product_details if p.gioi_tinh]))
         
+        # Subquery: tổng hợp lượt xem theo sản phẩm
+        view_count_subquery = db.session.query(
+            ProductView.product_id,
+            func.sum(ProductView.view_count).label('total_views')
+        ).group_by(ProductView.product_id).subquery()
+        
         # Xây dựng query gợi ý với Content-Based Filtering
-        recommendations = Product.query.filter(
+        recommendations_query = Product.query.filter(
             Product.trang_thai == 'Con_hang',
             Product.products_id.notin_(viewed_product_ids)  # Loại trừ sản phẩm đã xem
         )
         
         # Lọc theo categories hoặc gender tương tự
         if categories or genders:
-            recommendations = recommendations.filter(
+            recommendations_query = recommendations_query.filter(
                 db.or_(
                     Product.loai.in_(categories) if categories else False,
                     Product.gioi_tinh.in_(genders) if genders else False
@@ -154,26 +149,26 @@ def get_recommendations():
             )
         
         # Sắp xếp theo độ phổ biến (Popularity-Based Ranking)
-        recommendations = recommendations.outerjoin(
-            db.session.query(
-                db.func.count(ProductView.id).label('view_count'),
-                ProductView.product_id
-            ).group_by(ProductView.product_id).subquery(),
-            Product.products_id == db.column('product_id')
+        recommendations_query = recommendations_query.outerjoin(
+            view_count_subquery,
+            Product.products_id == view_count_subquery.c.product_id
         ).order_by(
-            desc(db.column('view_count')),
+            desc(view_count_subquery.c.total_views),
             desc(Product.created_at)
-        ).limit(limit).all()
+        )
+        
+        recommendations = recommendations_query.limit(limit).all()
         
         # Fallback: Bổ sung từ trending nếu không đủ
         if len(recommendations) < limit:
             remaining = limit - len(recommendations)
-            trending = get_trending_products_query(remaining, exclude_ids=[p.products_id for p in recommendations])
+            exclude = [p.products_id for p in recommendations] + viewed_product_ids
+            trending = get_trending_products_query(remaining, exclude_ids=exclude)
             recommendations.extend(trending)
         
         return jsonify({
             'products': [p.to_dict() for p in recommendations],
-            'based_on': 'user_behavior' if viewed_product_ids else 'trending'
+            'based_on': 'user_behavior'
         })
         
     except Exception as e:

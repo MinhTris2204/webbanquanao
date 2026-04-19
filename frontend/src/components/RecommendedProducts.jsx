@@ -20,6 +20,7 @@ export default function RecommendedProducts({ title = '🎯 Gợi ý dành cho b
   }, [products])
 
   const fetchRecommendations = async () => {
+    setLoading(true)
     try {
       let endpoint = ''
       switch (type) {
@@ -43,6 +44,7 @@ export default function RecommendedProducts({ title = '🎯 Gợi ý dành cho b
       setBasedOn(res.data.based_on || '')
     } catch (err) {
       console.error('Error fetching recommendations:', err)
+      setProducts([])
     } finally {
       setLoading(false)
     }
