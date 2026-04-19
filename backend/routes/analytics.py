@@ -159,7 +159,7 @@ def get_sales_trend():
 def get_promotion_suggestions():
     """Gợi ý sản phẩm cần khuyến mãi dựa trên dữ liệu"""
     
-    # Sản phẩm có nhiều lượt xem nhưng ít mua (tỷ lệ chuyển đổi thấp)
+    # Sản phẩm có nhiều lượt xem nhưng ít mua
     low_conversion = db.session.query(
         Product.products_id,
         Product.ten_san_pham,
@@ -179,74 +179,74 @@ def get_promotion_suggestions():
     for r in low_conversion:
         views = r.total_views or 0
         sold = r.total_sold or 0
-        conversion_rate = (sold / views * 100) if views > 0 else 0
+
+        # Bỏ qua sản phẩm bán tốt (sold >= views * 0.1 và sold >= 5)
+        if sold >= 5 and views > 0 and (sold / views) >= 0.1:
+            continue
+
+        hinh_anh = r.hinh_anh
+        if hinh_anh and not hinh_anh.startswith('http') and not hinh_anh.startswith('data:'):
+            hinh_anh = f"/uploads/{hinh_anh}"
         
-        # Chỉ gợi ý sản phẩm có tỷ lệ chuyển đổi < 10%
-        if conversion_rate < 10 and views >= 5:
-            hinh_anh = r.hinh_anh
-            if hinh_anh and not hinh_anh.startswith('http') and not hinh_anh.startswith('data:'):
-                hinh_anh = f"/uploads/{hinh_anh}"
-            
-            # Kiểm tra xem sản phẩm đã có khuyến mãi chưa và lấy thông tin KM
-            active_promotion = Promotion.query.filter(
-                Promotion.product_id == r.products_id,
-                Promotion.is_active == True,
-                Promotion.start_date <= datetime.utcnow(),
-                Promotion.end_date >= datetime.utcnow()
-            ).first()
-            
-            has_promotion = active_promotion is not None
-            promotion_price = None
-            promotion_info = None
-            
-            if active_promotion:
-                gia_ban = float(r.gia_ban) if r.gia_ban else 0
-                discount_val = float(active_promotion.discount_value)
-                if active_promotion.discount_type == 'percent':
-                    promotion_price = gia_ban * (1 - discount_val / 100)
-                    promotion_info = f'-{discount_val:.0f}%'
-                else:
-                    promotion_price = gia_ban - discount_val
-                    promotion_info = f'-{int(discount_val):,}đ'
-            
-            # Tính mức độ ưu tiên dựa trên: lượt xem cao + tỷ lệ chuyển đổi thấp
-            # Công thức: views * (10 - conversion_rate) / 10
-            priority_score = views * (10 - conversion_rate) / 10
-            
-            if conversion_rate < 2 and views >= 50:
-                priority = 'high'
-                priority_label = 'Cao'
-                reason = 'Rất nhiều lượt xem nhưng gần như không bán được - CẦN KHUYẾN MÃI NGAY'
-                suggested_discount = '20-30%'
-            elif conversion_rate < 5 and views >= 20:
-                priority = 'medium'
-                priority_label = 'Trung bình'
-                reason = 'Nhiều lượt xem nhưng ít mua - nên tạo khuyến mãi'
-                suggested_discount = '10-20%'
+        # Kiểm tra khuyến mãi đang hoạt động
+        active_promotion = Promotion.query.filter(
+            Promotion.product_id == r.products_id,
+            Promotion.is_active == True,
+            Promotion.start_date <= datetime.utcnow(),
+            Promotion.end_date >= datetime.utcnow()
+        ).first()
+        
+        has_promotion = active_promotion is not None
+        promotion_price = None
+        promotion_info = None
+        
+        if active_promotion:
+            gia_ban = float(r.gia_ban) if r.gia_ban else 0
+            discount_val = float(active_promotion.discount_value)
+            if active_promotion.discount_type == 'percent':
+                promotion_price = gia_ban * (1 - discount_val / 100)
+                promotion_info = f'-{discount_val:.0f}%'
             else:
-                priority = 'low'
-                priority_label = 'Thấp'
-                reason = 'Tỷ lệ mua chưa tối ưu - có thể cân nhắc khuyến mãi nhẹ'
-                suggested_discount = '5-10%'
-            
-            suggestions.append({
-                'products_id': r.products_id,
-                'ten_san_pham': r.ten_san_pham,
-                'gia_ban': float(r.gia_ban) if r.gia_ban else 0,
-                'gia_khuyen_mai': round(promotion_price, 0) if promotion_price else None,
-                'promotion_info': promotion_info,
-                'loai': r.loai,
-                'hinh_anh': hinh_anh,
-                'total_views': views,
-                'total_sold': sold,
-                'conversion_rate': round(conversion_rate, 2),
-                'has_promotion': has_promotion,
-                'priority': priority,
-                'priority_label': priority_label,
-                'priority_score': round(priority_score, 2),
-                'reason': reason if not has_promotion else 'Đang khuyến mãi nhưng vẫn ít người mua - cần xem xét lại chiến lược',
-                'suggested_discount': suggested_discount
-            })
+                promotion_price = gia_ban - discount_val
+                promotion_info = f'-{int(discount_val):,}đ'
+        
+        # Mức độ ưu tiên dựa trên: lượt xem cao + bán ít
+        # Score = views - sold * 10 (xem nhiều mà bán ít thì score cao)
+        priority_score = views - sold * 10
+
+        if views >= 50 and sold == 0:
+            priority = 'high'
+            priority_label = 'Cao'
+            reason = 'Rất nhiều lượt xem nhưng gần như không bán được - CẦN KHUYẾN MÃI NGAY'
+            suggested_discount = '20-30%'
+        elif views >= 20 and sold < 3:
+            priority = 'medium'
+            priority_label = 'Trung bình'
+            reason = 'Nhiều lượt xem nhưng ít mua - nên tạo khuyến mãi'
+            suggested_discount = '10-20%'
+        else:
+            priority = 'low'
+            priority_label = 'Thấp'
+            reason = 'Lượt xem khá nhưng chưa có nhiều đơn - có thể cân nhắc khuyến mãi nhẹ'
+            suggested_discount = '5-10%'
+        
+        suggestions.append({
+            'products_id': r.products_id,
+            'ten_san_pham': r.ten_san_pham,
+            'gia_ban': float(r.gia_ban) if r.gia_ban else 0,
+            'gia_khuyen_mai': round(promotion_price, 0) if promotion_price else None,
+            'promotion_info': promotion_info,
+            'loai': r.loai,
+            'hinh_anh': hinh_anh,
+            'total_views': views,
+            'total_sold': sold,
+            'has_promotion': has_promotion,
+            'priority': priority,
+            'priority_label': priority_label,
+            'priority_score': priority_score,
+            'reason': reason if not has_promotion else 'Đang khuyến mãi nhưng vẫn ít người mua - cần xem xét lại chiến lược',
+            'suggested_discount': suggested_discount
+        })
     
     # Sản phẩm tồn kho lâu (ít bán trong 30 ngày qua)
     thirty_days_ago = datetime.utcnow() - timedelta(days=30)
@@ -271,13 +271,11 @@ def get_promotion_suggestions():
      .limit(50).all()
     
     for r in slow_moving:
-        # Kiểm tra xem đã có trong suggestions chưa
         if not any(s['products_id'] == r.products_id for s in suggestions):
             hinh_anh = r.hinh_anh
             if hinh_anh and not hinh_anh.startswith('http') and not hinh_anh.startswith('data:'):
                 hinh_anh = f"/uploads/{hinh_anh}"
             
-            # Kiểm tra khuyến mãi đang hoạt động
             active_promotion = Promotion.query.filter(
                 Promotion.product_id == r.products_id,
                 Promotion.is_active == True,
@@ -303,19 +301,15 @@ def get_promotion_suggestions():
             if recent_sold == 0:
                 priority = 'high'
                 priority_label = 'Cao'
-                if has_promotion:
-                    reason = 'Đang khuyến mãi nhưng vẫn không bán được - cần xem xét giảm giá mạnh hơn hoặc đổi chiến lược'
-                else:
-                    reason = 'Không bán được sản phẩm nào trong 30 ngày - CẦN KHUYẾN MÃI NGAY'
+                reason = 'Đang khuyến mãi nhưng vẫn không bán được - cần xem xét giảm giá mạnh hơn' if has_promotion else 'Không bán được sản phẩm nào trong 30 ngày - CẦN KHUYẾN MÃI NGAY'
                 suggested_discount = '25-35%'
+                priority_score = 100
             else:
                 priority = 'medium'
                 priority_label = 'Trung bình'
-                if has_promotion:
-                    reason = 'Đang khuyến mãi nhưng bán chậm - cần điều chỉnh mức giảm giá'
-                else:
-                    reason = 'Sản phẩm bán chậm trong 30 ngày qua - nên tạo khuyến mãi'
+                reason = 'Đang khuyến mãi nhưng bán chậm - cần điều chỉnh mức giảm giá' if has_promotion else 'Sản phẩm bán chậm trong 30 ngày qua - nên tạo khuyến mãi'
                 suggested_discount = '15-25%'
+                priority_score = 50
             
             suggestions.append({
                 'products_id': r.products_id,
@@ -327,16 +321,15 @@ def get_promotion_suggestions():
                 'hinh_anh': hinh_anh,
                 'total_views': 0,
                 'total_sold': recent_sold,
-                'conversion_rate': 0,
                 'has_promotion': has_promotion,
                 'priority': priority,
                 'priority_label': priority_label,
-                'priority_score': 100 if recent_sold == 0 else 50,
+                'priority_score': priority_score,
                 'reason': reason,
                 'suggested_discount': suggested_discount
             })
     
-    # Sắp xếp theo mức độ ưu tiên (priority_score cao nhất lên đầu)
+    # Sắp xếp theo priority_score cao nhất lên đầu
     suggestions.sort(key=lambda x: x['priority_score'], reverse=True)
     
     return jsonify({'suggestions': suggestions}), 200
