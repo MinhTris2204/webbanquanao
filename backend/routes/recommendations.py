@@ -112,11 +112,10 @@ def get_recommendations():
         viewed_product_ids = [p[0] for p in viewed_products]
         
         if not viewed_product_ids:
-            # Không có lịch sử xem - fallback về trending
-            trending = get_trending_products_query(limit)
+            # Không có lịch sử xem - trả về rỗng, component tự ẩn
             return jsonify({
-                'products': [p.to_dict() for p in trending],
-                'based_on': 'trending'
+                'products': [],
+                'based_on': 'no_data'
             })
         
         # Trích xuất categories và gender từ sản phẩm đã xem
