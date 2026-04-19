@@ -143,8 +143,16 @@ export default function ProductDetail() {
   const [selectedSize, setSelectedSize] = useState('')
   const [message, setMessage] = useState({ text: '', type: '' })
   const [loading, setLoading] = useState(true)
+  const trackedProductId = useRef(null)
 
-  useEffect(() => { fetchProduct(); trackProductView() }, [id])
+  useEffect(() => { 
+    fetchProduct()
+    // Chỉ track nếu chưa track product này (tránh StrictMode double-invoke)
+    if (trackedProductId.current !== id) {
+      trackedProductId.current = id
+      trackProductView()
+    }
+  }, [id])
 
   const fetchProduct = async () => {
     try {
