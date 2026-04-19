@@ -22,10 +22,11 @@ def create_app():
     # Disable strict slashes to avoid redirects
     app.url_map.strict_slashes = False
     
-    # Configure CORS properly
+    # Configure CORS properly - must specify exact origins when supports_credentials=True
+    allowed_origins = os.environ.get('CORS_ORIGINS', 'http://localhost:5173').split(',')
     CORS(app, resources={
         r"/api/*": {
-            "origins": "*",
+            "origins": allowed_origins,
             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
             "allow_headers": ["Content-Type", "Authorization"],
             "expose_headers": ["Content-Type", "Authorization"],
@@ -38,7 +39,7 @@ def create_app():
             "supports_credentials": False
         },
         r"/socket.io/*": {
-            "origins": "*",
+            "origins": allowed_origins,
             "methods": ["GET", "POST", "OPTIONS"],
             "allow_headers": ["Content-Type", "Authorization"],
             "supports_credentials": True
