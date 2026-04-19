@@ -53,11 +53,12 @@ def get_products():
     # Filter for products on sale
     if on_sale == 'true':
         now = datetime.utcnow()
-        query = query.join(Promotion).filter(
+        active_product_ids = db.session.query(Promotion.product_id).filter(
             Promotion.is_active == True,
             Promotion.start_date <= now,
             Promotion.end_date >= now
-        )
+        ).subquery()
+        query = query.filter(Product.products_id.in_(active_product_ids))
     
     # Sorting
     if sort_by == 'newest':
@@ -165,11 +166,15 @@ def get_sale_products():
     
     now = datetime.utcnow()
     
-    query = Product.query.join(Promotion).filter(
+    # Lấy danh sách product_id có promotion đang active
+    active_product_ids = db.session.query(Promotion.product_id).filter(
         Promotion.is_active == True,
         Promotion.start_date <= now,
-        Promotion.end_date >= now,
-        Product.trang_thai == 'Con_hang'
+        Promotion.end_date >= now
+    ).subquery()
+
+    query = Product.query.filter(
+        Product.products_id.in_(active_product_ids)
     )
     
     # Apply filters
@@ -189,13 +194,13 @@ def get_sale_products():
         query = query.filter(Product.gia_ban <= max_price)
     
     # Sorting
-    if sort_by == 'discount':
-        # Sort by discount percentage (highest first)
-        query = query.order_by(Promotion.discount_value.desc())
-    elif sort_by == 'price':
+    if sort_by == 'price':
         query = query.order_by(Product.gia_ban.asc())
     elif sort_by == 'name':
         query = query.order_by(Product.ten_san_pham.asc())
+    else:
+        # Default: sort by newest
+        query = query.order_by(Product.created_at.desc())
     
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
     
