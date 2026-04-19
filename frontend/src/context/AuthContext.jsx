@@ -16,7 +16,9 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true)
   
   // ==================== XÁC ĐỊNH ĐANG TRONG APP ADMIN HAY KHÁCH HÀNG ====================
-  const isAdminApp = window.location.pathname.includes('admin.html')
+  const isAdminApp = window.location.pathname.includes('admin.html') || 
+                     window.location.href.includes('admin.html') ||
+                     document.querySelector('title')?.textContent?.includes('Admin Panel')
   const tokenKey = isAdminApp ? 'admin_token' : 'customer_token'
 
   useEffect(() => {

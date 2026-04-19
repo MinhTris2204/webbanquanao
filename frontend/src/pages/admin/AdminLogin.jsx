@@ -18,8 +18,18 @@ export default function AdminLogin() {
       // ==================== KIỂM TRA XEM NGƯỜI DÙNG CÓ PHẢI ADMIN KHÔNG ====================
       if (data.user.role !== 'admin') {
         setError('Bạn không có quyền truy cập trang quản trị')
+        // Remove both tokens to be safe
         localStorage.removeItem('token')
+        localStorage.removeItem('admin_token')
+        localStorage.removeItem('customer_token')
         return
+      }
+      
+      // Ensure token is stored with admin_token key
+      if (data.access_token) {
+        localStorage.setItem('admin_token', data.access_token)
+        // Remove customer token if exists
+        localStorage.removeItem('customer_token')
       }
       
       // Điều hướng đến bảng điều khiển
