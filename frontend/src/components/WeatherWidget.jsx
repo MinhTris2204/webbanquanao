@@ -9,6 +9,7 @@ export default function WeatherWidget() {
     const [location, setLocation] = useState({ lat: null, lon: null })
     const [currentTime, setCurrentTime] = useState(new Date())
     const [isVisible, setIsVisible] = useState(false)
+    const [iconError, setIconError] = useState(false)
 
     // Update clock every minute
     useEffect(() => {
@@ -56,7 +57,10 @@ export default function WeatherWidget() {
                 }
 
                 const res = await api.get('/api/weather/current', { params })
+                console.log('Weather data received:', res.data)
+                console.log('Icon URL:', res.data.icon_url)
                 setWeatherData(res.data)
+                setIconError(false) // Reset icon error state
                 setError(null)
             } catch (err) {
                 console.error('Error fetching weather:', err)
@@ -117,6 +121,23 @@ export default function WeatherWidget() {
     const textColor = isLightBg ? 'text-slate-800' : 'text-white'
     const subTextColor = isLightBg ? 'text-slate-600' : 'text-white/90'
 
+    // Get weather emoji for fallback
+    const getWeatherEmoji = (weatherMain) => {
+        const weatherEmojis = {
+            'clear': '☀️',
+            'clouds': '☁️',
+            'rain': '🌧️',
+            'drizzle': '🌦️',
+            'thunderstorm': '⛈️',
+            'snow': '❄️',
+            'mist': '🌫️',
+            'fog': '🌫️',
+            'haze': '🌫️'
+        }
+        const weather = weatherMain?.toLowerCase() || 'clear'
+        return weatherEmojis[weather] || '🌤️'
+    }
+
     return (
         <div className={`relative overflow-hidden rounded-3xl shadow-2xl mb-16 bg-gradient-to-br ${bgClass} ${textColor} transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
 
@@ -151,11 +172,18 @@ export default function WeatherWidget() {
                         <div className="flex items-center my-8 animate-fade-in">
                             <div className="relative">
                                 <div className="absolute inset-0 bg-white/20 rounded-full blur-2xl"></div>
-                                <img
-                                    src={weatherData.icon_url}
-                                    alt={weatherData.weather_main}
-                                    className="relative w-36 h-36 md:w-44 md:h-44 object-contain drop-shadow-2xl animate-bounce-slow"
-                                />
+                                {!iconError ? (
+                                    <img
+                                        src={weatherData.icon_url}
+                                        alt={weatherData.weather_main}
+                                        className="relative w-36 h-36 md:w-44 md:h-44 object-contain drop-shadow-2xl animate-bounce-slow"
+                                        onError={() => setIconError(true)}
+                                    />
+                                ) : (
+                                    <div className="relative text-8xl md:text-9xl animate-bounce-slow drop-shadow-2xl">
+                                        {getWeatherEmoji(weatherData.weather_main)}
+                                    </div>
+                                )}
                             </div>
                             <div className="ml-6">
                                 <div className="text-7xl md:text-8xl font-black tracking-tighter drop-shadow-lg">

@@ -11,6 +11,46 @@ import os
 auth_bp = Blueprint('auth', __name__)
 
 
+@auth_bp.route('/validate-email', methods=['POST'])
+def validate_email_endpoint():
+    """API endpoint để kiểm tra email có hợp lệ không (realtime validation)"""
+    data = request.get_json()
+    email = data.get('email', '').strip()
+    use_api = data.get('use_api', True)  # Bật API validation (ZeroBounce hoặc Abstract)
+    
+    if not email:
+        return jsonify({'valid': False, 'error': 'Vui lòng nhập email'}), 400
+    
+    from email_validator_util import validate_email_full, is_disposable_email
+    
+    # Check if email already exists
+    if User.query.filter_by(email=email).first():
+        return jsonify({
+            'valid': False,
+            'error': 'Email đã được đăng ký'
+        }), 200
+    
+    # Validate email format, domain, and existence
+    is_valid, error_msg = validate_email_full(email, check_smtp=False, use_api=use_api)
+    if not is_valid:
+        return jsonify({
+            'valid': False,
+            'error': error_msg
+        }), 200
+    
+    # Check if disposable email
+    if is_disposable_email(email):
+        return jsonify({
+            'valid': False,
+            'error': 'Email tạm thời không được chấp nhận. Vui lòng sử dụng email thật'
+        }), 200
+    
+    return jsonify({
+        'valid': True,
+        'message': 'Email hợp lệ'
+    }), 200
+
+
 def get_smtp_config():
     """Get SMTP configuration"""
     return {
@@ -103,12 +143,25 @@ def register():
     """Đăng ký tài khoản - Bước 1: Tạo tài khoản chưa xác thực"""
     data = request.get_json()
     
-    if User.query.filter_by(email=data.get('email')).first():
-        return jsonify({'error': 'Email đã tồn tại'}), 400
+    email = data.get('email', '').strip()
+    
+    # Validate email format, domain, and existence (dùng API)
+    from email_validator_util import validate_email_full, is_disposable_email
+    
+    is_valid, error_msg = validate_email_full(email, check_smtp=False, use_api=True)
+    if not is_valid:
+        return jsonify({'error': error_msg}), 400
+    
+    # Check if email is disposable
+    if is_disposable_email(email):
+        return jsonify({'error': 'Email tạm thời không được chấp nhận. Vui lòng sử dụng email thật'}), 400
+    
+    if User.query.filter_by(email=email).first():
+        return jsonify({'error': 'Email đã được đăng ký'}), 400
     
     username = data.get('taikhoan') or data.get('username')
     if User.query.filter_by(username=username).first():
-        return jsonify({'error': 'Tài khoản đã tồn tại'}), 400
+        return jsonify({'error': 'Tên đăng nhập đã tồn tại'}), 400
     
     user = User(
         username=username,

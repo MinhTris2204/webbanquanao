@@ -16,11 +16,11 @@ export function CartProvider({ children }) {
 
     try {
       const res = await api.get('/api/cart')
-      // Count number of items (products), not total quantity
+      // ==================== ĐẾM SỐ LƯỢNG SẢN PHẨM (KHÔNG PHẢI TỔNG SỐ LƯỢNG) ====================
       const count = res.data.cart_items?.length || 0
       setCartCount(count)
     } catch (err) {
-      console.error('Error fetching cart count:', err)
+      console.error('Lỗi khi lấy số lượng giỏ hàng:', err)
       setCartCount(0)
     }
   }
@@ -39,7 +39,7 @@ export function CartProvider({ children }) {
 export function useCart() {
   const context = useContext(CartContext)
   if (!context) {
-    throw new Error('useCart must be used within CartProvider')
+    throw new Error('useCart phải được sử dụng trong CartProvider')
   }
   return context
 }

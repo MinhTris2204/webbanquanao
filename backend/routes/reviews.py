@@ -7,13 +7,14 @@ from datetime import datetime
 reviews_bp = Blueprint('reviews', __name__)
 
 
+# ==================== QUẢN LÝ ĐÁNH GIÁ SẢN PHẨM ====================
 @reviews_bp.route('/product/<int:product_id>', methods=['GET', 'POST'])
 def handle_product_reviews(product_id):
-    """Get all reviews for a product (GET) or create a new review (POST)"""
+    """Lấy tất cả đánh giá cho sản phẩm (GET) hoặc tạo đánh giá mới (POST)"""
     if request.method == 'POST':
         return create_product_review(product_id)
     
-    # GET method - get all reviews
+    # Phương thức GET - lấy tất cả đánh giá
     try:
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 10, type=int)
@@ -21,7 +22,7 @@ def handle_product_reviews(product_id):
         
         query = Review.query.filter_by(product_id=product_id)
         
-        # Apply sorting
+        # Áp dụng sắp xếp
         if sort_by == 'newest':
             query = query.order_by(desc(Review.created_at))
         elif sort_by == 'oldest':
@@ -33,7 +34,7 @@ def handle_product_reviews(product_id):
         
         pagination = query.paginate(page=page, per_page=per_page, error_out=False)
         
-        # Calculate average rating
+        # Tính toán đánh giá trung bình
         all_reviews = Review.query.filter_by(product_id=product_id).all()
         average_rating = 0
         if all_reviews:
@@ -43,11 +44,11 @@ def handle_product_reviews(product_id):
         reviews = []
         for review in pagination.items:
             review_data = review.to_dict()
-            # Get user info
+            # Lấy thông tin người dùng
             user = User.query.get(review.user_id)
             if user:
                 review_data['user_name'] = user.hoten
-            # Get replies
+            # Lấy phản hồi
             replies = ReviewReply.query.filter_by(review_id=review.id).order_by(ReviewReply.created_at).all()
             review_data['replies'] = [reply.to_dict() for reply in replies]
             reviews.append(review_data)
@@ -67,11 +68,11 @@ def handle_product_reviews(product_id):
 @reviews_bp.route('/user/can-review/<int:product_id>', methods=['GET'])
 @jwt_required()
 def can_user_review(product_id):
-    """Check if user can review a product (must have purchased it)"""
+    """Kiểm tra xem người dùng có thể đánh giá sản phẩm không (phải đã mua)"""
     try:
         user_id = get_jwt_identity()
         
-        # Check if user has already reviewed this product
+        # Kiểm tra xem người dùng đã đánh giá sản phẩm này chưa
         existing_review = Review.query.filter_by(
             user_id=user_id,
             product_id=product_id
@@ -84,7 +85,7 @@ def can_user_review(product_id):
                 'review': existing_review.to_dict()
             })
         
-        # Check if user has purchased this product (only completed orders)
+        # Kiểm tra xem người dùng đã mua sản phẩm này chưa (chỉ đơn hàng hoàn thành)
         purchased = db.session.query(OrderDetail).join(Order).filter(
             Order.user_id == user_id,
             OrderDetail.product_id == product_id,
@@ -107,7 +108,7 @@ def can_user_review(product_id):
 
 @jwt_required()
 def create_product_review(product_id):
-    """Create a new review for a specific product"""
+    """Tạo đánh giá mới cho sản phẩm"""
     try:
         user_id = get_jwt_identity()
         data = request.json
@@ -116,26 +117,26 @@ def create_product_review(product_id):
         comment = data.get('comment', '')
         
         if not rating:
-            return jsonify({'error': 'rating is required'}), 400
+            return jsonify({'error': 'rating là bắt buộc'}), 400
         
         if rating < 1 or rating > 5:
-            return jsonify({'error': 'rating must be between 1 and 5'}), 400
+            return jsonify({'error': 'rating phải từ 1 đến 5'}), 400
         
-        # Check if product exists
+        # Kiểm tra sản phẩm có tồn tại không
         product = Product.query.get(product_id)
         if not product:
-            return jsonify({'error': 'Product not found'}), 404
+            return jsonify({'error': 'Sản phẩm không tồn tại'}), 404
         
-        # Check if user has already reviewed
+        # Kiểm tra người dùng đã đánh giá chưa
         existing_review = Review.query.filter_by(
             user_id=user_id,
             product_id=product_id
         ).first()
         
         if existing_review:
-            return jsonify({'error': 'You have already reviewed this product'}), 400
+            return jsonify({'error': 'Bạn đã đánh giá sản phẩm này rồi'}), 400
         
-        # Check if user has purchased the product (only completed orders)
+        # Kiểm tra người dùng đã mua sản phẩm (chỉ đơn hàng hoàn thành)
         order_detail = db.session.query(OrderDetail).join(Order).filter(
             Order.user_id == user_id,
             OrderDetail.product_id == product_id,
@@ -143,9 +144,9 @@ def create_product_review(product_id):
         ).first()
         
         if not order_detail:
-            return jsonify({'error': 'You can only review products you have purchased'}), 403
+            return jsonify({'error': 'Bạn chỉ có thể đánh giá sản phẩm đã mua'}), 403
         
-        # Create review
+        # Tạo đánh giá
         review = Review(
             user_id=user_id,
             product_id=product_id,
@@ -158,7 +159,7 @@ def create_product_review(product_id):
         db.session.commit()
         
         return jsonify({
-            'message': 'Review created successfully',
+            'message': 'Tạo đánh giá thành công',
             'review': review.to_dict()
         }), 201
         
@@ -170,7 +171,7 @@ def create_product_review(product_id):
 @reviews_bp.route('/create', methods=['POST'])
 @jwt_required()
 def create_review():
-    """Create a new review (legacy endpoint)"""
+    """Tạo đánh giá mới (endpoint cũ)"""
     try:
         user_id = get_jwt_identity()
         data = request.json
@@ -180,26 +181,26 @@ def create_review():
         comment = data.get('comment', '')
         
         if not product_id or not rating:
-            return jsonify({'error': 'product_id and rating are required'}), 400
+            return jsonify({'error': 'product_id và rating là bắt buộc'}), 400
         
         if rating < 1 or rating > 5:
-            return jsonify({'error': 'rating must be between 1 and 5'}), 400
+            return jsonify({'error': 'rating phải từ 1 đến 5'}), 400
         
-        # Check if product exists
+        # Kiểm tra sản phẩm có tồn tại không
         product = Product.query.get(product_id)
         if not product:
-            return jsonify({'error': 'Product not found'}), 404
+            return jsonify({'error': 'Sản phẩm không tồn tại'}), 404
         
-        # Check if user has already reviewed
+        # Kiểm tra người dùng đã đánh giá chưa
         existing_review = Review.query.filter_by(
             user_id=user_id,
             product_id=product_id
         ).first()
         
         if existing_review:
-            return jsonify({'error': 'You have already reviewed this product'}), 400
+            return jsonify({'error': 'Bạn đã đánh giá sản phẩm này rồi'}), 400
         
-        # Check if user has purchased the product (only completed orders)
+        # Kiểm tra người dùng đã mua sản phẩm (chỉ đơn hàng hoàn thành)
         order_detail = db.session.query(OrderDetail).join(Order).filter(
             Order.user_id == user_id,
             OrderDetail.product_id == product_id,
@@ -207,9 +208,9 @@ def create_review():
         ).first()
         
         if not order_detail:
-            return jsonify({'error': 'You can only review products you have purchased'}), 403
+            return jsonify({'error': 'Bạn chỉ có thể đánh giá sản phẩm đã mua'}), 403
         
-        # Create review
+        # Tạo đánh giá
         review = Review(
             user_id=user_id,
             product_id=product_id,
@@ -222,7 +223,7 @@ def create_review():
         db.session.commit()
         
         return jsonify({
-            'message': 'Review created successfully',
+            'message': 'Tạo đánh giá thành công',
             'review': review.to_dict()
         }), 201
         
@@ -234,25 +235,25 @@ def create_review():
 @reviews_bp.route('/<int:review_id>', methods=['PUT'])
 @jwt_required()
 def update_review(review_id):
-    """Update a review"""
+    """Cập nhật đánh giá"""
     try:
         user_id = get_jwt_identity()
-        # Convert to int if it's a string
+        # Chuyển đổi sang int nếu là string
         if isinstance(user_id, str):
             user_id = int(user_id)
         data = request.json
         
         review = Review.query.get(review_id)
         if not review:
-            return jsonify({'error': 'Review not found'}), 404
+            return jsonify({'error': 'Đánh giá không tồn tại'}), 404
         
         if review.user_id != user_id:
-            return jsonify({'error': 'Unauthorized'}), 403
+            return jsonify({'error': 'Không có quyền'}), 403
         
         if 'rating' in data:
             rating = data['rating']
             if rating < 1 or rating > 5:
-                return jsonify({'error': 'rating must be between 1 and 5'}), 400
+                return jsonify({'error': 'rating phải từ 1 đến 5'}), 400
             review.rating = rating
         
         if 'comment' in data:
@@ -262,7 +263,7 @@ def update_review(review_id):
         db.session.commit()
         
         return jsonify({
-            'message': 'Review updated successfully',
+            'message': 'Cập nhật đánh giá thành công',
             'review': review.to_dict()
         })
         
@@ -274,45 +275,41 @@ def update_review(review_id):
 @reviews_bp.route('/<int:review_id>', methods=['DELETE'])
 @jwt_required()
 def delete_review(review_id):
-    """Delete a review"""
+    """Xóa đánh giá"""
     try:
         user_id = get_jwt_identity()
-        # Convert to int if it's a string
+        # Chuyển đổi sang int nếu là string
         if isinstance(user_id, str):
             user_id = int(user_id)
         
         review = Review.query.get(review_id)
         if not review:
-            return jsonify({'error': 'Review not found'}), 404
+            return jsonify({'error': 'Đánh giá không tồn tại'}), 404
         
-        # Get current user to check if they're admin
+        # Lấy người dùng hiện tại để kiểm tra quyền
         current_user = User.query.get(user_id)
         if not current_user:
-            return jsonify({'error': 'User not found'}), 404
+            return jsonify({'error': 'Người dùng không tồn tại'}), 404
         
-        # Debug logging
-        print(f"Delete review attempt - Review ID: {review_id}, Review owner: {review.user_id} (type: {type(review.user_id)}), Current user: {user_id} (type: {type(user_id)}), User role: {current_user.role}")
-        
-        # Allow deletion if user is the review owner OR if user is admin
+        # Cho phép xóa nếu người dùng là chủ đánh giá HOẶC là admin
         if review.user_id != user_id and current_user.role != 'admin':
-            print(f"Unauthorized: review.user_id={review.user_id}, user_id={user_id}, role={current_user.role}")
-            return jsonify({'error': 'Unauthorized'}), 403
+            return jsonify({'error': 'Không có quyền'}), 403
         
         db.session.delete(review)
         db.session.commit()
         
-        return jsonify({'message': 'Review deleted successfully'})
+        return jsonify({'message': 'Xóa đánh giá thành công'})
         
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
 
-# Admin endpoints
+# ==================== QUẢN LÝ ĐÁNH GIÁ (ADMIN) ====================
 @reviews_bp.route('/admin/all', methods=['GET'])
 @jwt_required()
 def get_all_reviews():
-    """Get all reviews (admin only)"""
+    """Lấy tất cả đánh giá (chỉ admin)"""
     try:
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 20, type=int)
@@ -338,7 +335,7 @@ def get_all_reviews():
         reviews = []
         for review in pagination.items:
             review_data = review.to_dict()
-            # Get user and product info
+            # Lấy thông tin người dùng và sản phẩm
             user = User.query.get(review.user_id)
             product = Product.query.get(review.product_id)
             if user:
@@ -346,7 +343,7 @@ def get_all_reviews():
                 review_data['user_email'] = user.email
             if product:
                 review_data['product_name'] = product.ten_san_pham
-            # Get replies
+            # Lấy phản hồi
             replies = ReviewReply.query.filter_by(review_id=review.id).order_by(ReviewReply.created_at).all()
             review_data['replies'] = [reply.to_dict() for reply in replies]
             reviews.append(review_data)
@@ -365,9 +362,9 @@ def get_all_reviews():
 @reviews_bp.route('/admin/alerts', methods=['GET'])
 @jwt_required()
 def get_review_alerts():
-    """Get reviews that need attention (low ratings without replies)"""
+    """Lấy đánh giá cần chú ý (đánh giá thấp chưa có phản hồi)"""
     try:
-        # Get reviews with rating <= 2 that don't have replies
+        # Lấy đánh giá có rating <= 2 mà chưa có phản hồi
         low_rating_reviews = Review.query.filter(
             Review.rating <= 2
         ).outerjoin(ReviewReply).filter(
@@ -397,24 +394,24 @@ def get_review_alerts():
 @reviews_bp.route('/<int:review_id>/reply', methods=['POST', 'PUT', 'DELETE'])
 @jwt_required()
 def handle_review_reply(review_id):
-    """Create, update, or delete a reply to a review (admin only)"""
+    """Tạo, cập nhật hoặc xóa phản hồi cho đánh giá (chỉ admin)"""
     try:
         review = Review.query.get(review_id)
         if not review:
-            return jsonify({'error': 'Review not found'}), 404
+            return jsonify({'error': 'Đánh giá không tồn tại'}), 404
         
         if request.method == 'POST':
-            # Create new reply
+            # Tạo phản hồi mới
             data = request.json
             reply_text = data.get('reply')
             
             if not reply_text:
-                return jsonify({'error': 'reply is required'}), 400
+                return jsonify({'error': 'reply là bắt buộc'}), 400
             
-            # Check if reply already exists
+            # Kiểm tra xem phản hồi đã tồn tại chưa
             existing_reply = ReviewReply.query.filter_by(review_id=review_id).first()
             if existing_reply:
-                return jsonify({'error': 'Reply already exists for this review'}), 400
+                return jsonify({'error': 'Đánh giá này đã có phản hồi'}), 400
             
             reply = ReviewReply(
                 review_id=review_id,
@@ -425,41 +422,41 @@ def handle_review_reply(review_id):
             db.session.commit()
             
             return jsonify({
-                'message': 'Reply created successfully',
+                'message': 'Tạo phản hồi thành công',
                 'reply': reply.to_dict()
             }), 201
         
         elif request.method == 'PUT':
-            # Update existing reply
+            # Cập nhật phản hồi hiện tại
             data = request.json
             reply_text = data.get('reply')
             
             if not reply_text:
-                return jsonify({'error': 'reply is required'}), 400
+                return jsonify({'error': 'reply là bắt buộc'}), 400
             
             reply = ReviewReply.query.filter_by(review_id=review_id).first()
             if not reply:
-                return jsonify({'error': 'Reply not found'}), 404
+                return jsonify({'error': 'Phản hồi không tồn tại'}), 404
             
             reply.reply = reply_text
             reply.updated_at = datetime.utcnow()
             db.session.commit()
             
             return jsonify({
-                'message': 'Reply updated successfully',
+                'message': 'Cập nhật phản hồi thành công',
                 'reply': reply.to_dict()
             })
         
         elif request.method == 'DELETE':
-            # Delete reply
+            # Xóa phản hồi
             reply = ReviewReply.query.filter_by(review_id=review_id).first()
             if not reply:
-                return jsonify({'error': 'Reply not found'}), 404
+                return jsonify({'error': 'Phản hồi không tồn tại'}), 404
             
             db.session.delete(reply)
             db.session.commit()
             
-            return jsonify({'message': 'Reply deleted successfully'})
+            return jsonify({'message': 'Xóa phản hồi thành công'})
         
     except Exception as e:
         db.session.rollback()

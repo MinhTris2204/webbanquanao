@@ -42,7 +42,7 @@ export default function Checkout() {
       if (!isAuthenticated) {
         navigate('/login')
       } else if (buyNowItem) {
-        // Mua ngay - tính toán từ sản phẩm được chọn
+        // ==================== MUA NGAY - TÍNH TOÁN TỪ SẢN PHẨM ĐƯỢC CHỌN ====================
         const product = buyNowItem.product
         const unitPrice = product.promotion?.promotional_price || product.gia_ban
         const itemTotal = unitPrice * buyNowItem.quantity
@@ -141,7 +141,7 @@ export default function Checkout() {
         ma_voucher: appliedVoucher?.code || null
       }
 
-      // Nếu là "Mua ngay", gửi thông tin sản phẩm trực tiếp
+      // ==================== NẾU LÀ "MUA NGAY", GỬI THÔNG TIN SẢN PHẨM TRỰC TIẾP ====================
       if (buyNowItem) {
         orderData.buy_now_item = {
           product_id: buyNowItem.product_id,
@@ -153,7 +153,7 @@ export default function Checkout() {
       const orderRes = await api.post('/api/orders/create', orderData)
       const orderId = orderRes.data.order?.id
 
-      // Nếu chọn VNPay, tạo payment URL và redirect
+      // ==================== NẾU CHỌN VNPAY, TẠO PAYMENT URL VÀ REDIRECT ====================
       if (formData.payment_method === 'VNPAY' && orderId) {
         try {
           const paymentRes = await api.post(`/api/vnpay/create-payment/${orderId}`)

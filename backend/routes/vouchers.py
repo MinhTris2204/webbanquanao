@@ -13,29 +13,31 @@ def admin_required(fn):
         user_id = int(get_jwt_identity())
         user = User.query.get(user_id)
         if not user or user.role != 'admin':
-            return jsonify({'error': 'Admin access required'}), 403
+            return jsonify({'error': 'Cần quyền admin'}), 403
         return fn(*args, **kwargs)
     return wrapper
 
-# Admin routes
+# ==================== QUẢN LÝ MÃ GIẢM GIÁ (ADMIN) ====================
 @vouchers_bp.route('/admin', methods=['GET'])
 @admin_required
 def get_all_vouchers():
+    """Lấy danh sách tất cả mã giảm giá"""
     vouchers = Voucher.query.order_by(Voucher.created_at.desc()).all()
     return jsonify([v.to_dict() for v in vouchers]), 200
 
 @vouchers_bp.route('/admin', methods=['POST'])
 @admin_required
 def create_voucher():
+    """Tạo mã giảm giá mới"""
     data = request.get_json()
     
-    # Check if voucher code already exists
+    # Kiểm tra mã voucher đã tồn tại chưa
     code = data.get('code', '').upper()
     existing_voucher = Voucher.query.filter_by(code=code).first()
     if existing_voucher:
         return jsonify({'error': f'Mã voucher "{code}" đã tồn tại'}), 400
     
-    # Handle empty strings for numeric fields
+    # Xử lý các trường số có thể rỗng
     max_discount = data.get('max_discount')
     if max_discount == '' or max_discount is None:
         max_discount = None
@@ -48,7 +50,7 @@ def create_voucher():
     else:
         usage_limit = int(usage_limit)
     
-    # Parse dates - handle ISO format with timezone
+    # Phân tích ngày tháng - xử lý định dạng ISO với múi giờ
     start_date_str = data.get('start_date')
     end_date_str = data.get('end_date')
     
@@ -60,13 +62,13 @@ def create_voucher():
     start_date = datetime.fromisoformat(start_date_str)
     end_date = datetime.fromisoformat(end_date_str)
     
-    # Remove timezone info for comparison
+    # Loại bỏ thông tin múi giờ để so sánh
     if start_date.tzinfo is not None:
         start_date = start_date.replace(tzinfo=None)
     if end_date.tzinfo is not None:
         end_date = end_date.replace(tzinfo=None)
     
-    # Validate dates - chỉ so sánh ngày, không so sánh giờ
+    # Xác thực ngày tháng - chỉ so sánh ngày, không so sánh giờ
     today = datetime.utcnow().date()
     
     if start_date.date() < today:
@@ -96,6 +98,7 @@ def create_voucher():
 @vouchers_bp.route('/admin/<int:voucher_id>', methods=['PUT'])
 @admin_required
 def update_voucher(voucher_id):
+    """Cập nhật mã giảm giá"""
     voucher = Voucher.query.get_or_404(voucher_id)
     data = request.get_json()
     
@@ -103,7 +106,7 @@ def update_voucher(voucher_id):
     
     if 'code' in data:
         new_code = data['code'].upper()
-        # Check if new code already exists (excluding current voucher)
+        # Kiểm tra mã mới đã tồn tại chưa (không tính voucher hiện tại)
         existing = Voucher.query.filter(Voucher.code == new_code, Voucher.id != voucher_id).first()
         if existing:
             return jsonify({'error': f'Mã voucher "{new_code}" đã tồn tại'}), 400
@@ -143,7 +146,7 @@ def update_voucher(voucher_id):
     if 'is_active' in data:
         voucher.is_active = data['is_active']
     
-    # Validate end_date > start_date
+    # Xác thực end_date > start_date
     if voucher.end_date <= voucher.start_date:
         return jsonify({'error': 'Ngày kết thúc phải sau ngày bắt đầu'}), 400
     
@@ -154,16 +157,18 @@ def update_voucher(voucher_id):
 @vouchers_bp.route('/admin/<int:voucher_id>', methods=['DELETE'])
 @admin_required
 def delete_voucher(voucher_id):
+    """Xóa mã giảm giá"""
     voucher = Voucher.query.get_or_404(voucher_id)
     db.session.delete(voucher)
     db.session.commit()
     
     return jsonify({'message': 'Xóa voucher thành công'}), 200
 
-# Customer routes
+# ==================== KIỂM TRA MÃ GIẢM GIÁ (KHÁCH HÀNG) ====================
 @vouchers_bp.route('/validate', methods=['POST'])
 @jwt_required()
 def validate_voucher():
+    """Xác thực và áp dụng mã giảm giá"""
     data = request.get_json()
     code = data.get('code', '').upper()
     order_total = float(data.get('order_total', 0))

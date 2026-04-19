@@ -1,4 +1,5 @@
-# routes/vnpay.py - VNPay payment integration
+# ==================== TÍCH HỢP THANH TOÁN VNPAY ====================
+# File: routes/vnpay.py - Xử lý thanh toán qua cổng VNPay
 from flask import Blueprint, request, jsonify, redirect
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from models import db, Order
@@ -8,19 +9,18 @@ import os
 import hmac
 import hashlib
 
-# Vietnam timezone (UTC+7)
+# Múi giờ Việt Nam (UTC+7)
 VN_TZ = timezone(timedelta(hours=7))
 
 vnpay_bp = Blueprint("vnpay", __name__)
 
 
-# ============================================================
-# VNPay Helper Class (based on official VNPay Python demo)
-# ============================================================
+# ==================== LỚP HỖ TRỢ VNPAY ====================
+# Dựa trên mã demo chính thức của VNPay
 class VNPayHelper:
     @staticmethod
     def hmac_sha512(key: str, data: str) -> str:
-        """Generate HMAC SHA512 hash"""
+        """Tạo hash HMAC SHA512"""
         byteKey = key.encode('utf-8')
         byteData = data.encode('utf-8')
         return hmac.new(byteKey, byteData, hashlib.sha512).hexdigest()
@@ -28,41 +28,41 @@ class VNPayHelper:
     @staticmethod
     def build_payment_url(params: dict, secret_key: str, payment_url: str) -> str:
         """
-        Build VNPay payment URL with secure hash.
-        Based on official VNPay Python demo code.
+        Xây dựng URL thanh toán VNPay với hash bảo mật
+        Dựa trên mã demo chính thức của VNPay
         """
-        # Sort params alphabetically by key
+        # Sắp xếp các tham số theo thứ tự bảng chữ cái
         sorted_params = sorted(params.items())
         
-        # Build query string for hash (URL encoded)
-        # VNPay requires hash to be calculated from URL-encoded query string
+        # Xây dựng chuỗi truy vấn để tính hash (mã hóa URL)
+        # VNPay yêu cầu hash được tính từ chuỗi truy vấn được mã hóa URL
         query_parts = []
         for key, val in sorted_params:
             if val is not None and str(val) != "":
-                # Use quote_plus for proper URL encoding (spaces become +)
+                # Sử dụng quote_plus để mã hóa URL đúng cách (khoảng trắng thành +)
                 encoded_val = quote_plus(str(val))
                 query_parts.append(f"{key}={encoded_val}")
         
         hash_data = "&".join(query_parts)
         
-        # Calculate secure hash
+        # Tính hash bảo mật
         secure_hash = VNPayHelper.hmac_sha512(secret_key, hash_data)
         
-        # Build final URL
+        # Xây dựng URL cuối cùng
         final_url = f"{payment_url}?{hash_data}&vnp_SecureHash={secure_hash}"
         
         return final_url, hash_data, secure_hash
     
     @staticmethod
     def verify_checksum(params: dict, secret_key: str) -> bool:
-        """Verify VNPay response checksum"""
+        """Xác thực checksum phản hồi từ VNPay"""
         vnp_secure_hash = params.get("vnp_SecureHash", "")
         
-        # Remove hash fields from params
+        # Loại bỏ các trường hash khỏi tham số
         input_data = {k: v for k, v in params.items() 
                       if k not in ("vnp_SecureHash", "vnp_SecureHashType") and v}
         
-        # Sort and build hash data
+        # Sắp xếp và xây dựng dữ liệu hash
         sorted_params = sorted(input_data.items())
         query_parts = []
         for key, val in sorted_params:
@@ -76,10 +76,9 @@ class VNPayHelper:
         return calc_hash.upper() == vnp_secure_hash.upper()
 
 
-# ============================================================
-# Cấu hình môi trường
-# ============================================================
+# ==================== CẤU HÌNH MÔI TRƯỜNG ====================
 def get_vnpay_config():
+    """Lấy cấu hình VNPay từ biến môi trường"""
     return {
         "PUBLIC_BASE_URL": os.getenv("PUBLIC_BASE_URL", "").rstrip("/"),
         "VNPAY_RETURN_URL": os.getenv("VNPAY_RETURN_URL", "").strip(),
@@ -91,10 +90,9 @@ def get_vnpay_config():
     }
 
 
-# ============================================================
-# URL helpers
-# ============================================================
+# ==================== HỖ TRỢ URL ====================
 def _public_base_url():
+    """Lấy URL cơ sở công khai"""
     cfg = get_vnpay_config()
     if cfg["PUBLIC_BASE_URL"]:
         return cfg["PUBLIC_BASE_URL"]
@@ -121,11 +119,10 @@ def get_vnpay_return_url():
     return f"{base}/api/vnpay/return"
 
 
-# ============================================================
-# Tạo URL thanh toán
-# ============================================================
+# ==================== XÂY DỰNG URL THANH TOÁN ====================
 def build_vnpay_payment_url(amount_vnd, order_id: str, order_info: str, ip_addr: str, return_url: str):
     """
+    Xây dựng URL thanh toán VNPay
     amount_vnd: số tiền VND (ví dụ 1000000.00). Gửi cho VNPAY phải *100
     """
     cfg = get_vnpay_config()
@@ -151,38 +148,35 @@ def build_vnpay_payment_url(amount_vnd, order_id: str, order_info: str, ip_addr:
         "vnp_ExpireDate": (datetime.now(VN_TZ) + timedelta(minutes=15)).strftime("%Y%m%d%H%M%S"),
     }
     
-    # Build payment URL using VNPay helper
+    # Xây dựng URL thanh toán sử dụng VNPay helper
     final_url, hash_data, secure_hash = VNPayHelper.build_payment_url(
         params, 
         cfg["VNPAY_HASH_SECRET"], 
         cfg["VNPAY_PAYMENT_URL"]
     )
     
-    # Debug log
-    print(f"[VNPAY] TmnCode: {cfg['VNPAY_TMN_CODE']}", flush=True)
-    print(f"[VNPAY] Hash data: {hash_data}", flush=True)
+    # Ghi log debug
+    print(f"[VNPAY] Mã TMN: {cfg['VNPAY_TMN_CODE']}", flush=True)
+    print(f"[VNPAY] Dữ liệu hash: {hash_data}", flush=True)
     print(f"[VNPAY] SecureHash: {secure_hash}", flush=True)
-    print(f"[VNPAY] Payment URL: {final_url}", flush=True)
+    print(f"[VNPAY] URL thanh toán: {final_url}", flush=True)
     
     return final_url
 
 
-# ============================================================
-# Checksum verification
-# ============================================================
+# ==================== XÁC THỰC CHECKSUM ====================
 def verify_vnp_checksum(params: dict) -> bool:
+    """Xác thực checksum phản hồi từ VNPay"""
     cfg = get_vnpay_config()
     result = VNPayHelper.verify_checksum(params, cfg["VNPAY_HASH_SECRET"])
-    print(f"[VNPAY-VERIFY] Checksum valid: {result}", flush=True)
+    print(f"[VNPAY-VERIFY] Checksum hợp lệ: {result}", flush=True)
     return result
 
 
-# ============================================================
-# API: Tạo thanh toán VNPay cho đơn hàng đã tạo
-# ============================================================
+# ==================== API: TẠO THANH TOÁN VNPAY ====================
 @vnpay_bp.route('/create-payment/<int:order_id>', methods=['OPTIONS'])
 def create_vnpay_payment_options(order_id):
-    """Handle CORS preflight"""
+    """Xử lý CORS preflight"""
     return '', 200
 
 
@@ -225,7 +219,7 @@ def create_vnpay_payment(order_id):
         return_url=return_url
     )
     
-    # Cập nhật payment method (giữ nguyên trangthai = cho_xac_nhan)
+    # Cập nhật phương thức thanh toán (giữ nguyên trangthai = cho_xac_nhan)
     order.payment_method = 'VNPAY'
     db.session.commit()
     
@@ -235,11 +229,10 @@ def create_vnpay_payment(order_id):
     }), 200
 
 
-# ============================================================
-# Return URL (người dùng redirect sau thanh toán)
-# ============================================================
+# ==================== RETURN URL (NGƯỜI DÙNG REDIRECT SAU THANH TOÁN) ====================
 @vnpay_bp.route('/return', methods=['GET'])
 def vnpay_return():
+    """Xử lý khi người dùng quay lại từ trang thanh toán VNPay"""
     cfg = get_vnpay_config()
     params = dict(request.args.items())
     frontend_url = cfg["FRONTEND_URL"]
@@ -283,22 +276,21 @@ def vnpay_return():
         return redirect(f"{frontend_url}/orders?vnpay=failed&order_id={txn_ref}&code={resp_code}")
 
 
-# ============================================================
-# IPN URL (server-to-server callback)
-# ============================================================
+# ==================== IPN URL (CALLBACK TỪ SERVER VNPAY) ====================
 @vnpay_bp.route('/ipn', methods=['GET'])
 def vnpay_ipn():
+    """Xử lý callback từ server VNPay (server-to-server)"""
     cfg = get_vnpay_config()
     params = dict(request.args.items())
     
     if not params:
-        return jsonify({"RspCode": "99", "Message": "Invalid request"})
+        return jsonify({"RspCode": "99", "Message": "Yêu cầu không hợp lệ"})
     
     if not cfg["VNPAY_HASH_SECRET"]:
-        return jsonify({"RspCode": "99", "Message": "Server not configured"})
+        return jsonify({"RspCode": "99", "Message": "Server chưa được cấu hình"})
     
     if not verify_vnp_checksum(params):
-        return jsonify({"RspCode": "97", "Message": "Invalid Signature"})
+        return jsonify({"RspCode": "97", "Message": "Chữ ký không hợp lệ"})
     
     vnp_txnref = params.get("vnp_TxnRef")
     vnp_amount_raw = params.get("vnp_Amount")
@@ -307,44 +299,42 @@ def vnpay_ipn():
     vnp_trans_no = params.get("vnp_TransactionNo")
     
     try:
-        # TxnRef format: order_id_HHMMSS
+        # Định dạng TxnRef: order_id_HHMMSS
         order_id = int(vnp_txnref.split('_')[0])
     except:
-        return jsonify({"RspCode": "01", "Message": "Order not found"})
+        return jsonify({"RspCode": "01", "Message": "Không tìm thấy đơn hàng"})
     
     order = Order.query.get(order_id)
     if not order:
-        return jsonify({"RspCode": "01", "Message": "Order not found"})
+        return jsonify({"RspCode": "01", "Message": "Không tìm thấy đơn hàng"})
     
     try:
         vnp_amount = int(vnp_amount_raw)
     except:
-        return jsonify({"RspCode": "04", "Message": "Invalid amount"})
+        return jsonify({"RspCode": "04", "Message": "Số tiền không hợp lệ"})
     
     expected = int(round(float(order.tongtien) * 100))
     if vnp_amount != expected:
-        return jsonify({"RspCode": "04", "Message": "Invalid amount"})
+        return jsonify({"RspCode": "04", "Message": "Số tiền không hợp lệ"})
     
     if order.trangthai == "hoan_thanh":
-        return jsonify({"RspCode": "02", "Message": "Order Already Update"})
+        return jsonify({"RspCode": "02", "Message": "Đơn hàng đã được cập nhật"})
     
     if vnp_resp_code == "00" and vnp_trans_status == "00":
         order.trangthai = "hoan_thanh"
         order.payment_token = f"VNPAY_TXN:{vnp_trans_no}"
         db.session.commit()
         print(f"[VNPAY-IPN] ✅ Đã cập nhật đơn hàng #{order_id} thành 'hoan_thanh'")
-        return jsonify({"RspCode": "00", "Message": "Confirm Success"})
+        return jsonify({"RspCode": "00", "Message": "Xác nhận thành công"})
     else:
         order.trangthai = "huy"
         order.payment_token = f"VNPAY_FAIL:{vnp_resp_code}"
         db.session.commit()
         print(f"[VNPAY-IPN] ❌ Đơn hàng #{order_id} thanh toán thất bại")
-        return jsonify({"RspCode": "00", "Message": "Confirm Success"})
+        return jsonify({"RspCode": "00", "Message": "Xác nhận thành công"})
 
 
-# ============================================================
-# API: Kiểm tra trạng thái cấu hình VNPay
-# ============================================================
+# ==================== API: KIỂM TRA TRẠNG THÁI CẤU HÌNH VNPAY ====================
 @vnpay_bp.route('/config-status', methods=['GET'])
 def vnpay_config_status():
     """Kiểm tra VNPay đã được cấu hình chưa"""

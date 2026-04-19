@@ -422,10 +422,10 @@ export default function ChatWidget() {
                       {msg.products && msg.products.length > 0 && (
                         <div className="mt-3 grid grid-cols-2 gap-2">
                           {msg.products.map((product, pIdx) => (
-                            <button
+                            <div
                               key={pIdx}
                               onClick={() => navigate(`/products/${product.id}`)}
-                              className="block bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-blue-400 hover:shadow-lg transition-all group text-left"
+                              className="block bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-blue-400 hover:shadow-lg transition-all group text-left cursor-pointer"
                             >
                               <div className="aspect-square overflow-hidden bg-gray-100">
                                 <img src={getImageUrl(product.hinh_anh) || 'https://via.placeholder.com/150'} alt={product.ten_san_pham} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
@@ -448,7 +448,7 @@ export default function ChatWidget() {
                                   Mua
                                 </button>
                               </div>
-                            </button>
+                            </div>
                           ))}
                         </div>
                       )}

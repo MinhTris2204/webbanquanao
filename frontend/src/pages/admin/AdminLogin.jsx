@@ -15,14 +15,14 @@ export default function AdminLogin() {
     try {
       const data = await login(formData.taikhoan, formData.matkhau)
       
-      // Kiểm tra xem user có phải admin không
+      // ==================== KIỂM TRA XEM NGƯỜI DÙNG CÓ PHẢI ADMIN KHÔNG ====================
       if (data.user.role !== 'admin') {
         setError('Bạn không có quyền truy cập trang quản trị')
         localStorage.removeItem('token')
         return
       }
       
-      // Navigate to dashboard
+      // Điều hướng đến bảng điều khiển
       navigate('/')
     } catch (err) {
       setError(err.response?.data?.error || 'Đăng nhập thất bại')

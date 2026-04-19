@@ -288,6 +288,21 @@ export default function Promotions() {
     }));
   };
 
+  // Format number with thousand separator
+  const formatNumberWithDots = (value) => {
+    if (!value) return '';
+    // Remove all non-digit characters
+    const numericValue = value.toString().replace(/\D/g, '');
+    // Add dots as thousand separators
+    return numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  };
+
+  // Parse formatted number back to plain number
+  const parseFormattedNumber = (value) => {
+    if (!value) return '';
+    return value.toString().replace(/\./g, '');
+  };
+
   return (
     <div className="p-6">
       <div className="flex justify-end items-center mb-6">
@@ -552,17 +567,31 @@ export default function Promotions() {
                       <label className="block text-sm font-medium mb-2 text-gray-700">
                         {formData.discount_type === 'percent' ? '📊 Giá trị (%)' : '💵 Giá trị (₫)'} <span className="text-red-500">*</span>
                       </label>
-                      <input
-                        type="number"
-                        value={formData.discount_value}
-                        onChange={(e) => setFormData({ ...formData, discount_value: e.target.value })}
-                        className="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        required
-                        min="1"
-                        max={formData.discount_type === 'percent' ? '99' : undefined}
-                        step={formData.discount_type === 'percent' ? '1' : '1000'}
-                        placeholder={formData.discount_type === 'percent' ? 'Ví dụ: 50' : 'Ví dụ: 100000'}
-                      />
+                      {formData.discount_type === 'percent' ? (
+                        <input
+                          type="number"
+                          value={formData.discount_value}
+                          onChange={(e) => setFormData({ ...formData, discount_value: e.target.value })}
+                          className="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          required
+                          min="1"
+                          max="99"
+                          step="1"
+                          placeholder="Ví dụ: 50"
+                        />
+                      ) : (
+                        <input
+                          type="text"
+                          value={formatNumberWithDots(formData.discount_value)}
+                          onChange={(e) => {
+                            const plainValue = parseFormattedNumber(e.target.value);
+                            setFormData({ ...formData, discount_value: plainValue });
+                          }}
+                          className="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          required
+                          placeholder="Ví dụ: 100.000"
+                        />
+                      )}
                     </div>
                   </div>
 
@@ -706,15 +735,29 @@ export default function Promotions() {
                     <label className="block text-sm font-medium mb-1">
                       Giá trị giảm {bulkFormData.discount_type === 'percent' ? '(%)' : '(₫)'}
                     </label>
-                    <input
-                      type="number"
-                      value={bulkFormData.discount_value}
-                      onChange={(e) => setBulkFormData({ ...bulkFormData, discount_value: e.target.value })}
-                      className="w-full border rounded px-3 py-2"
-                      required
-                      min="1"
-                      step={bulkFormData.discount_type === 'percent' ? '1' : '1000'}
-                    />
+                    {bulkFormData.discount_type === 'percent' ? (
+                      <input
+                        type="number"
+                        value={bulkFormData.discount_value}
+                        onChange={(e) => setBulkFormData({ ...bulkFormData, discount_value: e.target.value })}
+                        className="w-full border rounded px-3 py-2"
+                        required
+                        min="1"
+                        step="1"
+                      />
+                    ) : (
+                      <input
+                        type="text"
+                        value={formatNumberWithDots(bulkFormData.discount_value)}
+                        onChange={(e) => {
+                          const plainValue = parseFormattedNumber(e.target.value);
+                          setBulkFormData({ ...bulkFormData, discount_value: plainValue });
+                        }}
+                        className="w-full border rounded px-3 py-2"
+                        required
+                        placeholder="Ví dụ: 100.000"
+                      />
+                    )}
                   </div>
                 </div>
 

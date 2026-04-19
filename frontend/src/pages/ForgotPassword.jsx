@@ -16,6 +16,8 @@ export default function ForgotPassword() {
   const [otpExpiry, setOtpExpiry] = useState(0)
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [emailValidation, setEmailValidation] = useState({ checking: false, valid: null, message: '' })
+  const [emailCheckTimeout, setEmailCheckTimeout] = useState(null)
 
   const startCountdown = () => {
     setCountdown(60)
@@ -41,6 +43,52 @@ export default function ForgotPassword() {
     const mins = Math.floor(seconds / 60)
     const secs = seconds % 60
     return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
+
+  // Kiểm tra email realtime
+  const validateEmailRealtime = async (email) => {
+    if (!email || email.length < 5) {
+      setEmailValidation({ checking: false, valid: null, message: '' })
+      return
+    }
+
+    setEmailValidation({ checking: true, valid: null, message: 'Đang kiểm tra...' })
+
+    try {
+      const res = await api.post('/api/auth/validate-email', { email, check_smtp: false })
+      if (res.data.valid) {
+        // Email hợp lệ nhưng chưa đăng ký - không cho phép reset password
+        setEmailValidation({ checking: false, valid: false, message: 'Email chưa được đăng ký' })
+      } else {
+        // Email đã đăng ký hoặc có lỗi khác
+        if (res.data.error === 'Email đã được đăng ký') {
+          // Email đã đăng ký - cho phép reset password
+          setEmailValidation({ checking: false, valid: true, message: '✓ Email hợp lệ' })
+        } else {
+          // Email không hợp lệ (không tồn tại, tạm thời, v.v.)
+          setEmailValidation({ checking: false, valid: false, message: res.data.error })
+        }
+      }
+    } catch (err) {
+      setEmailValidation({ checking: false, valid: false, message: 'Không thể kiểm tra email' })
+    }
+  }
+
+  // Debounce email validation
+  const handleEmailChange = (email) => {
+    setEmail(email)
+    
+    // Clear previous timeout
+    if (emailCheckTimeout) {
+      clearTimeout(emailCheckTimeout)
+    }
+
+    // Set new timeout
+    const timeout = setTimeout(() => {
+      validateEmailRealtime(email)
+    }, 800) // Wait 800ms after user stops typing
+
+    setEmailCheckTimeout(timeout)
   }
 
   const handleSubmitEmail = async (e) => {
@@ -276,10 +324,56 @@ export default function ForgotPassword() {
         <form onSubmit={handleSubmitEmail} className="space-y-6">
           <div>
             <label className="block text-gray-700 font-medium mb-2">Email</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Nhập email của bạn" required />
+            <div className="relative">
+              <input 
+                type="email" 
+                value={email} 
+                onChange={(e) => handleEmailChange(e.target.value)} 
+                className={`w-full px-4 py-3 pr-12 border-2 rounded-lg focus:outline-none focus:ring-2 transition ${
+                  emailValidation.valid === true 
+                    ? 'border-green-500 focus:ring-green-500' 
+                    : emailValidation.valid === false 
+                    ? 'border-red-500 focus:ring-red-500' 
+                    : 'border-gray-300 focus:ring-blue-500'
+                } focus:border-transparent`}
+                placeholder="Nhập email của bạn" 
+                required 
+              />
+              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                {emailValidation.checking && (
+                  <svg className="animate-spin h-5 w-5 text-blue-500" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                )}
+                {!emailValidation.checking && emailValidation.valid === true && (
+                  <svg className="h-6 w-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                )}
+                {!emailValidation.checking && emailValidation.valid === false && (
+                  <svg className="h-6 w-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                )}
+              </div>
+            </div>
+            {emailValidation.message && (
+              <p className={`text-sm mt-1 ${
+                emailValidation.valid === true ? 'text-green-600' : 
+                emailValidation.valid === false ? 'text-red-600' : 
+                'text-gray-500'
+              }`}>
+                {emailValidation.message}
+              </p>
+            )}
           </div>
-          <button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 rounded-lg font-semibold disabled:opacity-50">
-            {loading ? 'Đang gửi...' : 'Gửi mã OTP'}
+          <button 
+            type="submit" 
+            disabled={loading || emailValidation.valid !== true} 
+            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition"
+          >
+            {loading ? 'Đang gửi...' : emailValidation.valid !== true ? '⚠️ Vui lòng nhập email đã đăng ký' : 'Gửi mã OTP'}
           </button>
         </form>
         <div className="mt-6 text-center">

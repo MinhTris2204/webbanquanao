@@ -8,12 +8,12 @@ const GUEST_SESSION_KEY = 'guest_chat_session_id'
 export const useSocket = () => {
   const context = useContext(SocketContext)
   if (!context) {
-    throw new Error('useSocket must be used within SocketProvider')
+    throw new Error('useSocket phải được sử dụng trong SocketProvider')
   }
   return context
 }
 
-// Lấy hoặc tạo session ID cho guest
+// ==================== LẤY HOẶC TẠO SESSION ID CHO KHÁCH ====================
 function getGuestSessionId() {
   let sessionId = localStorage.getItem(GUEST_SESSION_KEY)
   if (!sessionId) {
@@ -35,7 +35,7 @@ export const SocketProvider = ({ children }) => {
     const token = localStorage.getItem(tokenKey)
     const guestSessionId = getGuestSessionId()
     
-    // Kết nối socket cho cả user đã đăng nhập và guest
+    // ==================== KẾT NỐI SOCKET CHO CẢ USER ĐÃ ĐĂNG NHẬP VÀ KHÁCH ====================
     const socketUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000'
     const newSocket = io(socketUrl, {
       transports: ['polling', 'websocket'],
@@ -46,9 +46,9 @@ export const SocketProvider = ({ children }) => {
     })
 
     newSocket.on('connect', () => {
-      console.log('Socket connected')
+      console.log('Socket đã kết nối')
       setIsConnected(true)
-      // Authenticate - dùng token nếu đã đăng nhập, session_id nếu là guest
+      // Xác thực - dùng token nếu đã đăng nhập, session_id nếu là khách
       if (token && isAuthenticated) {
         newSocket.emit('authenticate', { token })
       } else {
@@ -57,20 +57,20 @@ export const SocketProvider = ({ children }) => {
     })
 
     newSocket.on('disconnect', () => {
-      console.log('Socket disconnected')
+      console.log('Socket đã ngắt kết nối')
       setIsConnected(false)
     })
 
     newSocket.on('authenticated', (data) => {
-      console.log('Socket authenticated:', data)
+      console.log('Socket đã xác thực:', data)
     })
 
     newSocket.on('auth_error', (error) => {
-      console.error('Socket auth error:', error)
+      console.error('Lỗi xác thực socket:', error)
     })
 
     newSocket.on('error', (error) => {
-      console.error('Socket error:', error)
+      console.error('Lỗi socket:', error)
     })
 
     setSocket(newSocket)

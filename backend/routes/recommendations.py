@@ -1,4 +1,15 @@
 
+###############################################################################
+# HỆ THỐNG GỢI Ý SẢN PHẨM - RECOMMENDATION SYSTEM
+###############################################################################
+# Các thuật toán sử dụng:
+# 1. COLLABORATIVE FILTERING - Lọc cộng tác dựa trên hành vi người dùng
+# 2. CONTENT-BASED FILTERING - Lọc dựa trên thuộc tính sản phẩm
+# 3. TRENDING ALGORITHM - Thuật toán xu hướng (time-based popularity)
+# 4. MARKET BASKET ANALYSIS - Phân tích giỏ hàng (association rules)
+# 5. HYBRID APPROACH - Kết hợp nhiều phương pháp
+###############################################################################
+
 from flask import Blueprint, jsonify, request
 from models import db, Product, ProductView, Order, OrderDetail
 from flask_jwt_extended import jwt_required, get_jwt_identity, verify_jwt_in_request
@@ -9,7 +20,8 @@ import uuid
 recommendations_bp = Blueprint('recommendations', __name__)
 
 def get_user_or_session():
-    """Get user_id if authenticated, otherwise get/create session_id"""
+    """Lấy user_id nếu đã đăng nhập, ngược lại lấy/tạo session_id"""
+    # Kỹ thuật: SESSION-BASED TRACKING cho guest users
     try:
         verify_jwt_in_request(optional=True)
         user_id = get_jwt_identity()
@@ -18,7 +30,7 @@ def get_user_or_session():
     except:
         pass
     
-    # For guest users, use session_id from cookie or create new one
+    # Đối với guest users, sử dụng session_id từ cookie hoặc tạo mới
     session_id = request.cookies.get('session_id')
     if not session_id:
         session_id = str(uuid.uuid4())
@@ -28,7 +40,8 @@ def get_user_or_session():
 
 @recommendations_bp.route('/track-view', methods=['POST'])
 def track_view():
-    """Track product view for recommendation algorithm"""
+    """Theo dõi lượt xem sản phẩm cho thuật toán gợi ý"""
+    # Kỹ thuật: EVENT TRACKING & IMPLICIT FEEDBACK
     try:
         data = request.json
         product_id = data.get('product_id')
@@ -36,14 +49,14 @@ def track_view():
         if not product_id:
             return jsonify({'error': 'product_id is required'}), 400
         
-        # Check if product exists
+        # Kiểm tra sản phẩm có tồn tại
         product = Product.query.get(product_id)
         if not product:
             return jsonify({'error': 'Product not found'}), 404
         
         user_session = get_user_or_session()
         
-        # Find existing view record
+        # Tìm bản ghi xem sản phẩm hiện có
         if user_session['user_id']:
             view = ProductView.query.filter_by(
                 user_id=user_session['user_id'],
@@ -56,11 +69,11 @@ def track_view():
             ).first()
         
         if view:
-            # Update existing view
+            # Cập nhật lượt xem hiện có
             view.view_count += 1
             view.last_viewed_at = datetime.utcnow()
         else:
-            # Create new view record
+            # Tạo bản ghi xem mới
             view = ProductView(
                 user_id=user_session['user_id'],
                 session_id=user_session['session_id'],
@@ -73,9 +86,9 @@ def track_view():
         
         response = jsonify({'message': 'View tracked successfully'})
         
-        # Set session_id cookie for guest users
+        # Lưu session_id vào cookie cho guest users (30 ngày)
         if user_session['session_id']:
-            response.set_cookie('session_id', user_session['session_id'], max_age=30*24*60*60)  # 30 days
+            response.set_cookie('session_id', user_session['session_id'], max_age=30*24*60*60)
         
         return response
         
@@ -86,12 +99,19 @@ def track_view():
 
 @recommendations_bp.route('/for-you', methods=['GET'])
 def get_recommendations():
-    """Get personalized product recommendations based on user behavior"""
+    """Gợi ý sản phẩm cá nhân hóa dựa trên hành vi người dùng"""
+    ###########################################################################
+    # Thuật toán: HYBRID RECOMMENDATION (Kết hợp nhiều phương pháp)
+    # 1. COLLABORATIVE FILTERING - Phân tích lịch sử xem
+    # 2. CONTENT-BASED FILTERING - Lọc theo category/gender
+    # 3. POPULARITY-BASED RANKING - Ưu tiên sản phẩm hot
+    # 4. FALLBACK MECHANISM - Bổ sung từ trending nếu thiếu
+    ###########################################################################
     try:
         limit = request.args.get('limit', 8, type=int)
         user_session = get_user_or_session()
         
-        # Get user's viewed products
+        # Lấy danh sách sản phẩm người dùng đã xem (10 sản phẩm gần nhất)
         if user_session['user_id']:
             viewed_products = db.session.query(ProductView.product_id).filter(
                 ProductView.user_id == user_session['user_id']
@@ -104,13 +124,13 @@ def get_recommendations():
         viewed_product_ids = [p[0] for p in viewed_products]
         
         if not viewed_product_ids:
-            # No viewing history - return empty (không fallback)
+            # Không có lịch sử xem - trả về rỗng
             return jsonify({
                 'products': [],
                 'based_on': 'no_data'
             })
         
-        # Get categories and gender from viewed products
+        # Trích xuất categories và gender từ sản phẩm đã xem
         viewed_product_details = Product.query.filter(
             Product.products_id.in_(viewed_product_ids)
         ).all()
@@ -118,13 +138,13 @@ def get_recommendations():
         categories = list(set([p.loai for p in viewed_product_details if p.loai]))
         genders = list(set([p.gioi_tinh for p in viewed_product_details if p.gioi_tinh]))
         
-        # Build recommendation query
+        # Xây dựng query gợi ý với Content-Based Filtering
         recommendations = Product.query.filter(
             Product.trang_thai == 'Con_hang',
-            Product.products_id.notin_(viewed_product_ids)  # Exclude already viewed
+            Product.products_id.notin_(viewed_product_ids)  # Loại trừ sản phẩm đã xem
         )
         
-        # Filter by similar categories or gender
+        # Lọc theo categories hoặc gender tương tự
         if categories or genders:
             recommendations = recommendations.filter(
                 db.or_(
@@ -133,7 +153,7 @@ def get_recommendations():
                 )
             )
         
-        # Prioritize products with promotions
+        # Sắp xếp theo độ phổ biến (Popularity-Based Ranking)
         recommendations = recommendations.outerjoin(
             db.session.query(
                 db.func.count(ProductView.id).label('view_count'),
@@ -145,8 +165,8 @@ def get_recommendations():
             desc(Product.created_at)
         ).limit(limit).all()
         
+        # Fallback: Bổ sung từ trending nếu không đủ
         if len(recommendations) < limit:
-            # Fill with trending products if not enough recommendations
             remaining = limit - len(recommendations)
             trending = get_trending_products_query(remaining, exclude_ids=[p.products_id for p in recommendations])
             recommendations.extend(trending)
@@ -162,37 +182,42 @@ def get_recommendations():
 
 @recommendations_bp.route('/similar/<int:product_id>', methods=['GET'])
 def get_similar_products(product_id):
-    """Get products similar to the given product"""
+    """Tìm sản phẩm tương tự với sản phẩm đã cho"""
+    ###########################################################################
+    # Thuật toán: CONTENT-BASED SIMILARITY với MULTI-CRITERIA RANKING
+    # - Bắt buộc: Cùng loại sản phẩm (áo -> áo, quần -> quần)
+    # - Ưu tiên: Cùng giới tính > Giá tương đương (±50%) > Random
+    # - Kỹ thuật: CASE-BASED SCORING
+    ###########################################################################
     try:
         limit = request.args.get('limit', 8, type=int)
         
-        # Get the reference product
+        # Lấy thông tin sản phẩm tham chiếu
         product = Product.query.get(product_id)
         if not product:
             return jsonify({'error': 'Product not found'}), 404
         
-        # Find similar products - MUST have same category (loai)
-        # Priority: same loai + same gioi_tinh > same loai only
-        price_min = float(product.gia_ban) * 0.5  # 50% lower
-        price_max = float(product.gia_ban) * 1.5  # 50% higher
+        # Tính khoảng giá tương tự (±50%)
+        price_min = float(product.gia_ban) * 0.5
+        price_max = float(product.gia_ban) * 1.5
         
-        # First, get products with same category (loai) - this is required
+        # Tìm sản phẩm tương tự - BẮT BUỘC cùng loại
         similar = Product.query.filter(
             Product.products_id != product_id,
             Product.trang_thai == 'Con_hang',
-            Product.loai == product.loai  # Must be same category (áo -> áo, quần -> quần)
+            Product.loai == product.loai  # Bắt buộc cùng category
         ).order_by(
-            # Prioritize same gender
+            # Ưu tiên 1: Cùng giới tính
             db.case(
                 (Product.gioi_tinh == product.gioi_tinh, 1),
                 else_=0
             ).desc(),
-            # Then by price similarity
+            # Ưu tiên 2: Giá tương đương
             db.case(
                 (Product.gia_ban.between(price_min, price_max), 1),
                 else_=0
             ).desc(),
-            # Then random for variety
+            # Ưu tiên 3: Random để tạo đa dạng
             func.random()
         ).limit(limit).all()
         
@@ -207,7 +232,8 @@ def get_similar_products(product_id):
 
 @recommendations_bp.route('/trending', methods=['GET'])
 def get_trending():
-    """Get trending products based on recent views and purchases"""
+    """Lấy danh sách sản phẩm đang thịnh hành"""
+    # Thuật toán: TIME-BASED POPULARITY RANKING (30 ngày gần nhất)
     try:
         limit = request.args.get('limit', 8, type=int)
         return get_trending_products(limit)
@@ -217,7 +243,7 @@ def get_trending():
 
 
 def get_trending_products(limit=8):
-    """Helper function to get trending products"""
+    """Helper function để lấy sản phẩm trending"""
     products = get_trending_products_query(limit)
     return jsonify({
         'products': [p.to_dict() for p in products],
@@ -226,30 +252,40 @@ def get_trending_products(limit=8):
 
 
 def get_trending_products_query(limit=8, exclude_ids=None):
-    """Helper function to get trending products query"""
-    # Get products with most views in last 30 days
+    """Helper function để query sản phẩm trending"""
+    ###########################################################################
+    # Thuật toán: AGGREGATION-BASED TRENDING
+    # 1. TIME WINDOW FILTERING - Chỉ tính 30 ngày gần nhất
+    # 2. AGGREGATION - Tổng hợp view_count theo product_id
+    # 3. RANKING - Sắp xếp theo total_views giảm dần
+    ###########################################################################
+    
+    # Lấy sản phẩm có nhiều lượt xem nhất trong 30 ngày qua
     thirty_days_ago = datetime.utcnow() - timedelta(days=30)
     
+    # Subquery: Tổng hợp lượt xem theo sản phẩm
     trending_subquery = db.session.query(
         ProductView.product_id,
         func.sum(ProductView.view_count).label('total_views')
     ).filter(
-        ProductView.last_viewed_at >= thirty_days_ago
+        ProductView.last_viewed_at >= thirty_days_ago  # Time window: 30 ngày
     ).group_by(ProductView.product_id).subquery()
     
     query = Product.query.filter(
         Product.trang_thai == 'Con_hang'
     )
     
+    # Loại trừ các sản phẩm đã có trong danh sách khác
     if exclude_ids:
         query = query.filter(Product.products_id.notin_(exclude_ids))
     
+    # Join với trending_subquery và sắp xếp theo popularity
     products = query.outerjoin(
         trending_subquery,
         Product.products_id == trending_subquery.c.product_id
     ).order_by(
-        desc(trending_subquery.c.total_views),
-        desc(Product.created_at)
+        desc(trending_subquery.c.total_views),  # Ưu tiên: Nhiều lượt xem
+        desc(Product.created_at)  # Fallback: Sản phẩm mới nhất
     ).limit(limit).all()
     
     return products
@@ -257,38 +293,46 @@ def get_trending_products_query(limit=8, exclude_ids=None):
 
 @recommendations_bp.route('/frequently-bought-together/<int:product_id>', methods=['GET'])
 def get_frequently_bought_together(product_id):
-    """Get products frequently bought together with the given product"""
+    """Tìm sản phẩm thường được mua cùng với sản phẩm đã cho"""
+    ###########################################################################
+    # Thuật toán: MARKET BASKET ANALYSIS (Phân tích giỏ hàng)
+    # Kỹ thuật: ASSOCIATION RULE MINING - Frequency Counting
+    # - Tìm đơn hàng có chứa sản phẩm A
+    # - Đếm tần suất xuất hiện sản phẩm B trong các đơn hàng đó
+    # - Sắp xếp theo tần suất giảm dần
+    ###########################################################################
     try:
         limit = request.args.get('limit', 4, type=int)
         
-        # Find completed orders containing this product
+        # Bước 1: Tìm các đơn hàng đã hoàn thành có chứa sản phẩm này
         orders_with_product = db.session.query(OrderDetail.order_id).join(
             Order, OrderDetail.order_id == Order.id
         ).filter(
             OrderDetail.product_id == product_id,
-            Order.trangthai == 'hoan_thanh'  # Only completed orders
+            Order.trangthai == 'hoan_thanh'  # Chỉ tính đơn hàng hoàn thành
         ).subquery()
         
-        # Find other products in those orders
+        # Bước 2: Đếm tần suất xuất hiện của các sản phẩm khác (Frequency Counting)
         frequently_bought = db.session.query(
             OrderDetail.product_id,
             func.count(OrderDetail.product_id).label('frequency')
         ).filter(
             OrderDetail.order_id.in_(orders_with_product),
-            OrderDetail.product_id != product_id
+            OrderDetail.product_id != product_id  # Loại trừ chính sản phẩm đang xem
         ).group_by(OrderDetail.product_id).order_by(
-            desc('frequency')
+            desc('frequency')  # Sắp xếp theo tần suất
         ).limit(limit).all()
         
         product_ids = [item[0] for item in frequently_bought]
         
-        # Nếu không có dữ liệu thực tế, trả về mảng rỗng (không fallback)
+        # Nếu không có dữ liệu thực tế, trả về mảng rỗng
         if not product_ids:
             return jsonify({
                 'products': [],
                 'based_on': 'no_data'
             })
         
+        # Bước 3: Lấy thông tin chi tiết sản phẩm
         products = Product.query.filter(
             Product.products_id.in_(product_ids),
             Product.trang_thai == 'Con_hang'

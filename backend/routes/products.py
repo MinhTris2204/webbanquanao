@@ -13,6 +13,13 @@ def get_products():
     on_sale = request.args.get('on_sale', '')  # Filter for products with active promotions
     sort_by = request.args.get('sort_by', 'newest')  # newest, oldest, name, price_asc, price_desc
     
+    # New filter parameters
+    category = request.args.get('category', '')  # Filter by loai (category)
+    gender = request.args.get('gender', '')  # Filter by gioi_tinh (gender)
+    size = request.args.get('size', '')  # Filter by size
+    min_price = request.args.get('min_price', type=float)  # Minimum price
+    max_price = request.args.get('max_price', type=float)  # Maximum price
+    
     query = Product.query
     
     if search:
@@ -24,6 +31,24 @@ def get_products():
             query = query.filter(Product.products_id == int(search[1:]))
         else:
             query = query.filter(Product.ten_san_pham.ilike(f'%{search}%'))
+    
+    # Filter by category (loai)
+    if category:
+        query = query.filter(Product.loai == category)
+    
+    # Filter by gender (gioi_tinh)
+    if gender:
+        query = query.filter(Product.gioi_tinh == gender)
+    
+    # Filter by size (contains check for comma-separated sizes)
+    if size:
+        query = query.filter(Product.size.ilike(f'%{size}%'))
+    
+    # Filter by price range
+    if min_price is not None:
+        query = query.filter(Product.gia_ban >= min_price)
+    if max_price is not None:
+        query = query.filter(Product.gia_ban <= max_price)
     
     # Filter for products on sale
     if on_sale == 'true':
@@ -132,6 +157,10 @@ def get_sale_products():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 12, type=int)
     category = request.args.get('category', '')
+    gender = request.args.get('gender', '')
+    size = request.args.get('size', '')
+    min_price = request.args.get('min_price', type=float)
+    max_price = request.args.get('max_price', type=float)
     sort_by = request.args.get('sort_by', 'discount')  # discount, price, name
     
     now = datetime.utcnow()
@@ -143,8 +172,21 @@ def get_sale_products():
         Product.trang_thai == 'Con_hang'
     )
     
+    # Apply filters
     if category:
         query = query.filter(Product.loai == category)
+    
+    if gender:
+        query = query.filter(Product.gioi_tinh == gender)
+    
+    if size:
+        query = query.filter(Product.size.ilike(f'%{size}%'))
+    
+    if min_price is not None:
+        query = query.filter(Product.gia_ban >= min_price)
+    
+    if max_price is not None:
+        query = query.filter(Product.gia_ban <= max_price)
     
     # Sorting
     if sort_by == 'discount':

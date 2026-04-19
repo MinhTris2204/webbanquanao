@@ -6,7 +6,7 @@ const AuthContext = createContext()
 export const useAuth = () => {
   const context = useContext(AuthContext)
   if (!context) {
-    throw new Error('useAuth must be used within AuthProvider')
+    throw new Error('useAuth phải được sử dụng trong AuthProvider')
   }
   return context
 }
@@ -15,24 +15,24 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
   
-  // Determine if we're in admin app or customer app
+  // ==================== XÁC ĐỊNH ĐANG TRONG APP ADMIN HAY KHÁCH HÀNG ====================
   const isAdminApp = window.location.pathname.includes('admin.html')
   const tokenKey = isAdminApp ? 'admin_token' : 'customer_token'
 
   useEffect(() => {
     const token = localStorage.getItem(tokenKey)
     if (token) {
-      console.log('Checking auth with token:', token.substring(0, 20) + '...')
+      console.log('Kiểm tra xác thực với token:', token.substring(0, 20) + '...')
       api.get('/api/auth/me')
         .then(res => {
-          console.log('Auth check successful:', res.data)
-          // Verify user role matches app type
+          console.log('Kiểm tra xác thực thành công:', res.data)
+          // Xác thực vai trò người dùng phù hợp với loại app
           if (isAdminApp && res.data.role !== 'admin') {
-            console.log('Admin app but user is not admin, clearing token')
+            console.log('App admin nhưng người dùng không phải admin, xóa token')
             localStorage.removeItem(tokenKey)
             setUser(null)
           } else if (!isAdminApp && res.data.role === 'admin') {
-            console.log('Customer app but user is admin, clearing token')
+            console.log('App khách hàng nhưng người dùng là admin, xóa token')
             localStorage.removeItem(tokenKey)
             setUser(null)
           } else {
@@ -40,10 +40,10 @@ export const AuthProvider = ({ children }) => {
           }
         })
         .catch((error) => {
-          console.log('Auth check failed:', error.response?.status, error.response?.data)
+          console.log('Kiểm tra xác thực thất bại:', error.response?.status, error.response?.data)
           // Chỉ xóa token nếu thực sự không hợp lệ (401 hoặc 422)
           if (error.response && (error.response.status === 401 || error.response.status === 422)) {
-            console.log('Clearing invalid token')
+            console.log('Xóa token không hợp lệ')
             localStorage.removeItem(tokenKey)
           }
         })

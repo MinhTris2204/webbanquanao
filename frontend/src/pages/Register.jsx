@@ -22,6 +22,8 @@ export default function Register() {
   const [otpExpiry, setOtpExpiry] = useState(0) // Đếm ngược thời gian OTP hết hạn
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [emailValidation, setEmailValidation] = useState({ checking: false, valid: null, message: '' })
+  const [emailCheckTimeout, setEmailCheckTimeout] = useState(null)
   const navigate = useNavigate()
 
   // Đếm ngược để gửi lại OTP
@@ -57,6 +59,45 @@ export default function Register() {
     const mins = Math.floor(seconds / 60)
     const secs = seconds % 60
     return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
+
+  // Kiểm tra email realtime
+  const validateEmailRealtime = async (email) => {
+    if (!email || email.length < 5) {
+      setEmailValidation({ checking: false, valid: null, message: '' })
+      return
+    }
+
+    setEmailValidation({ checking: true, valid: null, message: 'Đang kiểm tra...' })
+
+    try {
+      const res = await api.post('/api/auth/validate-email', { email, check_smtp: false })
+      if (res.data.valid) {
+        const message = res.data.warning || '✓ Email hợp lệ'
+        setEmailValidation({ checking: false, valid: true, message })
+      } else {
+        setEmailValidation({ checking: false, valid: false, message: res.data.error })
+      }
+    } catch (err) {
+      setEmailValidation({ checking: false, valid: false, message: 'Không thể kiểm tra email' })
+    }
+  }
+
+  // Debounce email validation
+  const handleEmailChange = (email) => {
+    setFormData({ ...formData, email })
+    
+    // Clear previous timeout
+    if (emailCheckTimeout) {
+      clearTimeout(emailCheckTimeout)
+    }
+
+    // Set new timeout
+    const timeout = setTimeout(() => {
+      validateEmailRealtime(email)
+    }, 800) // Wait 800ms after user stops typing
+
+    setEmailCheckTimeout(timeout)
   }
 
   const handleSubmit = async (e) => {
@@ -282,15 +323,52 @@ export default function Register() {
             <label className="block text-gray-700 mb-2 font-semibold">
               Email <span className="text-red-500">*</span>
             </label>
-            <input
-              type="email"
-              className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-              placeholder="your@email.com"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              required
-            />
-            <p className="text-sm text-gray-500 mt-1">Bạn sẽ nhận mã OTP qua email này</p>
+            <div className="relative">
+              <input
+                type="email"
+                className={`w-full px-4 py-3 pr-12 border-2 rounded-lg focus:outline-none focus:ring-2 transition ${
+                  emailValidation.valid === true 
+                    ? 'border-green-500 focus:ring-green-500' 
+                    : emailValidation.valid === false 
+                    ? 'border-red-500 focus:ring-red-500' 
+                    : 'border-gray-300 focus:ring-blue-500'
+                } focus:border-transparent`}
+                placeholder="your@email.com"
+                value={formData.email}
+                onChange={(e) => handleEmailChange(e.target.value)}
+                required
+              />
+              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                {emailValidation.checking && (
+                  <svg className="animate-spin h-5 w-5 text-blue-500" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                )}
+                {!emailValidation.checking && emailValidation.valid === true && (
+                  <svg className="h-6 w-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                )}
+                {!emailValidation.checking && emailValidation.valid === false && (
+                  <svg className="h-6 w-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                )}
+              </div>
+            </div>
+            {emailValidation.message && (
+              <p className={`text-sm mt-1 ${
+                emailValidation.valid === true ? 'text-blue-600' : 
+                emailValidation.valid === false ? 'text-red-600' : 
+                'text-gray-500'
+              }`}>
+                {emailValidation.message}
+              </p>
+            )}
+            {!emailValidation.message && (
+              <p className="text-sm text-gray-500 mt-1">Bạn sẽ nhận mã OTP qua email này</p>
+            )}
           </div>
 
           <div>
@@ -401,8 +479,8 @@ export default function Register() {
 
           <button
             type="submit"
-            disabled={loading}
-            className="w-full bg-gradient-to-r from-blue-500 to-cyan-600 text-white py-4 rounded-lg hover:from-blue-600 hover:to-cyan-700 font-bold text-lg shadow-lg hover:shadow-xl transition disabled:opacity-50"
+            disabled={loading || emailValidation.valid !== true}
+            className="w-full bg-gradient-to-r from-blue-500 to-cyan-600 text-white py-4 rounded-lg hover:from-blue-600 hover:to-cyan-700 font-bold text-lg shadow-lg hover:shadow-xl transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? (
               <span className="flex items-center justify-center gap-2">
@@ -412,7 +490,7 @@ export default function Register() {
                 </svg>
                 Đang xử lý...
               </span>
-            ) : '🚀 Đăng ký ngay'}
+            ) : emailValidation.valid !== true ? '⚠️ Vui lòng nhập email hợp lệ' : '🚀 Đăng ký ngay'}
           </button>
         </form>
 

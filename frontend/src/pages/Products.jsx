@@ -44,7 +44,7 @@ export default function Products() {
 
   useEffect(() => {
     fetchProducts()
-  }, [currentPage, onSaleOnly, selectedCategory])
+  }, [currentPage, onSaleOnly, selectedCategory, selectedGender, selectedSize, priceRange])
 
   const fetchProducts = async () => {
     setLoading(true)
@@ -56,14 +56,23 @@ export default function Products() {
           params: { 
             page: currentPage,
             per_page: itemsPerPage,
-            category: selectedCategory || undefined
+            category: selectedCategory || undefined,
+            gender: selectedGender || undefined,
+            size: selectedSize || undefined,
+            min_price: priceRange.min || undefined,
+            max_price: priceRange.max || undefined
           } 
         })
       } else {
         res = await api.get('/api/products', { 
           params: { 
             page: currentPage,
-            per_page: itemsPerPage
+            per_page: itemsPerPage,
+            category: selectedCategory || undefined,
+            gender: selectedGender || undefined,
+            size: selectedSize || undefined,
+            min_price: priceRange.min || undefined,
+            max_price: priceRange.max || undefined
           } 
         })
       }
@@ -77,22 +86,7 @@ export default function Products() {
     }
   }
 
-  const filteredProducts = products.filter(product => {
-    // Nếu đang lọc khuyến mãi, category đã được lọc từ API
-    const matchCategory = onSaleOnly || !selectedCategory || product.loai === selectedCategory
-    const matchGender = !selectedGender || product.gioi_tinh === selectedGender
-    
-    // Lọc theo size
-    const matchSize = !selectedSize || (product.size && product.size.includes(selectedSize))
-    
-    // Lọc theo khoảng giá (dùng giá khuyến mãi nếu có)
-    const price = product.promotion?.promotional_price || parseFloat(product.gia_ban)
-    const minPrice = priceRange.min ? parseFloat(priceRange.min) : 0
-    const maxPrice = priceRange.max ? parseFloat(priceRange.max) : Infinity
-    const matchPrice = price >= minPrice && price <= maxPrice
-    
-    return matchCategory && matchGender && matchSize && matchPrice
-  })
+  const filteredProducts = products // Không cần lọc nữa vì backend đã lọc
 
   const formatPrice = (value) => {
     const number = value.replace(/\D/g, '')
@@ -111,6 +105,7 @@ export default function Products() {
       min: min ? formatPrice(min) : '', 
       max: max ? formatPrice(max) : '' 
     })
+    setCurrentPage(1) // Reset về trang 1 khi thay đổi giá
   }
 
   const handleResetFilters = () => {
@@ -121,6 +116,8 @@ export default function Products() {
     setPriceRange({ min: '', max: '' })
     setPriceDisplay({ min: '', max: '' })
     setCurrentPage(1)
+    // Trigger re-fetch
+    fetchProducts()
   }
 
   if (loading) {
@@ -183,7 +180,10 @@ export default function Products() {
             <label className="block text-sm font-semibold text-gray-700 mb-2">Loại sản phẩm</label>
             <select
               value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
+              onChange={(e) => {
+                setSelectedCategory(e.target.value)
+                setCurrentPage(1)
+              }}
               className="w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
             >
               <option value="">Tất cả</option>
@@ -201,7 +201,10 @@ export default function Products() {
             <label className="block text-sm font-semibold text-gray-700 mb-2">Giới tính</label>
             <select
               value={selectedGender}
-              onChange={(e) => setSelectedGender(e.target.value)}
+              onChange={(e) => {
+                setSelectedGender(e.target.value)
+                setCurrentPage(1)
+              }}
               className="w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
             >
               <option value="">Tất cả</option>
@@ -216,7 +219,10 @@ export default function Products() {
             <label className="block text-sm font-semibold text-gray-700 mb-2">Size</label>
             <select
               value={selectedSize}
-              onChange={(e) => setSelectedSize(e.target.value)}
+              onChange={(e) => {
+                setSelectedSize(e.target.value)
+                setCurrentPage(1)
+              }}
               className="w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
             >
               <option value="">Tất cả</option>
@@ -234,7 +240,10 @@ export default function Products() {
               <input
                 type="checkbox"
                 checked={onSaleOnly}
-                onChange={(e) => setOnSaleOnly(e.target.checked)}
+                onChange={(e) => {
+                  setOnSaleOnly(e.target.checked)
+                  setCurrentPage(1)
+                }}
                 className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500 mr-3"
               />
               <span className="text-sm font-semibold text-red-600">🔥 Chỉ sản phẩm Sale</span>

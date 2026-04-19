@@ -92,6 +92,21 @@ export default function AdminVouchers() {
     })
   }
 
+  // Format number with thousand separator
+  const formatNumberWithDots = (value) => {
+    if (!value) return '';
+    // Remove all non-digit characters
+    const numericValue = value.toString().replace(/\D/g, '');
+    // Add dots as thousand separators
+    return numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  };
+
+  // Parse formatted number back to plain number
+  const parseFormattedNumber = (value) => {
+    if (!value) return '';
+    return value.toString().replace(/\./g, '');
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="flex justify-end items-center mb-6">
@@ -156,14 +171,28 @@ export default function AdminVouchers() {
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">Giá trị giảm *</label>
-                  <input
-                    type="number"
-                    required
-                    value={formData.discount_value}
-                    onChange={(e) => setFormData({ ...formData, discount_value: e.target.value })}
-                    className="w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                    placeholder={formData.discount_type === 'percent' ? '10' : '50000'}
-                  />
+                  {formData.discount_type === 'percent' ? (
+                    <input
+                      type="number"
+                      required
+                      value={formData.discount_value}
+                      onChange={(e) => setFormData({ ...formData, discount_value: e.target.value })}
+                      className="w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                      placeholder="10"
+                    />
+                  ) : (
+                    <input
+                      type="text"
+                      required
+                      value={formatNumberWithDots(formData.discount_value)}
+                      onChange={(e) => {
+                        const plainValue = parseFormattedNumber(e.target.value);
+                        setFormData({ ...formData, discount_value: plainValue });
+                      }}
+                      className="w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                      placeholder="50.000"
+                    />
+                  )}
                 </div>
               </div>
 
@@ -171,19 +200,26 @@ export default function AdminVouchers() {
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">Đơn tối thiểu (₫)</label>
                   <input
-                    type="number"
-                    value={formData.min_order_value}
-                    onChange={(e) => setFormData({ ...formData, min_order_value: e.target.value })}
+                    type="text"
+                    value={formatNumberWithDots(formData.min_order_value)}
+                    onChange={(e) => {
+                      const plainValue = parseFormattedNumber(e.target.value);
+                      setFormData({ ...formData, min_order_value: plainValue });
+                    }}
                     className="w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                    placeholder="0"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">Giảm tối đa (₫)</label>
                   <input
-                    type="number"
-                    value={formData.max_discount}
-                    onChange={(e) => setFormData({ ...formData, max_discount: e.target.value })}
+                    type="text"
+                    value={formatNumberWithDots(formData.max_discount)}
+                    onChange={(e) => {
+                      const plainValue = parseFormattedNumber(e.target.value);
+                      setFormData({ ...formData, max_discount: plainValue });
+                    }}
                     className="w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                     placeholder="Không giới hạn"
                   />

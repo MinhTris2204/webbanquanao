@@ -173,7 +173,7 @@ def get_promotion_suggestions():
      .group_by(Product.products_id, Product.ten_san_pham, Product.gia_ban, Product.loai, Product.hinh_anh)\
      .having(func.coalesce(func.sum(ProductView.view_count), 0) > 5)\
      .order_by(desc('total_views'))\
-     .limit(20).all()
+     .limit(50).all()
     
     suggestions = []
     for r in low_conversion:
@@ -268,7 +268,7 @@ def get_promotion_suggestions():
      .group_by(Product.products_id, Product.ten_san_pham, Product.gia_ban, Product.loai, Product.hinh_anh)\
      .having(func.coalesce(func.sum(OrderDetail.quantity), 0) < 3)\
      .order_by('recent_sold')\
-     .limit(10).all()
+     .limit(50).all()
     
     for r in slow_moving:
         # Kiểm tra xem đã có trong suggestions chưa
