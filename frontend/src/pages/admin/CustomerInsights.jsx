@@ -429,7 +429,7 @@ function PromotionSuggestions({ suggestions }) {
                   </div>
                   
                   <div className="mt-3 p-3 bg-white/70 rounded-lg">
-                    <div className="grid grid-cols-3 gap-2 text-center text-sm">
+                    <div className="grid grid-cols-2 gap-2 text-center text-sm">
                       <div>
                         <p className="text-gray-500">{`L\u01B0\u1EE3t xem`}</p>
                         <p className="font-bold text-blue-600">{product.total_views}</p>
@@ -437,10 +437,6 @@ function PromotionSuggestions({ suggestions }) {
                       <div>
                         <p className="text-gray-500">{`\u0110\u00E3 b\u00E1n`}</p>
                         <p className="font-bold text-green-600">{product.total_sold}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-500">{`T\u1EF7 l\u1EC7 mua`}</p>
-                        <p className={`font-bold ${product.conversion_rate < 5 ? 'text-red-600' : 'text-yellow-600'}`}>{product.conversion_rate}%</p>
                       </div>
                     </div>
                     <div className="mt-2 pt-2 border-t border-gray-200">
