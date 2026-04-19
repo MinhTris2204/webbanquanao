@@ -42,7 +42,9 @@ def get_top_customers():
     if start_date:
         query = query.filter(Order.created_at >= datetime.fromisoformat(start_date))
     if end_date:
-        query = query.filter(Order.created_at <= datetime.fromisoformat(end_date))
+        # Set đến cuối ngày 23:59:59 để bao gồm toàn bộ ngày được chọn
+        end_dt = datetime.fromisoformat(end_date).replace(hour=23, minute=59, second=59)
+        query = query.filter(Order.created_at <= end_dt)
     
     results = query.group_by(User.user_id, User.full_name, User.email, User.phone)\
                    .order_by(desc('total_spent'))\
@@ -89,7 +91,9 @@ def get_top_products():
     if start_date:
         query = query.filter(Order.created_at >= datetime.fromisoformat(start_date))
     if end_date:
-        query = query.filter(Order.created_at <= datetime.fromisoformat(end_date))
+        # Set đến cuối ngày 23:59:59 để bao gồm toàn bộ ngày được chọn
+        end_dt = datetime.fromisoformat(end_date).replace(hour=23, minute=59, second=59)
+        query = query.filter(Order.created_at <= end_dt)
     if category:
         query = query.filter(Product.loai == category)
     
