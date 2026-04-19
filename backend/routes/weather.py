@@ -95,7 +95,28 @@ def get_current_weather():
         weather_main = data['weather'][0]['main']
         description = data['weather'][0]['description']
         icon_code = data['weather'][0]['icon']
-        city = data['name']
+        
+        # ==================== LẤY TÊN THÀNH PHỐ TỪ REVERSE GEOCODING ====================
+        # Sử dụng Reverse Geocoding API để lấy tên thành phố thay vì tên huyện/xã
+        city = data['name']  # Giá trị mặc định
+        try:
+            geo_url = f"http://api.openweathermap.org/geo/1.0/reverse"
+            geo_params = {
+                'lat': lat,
+                'lon': lon,
+                'limit': 1,
+                'appid': OPENWEATHER_API_KEY
+            }
+            geo_response = requests.get(geo_url, params=geo_params, timeout=3)
+            if geo_response.status_code == 200:
+                geo_data = geo_response.json()
+                if geo_data and len(geo_data) > 0:
+                    # Ưu tiên lấy state (tỉnh/thành phố) thay vì name (huyện/xã)
+                    city = geo_data[0].get('state') or geo_data[0].get('name', city)
+                    print(f"[WEATHER] Tên thành phố từ Geocoding: {city}")
+        except Exception as geo_error:
+            print(f"[WEATHER] Lỗi khi lấy tên thành phố: {geo_error}")
+            # Giữ nguyên city từ weather API nếu geocoding thất bại
         
         advice, suggested_types = get_clothing_advice(temp, weather_main)
         

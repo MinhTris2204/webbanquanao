@@ -20,6 +20,7 @@ import Checkout from './pages/Checkout'
 import Orders from './pages/Orders'
 import Profile from './pages/Profile'
 import StoreInfoPage from './pages/StoreInfoPage'
+import MoMoReturn from './pages/MoMoReturn'
 
 
 // Component to scroll to top on route change
@@ -56,6 +57,7 @@ function App() {
           <Route path="/search" element={<Search />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/checkout" element={<Checkout />} />
+          <Route path="/checkout/momo-return" element={<MoMoReturn />} />
           <Route path="/orders" element={<Orders />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/info/:key" element={<StoreInfoPage />} />

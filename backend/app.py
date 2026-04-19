@@ -92,6 +92,10 @@ def create_app():
     from routes.vnpay import vnpay_bp
     app.register_blueprint(vnpay_bp, url_prefix='/api/vnpay')
     
+    # Import MoMo blueprint
+    from routes.momo import momo_bp
+    app.register_blueprint(momo_bp, url_prefix='/api/momo')
+    
     # Import Analytics blueprint
     from routes.analytics import analytics_bp
     app.register_blueprint(analytics_bp, url_prefix='/api/analytics')

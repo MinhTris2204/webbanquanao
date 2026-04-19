@@ -257,11 +257,13 @@ def vnpay_return():
             
             if order:
                 if success and order.trangthai != "hoan_thanh":
+                    # Thanh toán online thành công - Đặt thành "Hoàn thành"
                     order.trangthai = "hoan_thanh"
                     order.payment_token = f"VNPAY_TXN:{txn_no or 'n/a'}"
                     db.session.commit()
                     print(f"[VNPAY-RETURN] ✅ Đã cập nhật đơn hàng #{txn_ref} thành 'hoan_thanh'")
                 elif not success:
+                    # Thanh toán thất bại hoặc bị hủy
                     order.trangthai = "huy"
                     order.payment_token = f"VNPAY_FAIL:{resp_code}"
                     db.session.commit()
@@ -321,12 +323,14 @@ def vnpay_ipn():
         return jsonify({"RspCode": "02", "Message": "Đơn hàng đã được cập nhật"})
     
     if vnp_resp_code == "00" and vnp_trans_status == "00":
+        # Thanh toán online thành công - Đặt thành "Hoàn thành"
         order.trangthai = "hoan_thanh"
         order.payment_token = f"VNPAY_TXN:{vnp_trans_no}"
         db.session.commit()
         print(f"[VNPAY-IPN] ✅ Đã cập nhật đơn hàng #{order_id} thành 'hoan_thanh'")
         return jsonify({"RspCode": "00", "Message": "Xác nhận thành công"})
     else:
+        # Thanh toán thất bại hoặc bị hủy
         order.trangthai = "huy"
         order.payment_token = f"VNPAY_FAIL:{vnp_resp_code}"
         db.session.commit()

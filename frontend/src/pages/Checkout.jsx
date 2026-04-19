@@ -23,6 +23,7 @@ export default function Checkout() {
     sdt: user?.sdt || '',
     diachi_giaohang: user?.diachi || '',
     payment_method: 'COD',
+    momo_payment_type: 'wallet', // wallet hoặc atm
     ghichu: ''
   })
 
@@ -169,6 +170,35 @@ export default function Checkout() {
         }
       }
 
+      // ==================== NẾU CHỌN MOMO, TẠO PAYMENT URL VÀ REDIRECT ====================
+      if (formData.payment_method === 'MOMO' && orderId) {
+        try {
+          const finalTotal = getFinalTotal()
+          const paymentType = formData.momo_payment_type === 'atm' ? 'payWithATM' : 'captureWallet'
+          
+          const paymentRes = await api.post('/api/momo/create-payment', {
+            orderId: orderId.toString(),
+            amount: finalTotal,
+            orderInfo: `Thanh toán đơn hàng #${orderId}`,
+            paymentType: paymentType
+          })
+          
+          if (paymentRes.data.success && paymentRes.data.payUrl) {
+            // Redirect đến trang thanh toán MoMo
+            window.location.href = paymentRes.data.payUrl
+            return
+          } else {
+            setError(paymentRes.data.message || 'Không thể tạo thanh toán MoMo')
+            setSubmitting(false)
+            return
+          }
+        } catch (momoErr) {
+          setError(momoErr.response?.data?.message || 'Không thể tạo thanh toán MoMo')
+          setSubmitting(false)
+          return
+        }
+      }
+
       navigate('/orders?success=true')
     } catch (err) {
       setError(err.response?.data?.error || 'Có lỗi xảy ra khi đặt hàng')
@@ -302,6 +332,66 @@ export default function Checkout() {
                       <p className="font-semibold text-gray-800">💳 Thanh toán VNPay</p>
                       <p className="text-sm text-gray-500">Quét mã QR / Thẻ ATM / Visa / MasterCard</p>
                     </div>
+                  </div>
+                </label>
+
+                <label className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition ${formData.payment_method === 'MOMO'
+                  ? 'border-pink-500 bg-pink-50'
+                  : 'border-gray-300 hover:border-pink-500'
+                  }`}>
+                  <input
+                    type="radio"
+                    name="payment_method"
+                    value="MOMO"
+                    checked={formData.payment_method === 'MOMO'}
+                    onChange={(e) => setFormData({ ...formData, payment_method: e.target.value })}
+                    className="w-5 h-5 text-pink-600"
+                  />
+                  <div className="ml-4 flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      {/* MoMo Logo SVG */}
+                      <div className="w-12 h-12 bg-[#A50064] rounded-lg flex items-center justify-center p-1.5">
+                        <svg viewBox="0 0 100 100" className="w-full h-full">
+                          <text x="50" y="70" fontSize="70" fontWeight="bold" fill="white" textAnchor="middle" fontFamily="Arial, sans-serif">M</text>
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-800">📱 Thanh toán MoMo</p>
+                        <p className="text-sm text-gray-500">Ví điện tử / Thẻ ATM nội địa</p>
+                      </div>
+                    </div>
+                    
+                    {/* Sub-options for MoMo */}
+                    {formData.payment_method === 'MOMO' && (
+                      <div className="ml-14 mt-3 space-y-2 border-t pt-3">
+                        <label className="flex items-center cursor-pointer">
+                          <input
+                            type="radio"
+                            name="momo_payment_type"
+                            value="wallet"
+                            checked={formData.momo_payment_type === 'wallet'}
+                            onChange={(e) => setFormData({ ...formData, momo_payment_type: e.target.value })}
+                            className="w-4 h-4 text-pink-600"
+                          />
+                          <span className="ml-2 text-sm text-gray-700">
+                            💰 Ví MoMo (Quét mã QR)
+                          </span>
+                        </label>
+                        <label className="flex items-center cursor-pointer">
+                          <input
+                            type="radio"
+                            name="momo_payment_type"
+                            value="atm"
+                            checked={formData.momo_payment_type === 'atm'}
+                            onChange={(e) => setFormData({ ...formData, momo_payment_type: e.target.value })}
+                            className="w-4 h-4 text-pink-600"
+                          />
+                          <span className="ml-2 text-sm text-gray-700">
+                            💳 Thẻ ATM nội địa (Napas)
+                          </span>
+                        </label>
+                      </div>
+                    )}
                   </div>
                 </label>
               </div>
