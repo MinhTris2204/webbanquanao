@@ -31,11 +31,11 @@ def validate_email_endpoint():
         }), 200
     
     # Validate email format, domain, and existence
-    is_valid, error_msg = validate_email_full(email, check_smtp=False, use_api=use_api)
+    is_valid, msg = validate_email_full(email, check_smtp=False, use_api=use_api)
     if not is_valid:
         return jsonify({
             'valid': False,
-            'error': error_msg
+            'error': msg
         }), 200
     
     # Check if disposable email
@@ -45,14 +45,14 @@ def validate_email_endpoint():
             'error': 'Email tạm thời không được chấp nhận. Vui lòng sử dụng email thật'
         }), 200
     
-    return jsonify({
-        'valid': True,
-        'message': 'Email hợp lệ'
-    }), 200
+    response = {'valid': True, 'message': 'Email hợp lệ'}
+    if msg:  # warning message from API
+        response['warning'] = msg
+    return jsonify(response), 200
 
 
 def get_smtp_config():
-    """Get SMTP configuration"""
+    """Lấy cấu hình SMTP từ biến môi trường"""
     return {
         'server': os.getenv('SMTP_SERVER', 'smtp.gmail.com'),
         'port': int(os.getenv('SMTP_PORT', 587)),
@@ -63,11 +63,11 @@ def get_smtp_config():
 
 
 def send_email(to_email, subject, html_content):
-    """Send email using SMTP"""
+    """Gửi email qua SMTP"""
     cfg = get_smtp_config()
     
     if not cfg['user'] or not cfg['password']:
-        print("[EMAIL] SMTP not configured, skipping email send")
+        print("[EMAIL] SMTP chưa được cấu hình, bỏ qua gửi email")
         return False
     
     msg = MIMEMultipart('alternative')
@@ -82,15 +82,15 @@ def send_email(to_email, subject, html_content):
         server.login(cfg['user'], cfg['password'])
         server.sendmail(cfg['user'], to_email, msg.as_string())
         server.quit()
-        print(f"[EMAIL] Email sent to {to_email}")
+        print(f"[EMAIL] Đã gửi email đến {to_email}")
         return True
     except Exception as e:
-        print(f"[EMAIL] Error sending email: {e}")
+        print(f"[EMAIL] Lỗi gửi email: {e}")
         return False
 
 
 def send_otp_email(to_email, otp_code, user_name, purpose='register'):
-    """Send OTP email for verification"""
+    """Gửi email OTP để xác thực"""
     if purpose == 'register':
         subject = '🔐 Xác nhận đăng ký tài khoản - Shop Quần Áo'
         title = 'Xác nhận đăng ký'
@@ -296,7 +296,7 @@ def get_current_user():
     user = User.query.get(user_id)
     
     if not user:
-        return jsonify({'error': 'User not found'}), 404
+        return jsonify({'error': 'Không tìm thấy người dùng'}), 404
     
     return jsonify(user.to_dict()), 200
 
@@ -314,7 +314,7 @@ def update_profile():
     user = User.query.get(user_id)
     
     if not user:
-        return jsonify({'error': 'User not found'}), 404
+        return jsonify({'error': 'Không tìm thấy người dùng'}), 404
     
     data = request.get_json()
     
@@ -345,7 +345,7 @@ def change_password():
     user = User.query.get(user_id)
     
     if not user:
-        return jsonify({'error': 'User not found'}), 404
+        return jsonify({'error': 'Không tìm thấy người dùng'}), 404
     
     data = request.get_json()
     current_password = data.get('current_password')
@@ -373,7 +373,7 @@ def delete_account():
     user = User.query.get(user_id)
     
     if not user:
-        return jsonify({'error': 'User not found'}), 404
+        return jsonify({'error': 'Không tìm thấy người dùng'}), 404
     
     db.session.delete(user)
     db.session.commit()
@@ -477,10 +477,10 @@ def reset_password():
     return jsonify({'message': 'Đặt lại mật khẩu thành công! Bạn có thể đăng nhập với mật khẩu mới'}), 200
 
 
-# Legacy endpoint for backward compatibility
+# Endpoint cũ để tương thích ngược
 @auth_bp.route('/verify-reset-token', methods=['POST'])
 def verify_reset_token():
-    """Verify if reset token is valid (legacy)"""
+    """Xác thực token đặt lại mật khẩu (endpoint cũ)"""
     data = request.get_json()
     token = data.get('token', '').strip()
     
