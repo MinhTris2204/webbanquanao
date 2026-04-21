@@ -26,6 +26,7 @@ function getGuestSessionId() {
 export const SocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null)
   const [isConnected, setIsConnected] = useState(false)
+  const [isSocketReady, setIsSocketReady] = useState(false) // true sau khi authenticated
   const { isAuthenticated } = useAuth()
   
   const isAdminApp = window.location.pathname.includes('admin.html')
@@ -48,6 +49,7 @@ export const SocketProvider = ({ children }) => {
     newSocket.on('connect', () => {
       console.log('Socket đã kết nối')
       setIsConnected(true)
+      setIsSocketReady(false) // reset, chờ authenticated
       // Xác thực - dùng token nếu đã đăng nhập, session_id nếu là khách
       if (token && isAuthenticated) {
         newSocket.emit('authenticate', { token })
@@ -59,10 +61,12 @@ export const SocketProvider = ({ children }) => {
     newSocket.on('disconnect', () => {
       console.log('Socket đã ngắt kết nối')
       setIsConnected(false)
+      setIsSocketReady(false)
     })
 
     newSocket.on('authenticated', (data) => {
       console.log('Socket đã xác thực:', data)
+      setIsSocketReady(true) // sẵn sàng join room
     })
 
     newSocket.on('auth_error', (error) => {
@@ -81,7 +85,7 @@ export const SocketProvider = ({ children }) => {
   }, [isAuthenticated, tokenKey])
 
   const joinConversation = useCallback((conversationId, guestSessionId = null) => {
-    if (socket && isConnected) {
+    if (socket && isSocketReady) {
       const token = localStorage.getItem(tokenKey)
       socket.emit('join_conversation', { 
         conversation_id: conversationId, 
@@ -89,13 +93,13 @@ export const SocketProvider = ({ children }) => {
         session_id: guestSessionId || getGuestSessionId()
       })
     }
-  }, [socket, isConnected, tokenKey])
+  }, [socket, isSocketReady, tokenKey])
 
   const leaveConversation = useCallback((conversationId) => {
-    if (socket && isConnected) {
+    if (socket && isSocketReady) {
       socket.emit('leave_conversation', { conversation_id: conversationId })
     }
-  }, [socket, isConnected])
+  }, [socket, isSocketReady])
 
   const sendMessage = useCallback((conversationId, content, messageType = 'text', imageUrl = null, guestSessionId = null) => {
     if (socket && isConnected) {
@@ -137,6 +141,7 @@ export const SocketProvider = ({ children }) => {
   const value = {
     socket,
     isConnected,
+    isSocketReady,
     joinConversation,
     leaveConversation,
     sendMessage,

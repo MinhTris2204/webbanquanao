@@ -4,7 +4,7 @@ import api from '../../utils/api'
 import { useToast } from '../../components/Toast'
 
 export default function AdminChat() {
-  const { socket, isConnected, joinConversation, leaveConversation, sendMessage, sendTyping, markAsRead } = useSocket()
+  const { socket, isConnected, isSocketReady, joinConversation, leaveConversation, sendMessage, sendTyping, markAsRead } = useSocket()
   const toast = useToast()
 
   const [conversations, setConversations] = useState([])
@@ -58,24 +58,35 @@ export default function AdminChat() {
     const handleMessagesRead = (data) => {
       if (data.conversation_id === selectedConversation?.id) setMessages(prev => prev.map(msg => ({ ...msg, is_read: true })))
     }
+    const handleConversationClosedByCustomer = (data) => {
+      setConversations(prev => prev.map(c =>
+        c.id === data.conversation_id ? { ...c, status: 'closed' } : c
+      ))
+      if (selectedConversation?.id === data.conversation_id) {
+        setSelectedConversation(prev => prev ? { ...prev, status: 'closed' } : null)
+        toast.info('Khách hàng đã kết thúc cuộc trò chuyện.')
+      }
+    }
     socket.on('new_message', handleNewMessage)
     socket.on('new_customer_message', handleNewCustomerMessage)
     socket.on('user_typing', handleTyping)
     socket.on('messages_read', handleMessagesRead)
+    socket.on('conversation_closed_by_customer', handleConversationClosedByCustomer)
     return () => {
       socket.off('new_message', handleNewMessage)
       socket.off('new_customer_message', handleNewCustomerMessage)
       socket.off('user_typing', handleTyping)
       socket.off('messages_read', handleMessagesRead)
+      socket.off('conversation_closed_by_customer', handleConversationClosedByCustomer)
     }
   }, [socket, selectedConversation, markAsRead])
 
   useEffect(() => {
-    if (selectedConversation && isConnected) {
+    if (selectedConversation && isSocketReady) {
       joinConversation(selectedConversation.id)
       return () => leaveConversation(selectedConversation.id)
     }
-  }, [selectedConversation, isConnected, joinConversation, leaveConversation])
+  }, [selectedConversation, isSocketReady, joinConversation, leaveConversation])
 
   const loadConversations = async () => {
     try {
@@ -225,12 +236,19 @@ export default function AdminChat() {
     })
   }
 
-  const formatTime = (dateStr) => new Date(dateStr).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+  const parseUTC = (dateStr) => {
+    if (!dateStr) return new Date()
+    if (typeof dateStr === 'string' && !dateStr.endsWith('Z') && !dateStr.includes('+') && !dateStr.includes('-', 10)) {
+      return new Date(dateStr + 'Z')
+    }
+    return new Date(dateStr)
+  }
+  const formatTime = (dateStr) => parseUTC(dateStr).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Ho_Chi_Minh' })
   const formatDate = (dateStr) => {
-    const date = new Date(dateStr)
+    const date = parseUTC(dateStr)
     const today = new Date()
     if (date.toDateString() === today.toDateString()) return formatTime(dateStr)
-    return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })
+    return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', timeZone: 'Asia/Ho_Chi_Minh' })
   }
 
   const totalUnread = conversations.reduce((sum, c) => sum + (c.unread_count || 0), 0)

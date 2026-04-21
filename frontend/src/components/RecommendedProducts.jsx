@@ -33,9 +33,6 @@ export default function RecommendedProducts({ title = '🎯 Gợi ý dành cho b
         case 'trending':
           endpoint = `/api/recommendations/trending?limit=${limit}`
           break
-        case 'frequently-bought':
-          endpoint = `/api/recommendations/frequently-bought-together/${productId}?limit=${limit}`
-          break
         default:
           endpoint = `/api/recommendations/for-you?limit=${limit}`
       }
@@ -93,7 +90,6 @@ export default function RecommendedProducts({ title = '🎯 Gợi ý dành cho b
             <p className="text-sm text-gray-600 mt-1">
               {basedOn === 'user_behavior' && '📊 Dựa trên lịch sử xem của bạn'}
               {basedOn === 'trending' && '🔥 Sản phẩm đang thịnh hành'}
-              {basedOn === 'frequently_bought_together' && '🛒 Dựa trên đơn hàng thực tế'}
             </p>
           )}
         </div>

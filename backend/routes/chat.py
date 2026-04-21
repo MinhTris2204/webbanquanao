@@ -8,7 +8,7 @@ chat_bp = Blueprint('chat', __name__)
 @chat_bp.route('/', methods=['GET'])
 @jwt_required()
 def get_conversations():
-    """Get all conversations that have messages - for admin only"""
+    """Lấy tất cả cuộc hội thoại có tin nhắn - chỉ dành cho admin"""
     user_id = get_jwt_identity()
     user = User.query.get(user_id)
     
@@ -27,7 +27,7 @@ def get_conversations():
 
 @chat_bp.route('/my-conversation', methods=['GET'])
 def get_my_conversation():
-    """Get existing conversation for customer or guest (don't create new)"""
+    """Lấy cuộc hội thoại hiện có của khách hàng hoặc khách vãng lai (không tạo mới)"""
     # Kiểm tra nếu đã đăng nhập
     try:
         verify_jwt_in_request()
@@ -47,7 +47,7 @@ def get_my_conversation():
 
 
 def get_user_conversation(user_id):
-    """Get conversation for logged in user - don't create if not exists"""
+    """Lấy cuộc hội thoại của người dùng đã đăng nhập - không tạo mới nếu chưa có"""
     # Check for closed conversation first
     closed_conversation = ChatConversation.query.filter_by(
         customer_id=user_id,
@@ -57,7 +57,7 @@ def get_user_conversation(user_id):
     if closed_conversation:
         return jsonify(closed_conversation.to_dict(include_messages=True))
     
-    # Find existing active conversation
+    # Tìm cuộc hội thoại đang hoạt động
     conversation = ChatConversation.query.filter_by(
         customer_id=user_id,
         status='active'
@@ -75,7 +75,7 @@ def get_user_conversation(user_id):
 
 
 def get_guest_conversation(session_id):
-    """Get conversation for guest user - don't create if not exists"""
+    """Lấy cuộc hội thoại của khách vãng lai - không tạo mới nếu chưa có"""
     # Check for closed conversation first
     closed_conversation = ChatConversation.query.filter_by(
         guest_session_id=session_id,
@@ -85,7 +85,7 @@ def get_guest_conversation(session_id):
     if closed_conversation:
         return jsonify(closed_conversation.to_dict(include_messages=True))
     
-    # Find existing active conversation
+    # Tìm cuộc hội thoại đang hoạt động
     conversation = ChatConversation.query.filter_by(
         guest_session_id=session_id,
         status='active'
@@ -104,7 +104,7 @@ def get_guest_conversation(session_id):
 
 @chat_bp.route('/guest/set-name', methods=['POST'])
 def set_guest_name():
-    """Set name for guest conversation"""
+    """Đặt tên cho cuộc hội thoại của khách vãng lai"""
     data = request.get_json()
     session_id = data.get('session_id')
     guest_name = data.get('name', '').strip()
@@ -128,13 +128,13 @@ def set_guest_name():
 @chat_bp.route('/<int:conversation_id>', methods=['GET'])
 @jwt_required()
 def get_conversation(conversation_id):
-    """Get conversation by ID with messages"""
+    """Lấy cuộc hội thoại theo ID kèm tin nhắn"""
     user_id = get_jwt_identity()
     user = User.query.get(user_id)
     
     conversation = ChatConversation.query.get_or_404(conversation_id)
     
-    # Check permission
+    # Kiểm tra quyền truy cập
     if user.role != 'admin' and conversation.customer_id != user_id:
         return jsonify({'error': 'Unauthorized'}), 403
     
@@ -143,7 +143,7 @@ def get_conversation(conversation_id):
 
 @chat_bp.route('/<int:conversation_id>/messages', methods=['GET'])
 def get_messages(conversation_id):
-    """Get messages for a conversation"""
+    """Lấy tin nhắn của một cuộc hội thoại"""
     conversation = ChatConversation.query.get_or_404(conversation_id)
     
     # Kiểm tra quyền truy cập
@@ -165,7 +165,7 @@ def get_messages(conversation_id):
 
 @chat_bp.route('/<int:conversation_id>/read', methods=['POST'])
 def mark_as_read(conversation_id):
-    """Mark messages as read"""
+    """Đánh dấu tin nhắn đã đọc"""
     conversation = ChatConversation.query.get_or_404(conversation_id)
     is_admin = False
     
@@ -185,7 +185,7 @@ def mark_as_read(conversation_id):
         if conversation.guest_session_id != session_id:
             return jsonify({'error': 'Unauthorized'}), 403
     
-    # Mark messages from the other party as read
+    # Đánh dấu tin nhắn từ phía kia là đã đọc
     if is_admin:
         ChatMessage.query.filter_by(
             conversation_id=conversation_id,
@@ -206,7 +206,7 @@ def mark_as_read(conversation_id):
 @chat_bp.route('/<int:conversation_id>/close', methods=['POST'])
 @jwt_required()
 def close_conversation(conversation_id):
-    """Close a conversation - admin only"""
+    """Đóng cuộc hội thoại - chỉ admin"""
     user_id = get_jwt_identity()
     user = User.query.get(user_id)
     
@@ -217,11 +217,11 @@ def close_conversation(conversation_id):
     customer_id = conversation.customer_id
     guest_session_id = conversation.guest_session_id
     
-    # Mark conversation as closed
+    # Đánh dấu cuộc hội thoại là đã đóng
     conversation.status = 'closed'
     db.session.commit()
     
-    # Notify customer via socket
+    # Thông báo cho khách hàng qua socket
     from socket_events import socketio
     if customer_id:
         socketio.emit('conversation_closed', {
@@ -237,10 +237,49 @@ def close_conversation(conversation_id):
     return jsonify({'success': True})
 
 
+@chat_bp.route('/<int:conversation_id>/customer-close', methods=['POST'])
+def customer_close_conversation(conversation_id):
+    """Khách hàng tự kết thúc cuộc hội thoại"""
+    conversation = ChatConversation.query.get_or_404(conversation_id)
+    
+    # Kiểm tra quyền: phải là chủ conversation
+    is_authorized = False
+    try:
+        verify_jwt_in_request()
+        user_id = get_jwt_identity()
+        user = User.query.get(user_id)
+        if user and (conversation.customer_id == user.user_id or conversation.customer_id == int(user_id)):
+            is_authorized = True
+    except:
+        pass
+    
+    if not is_authorized:
+        # Thử guest session
+        data = request.get_json() or {}
+        session_id = data.get('session_id') or request.args.get('session_id')
+        if session_id and conversation.guest_session_id == session_id:
+            is_authorized = True
+    
+    if not is_authorized:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    conversation.status = 'closed'
+    db.session.commit()
+    
+    # Thông báo cho admin qua socket
+    from socket_events import socketio
+    socketio.emit('conversation_closed_by_customer', {
+        'conversation_id': conversation_id,
+        'message': 'Khách hàng đã kết thúc cuộc trò chuyện.'
+    }, room='admin_room')
+    
+    return jsonify({'success': True})
+
+
 @chat_bp.route('/<int:conversation_id>', methods=['DELETE'])
 @jwt_required()
 def delete_conversation(conversation_id):
-    """Delete a conversation permanently - admin only"""
+    """Xóa vĩnh viễn cuộc hội thoại - chỉ admin"""
     user_id = get_jwt_identity()
     user = User.query.get(user_id)
     
@@ -249,10 +288,10 @@ def delete_conversation(conversation_id):
     
     conversation = ChatConversation.query.get_or_404(conversation_id)
     
-    # Delete all messages first
+    # Xóa tất cả tin nhắn trước
     ChatMessage.query.filter_by(conversation_id=conversation_id).delete()
     
-    # Delete conversation
+    # Xóa cuộc hội thoại
     db.session.delete(conversation)
     db.session.commit()
     
@@ -261,7 +300,7 @@ def delete_conversation(conversation_id):
 
 @chat_bp.route('/start-new', methods=['POST'])
 def start_new_conversation():
-    """Delete closed conversation and start new one"""
+    """Xóa cuộc hội thoại đã đóng và bắt đầu cuộc mới"""
     # Kiểm tra nếu đã đăng nhập
     try:
         verify_jwt_in_request()
@@ -282,8 +321,8 @@ def start_new_conversation():
 
 
 def start_new_user_conversation(user_id):
-    """Start new conversation for logged in user"""
-    # Delete closed conversations
+    """Bắt đầu cuộc hội thoại mới cho người dùng đã đăng nhập"""
+    # Xóa các cuộc hội thoại đã đóng
     closed_conversations = ChatConversation.query.filter_by(
         customer_id=user_id,
         status='closed'
@@ -303,8 +342,8 @@ def start_new_user_conversation(user_id):
 
 
 def start_new_guest_conversation(session_id):
-    """Start new conversation for guest"""
-    # Delete closed conversations
+    """Bắt đầu cuộc hội thoại mới cho khách vãng lai"""
+    # Xóa các cuộc hội thoại đã đóng
     closed_conversations = ChatConversation.query.filter_by(
         guest_session_id=session_id,
         status='closed'
@@ -326,7 +365,7 @@ def start_new_guest_conversation(session_id):
 @chat_bp.route('/unread-count', methods=['GET'])
 @jwt_required()
 def get_unread_count():
-    """Get total unread message count for admin"""
+    """Lấy tổng số tin nhắn chưa đọc cho admin"""
     user_id = get_jwt_identity()
     user = User.query.get(user_id)
     

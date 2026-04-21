@@ -409,7 +409,7 @@ def get_all_store_info_simple():
 def get_promotional_products():
     """
     Lấy tất cả sản phẩm đang có khuyến mãi
-    Tính toán giá sau giảm và thông tin khuyến mãi
+    
     """
     try:
         now = datetime.utcnow()
@@ -625,9 +625,13 @@ CHATBOT_PROMPT = """Bạn là trợ lý AI của cửa hàng thời trang Shop Q
    - TUYỆT ĐỐI KHÔNG tự bịa địa chỉ, số điện thoại, email, giờ mở cửa
    - Nếu thông tin không có trong dữ liệu → nói "Vui lòng liên hệ hotline để biết thêm chi tiết"
    - Khi trả lời về địa chỉ/liên hệ → COPY NGUYÊN VĂN từ dữ liệu, không thay đổi
-6. Trả lời bằng tiếng Việt, thân thiện, ngắn gọn
-7. KHÔNG bịa đặt thông tin không có trong dữ liệu
-8. SỬ DỤNG LỊCH SỬ HỘI THOẠI để hiểu ngữ cảnh và trả lời phù hợp
+6. **VẤN ĐỀ CẦN NHÂN VIÊN HỖ TRỢ:**
+   - Nếu khách hỏi về: bảo mật tài khoản, mật khẩu, khiếu nại, hoàn tiền, lỗi thanh toán, tài khoản bị khóa, hàng bị hỏng, tranh chấp → trả lời ngắn gọn rằng vấn đề này cần nhân viên hỗ trợ trực tiếp, và gợi ý chuyển sang CSKH
+   - Nếu khách hỏi về đơn hàng (kiểm tra đơn, trạng thái đơn, giao hàng, hủy đơn, đơn ở đâu, khi nào nhận được...) → trả lời ngắn gọn rằng cần nhân viên tra cứu đơn hàng trực tiếp, gợi ý chuyển sang CSKH
+   - Kết thúc câu trả lời bằng: [SUGGEST_CSKH]
+7. Trả lời bằng tiếng Việt, thân thiện, ngắn gọn
+8. KHÔNG bịa đặt thông tin không có trong dữ liệu
+9. SỬ DỤNG LỊCH SỬ HỘI THOẠI để hiểu ngữ cảnh và trả lời phù hợp
 
 **BẮT BUỘC:** Ở DÒNG CUỐI CÙNG của câu trả lời, PHẢI ghi CHÍNH XÁC theo format:
 [PRODUCTS: id1,id2] - chỉ ghi ID của sản phẩm bạn ĐÃ ĐỀ CẬP trong câu trả lời
@@ -848,8 +852,15 @@ def ask_chatbot():
             # Parse ID sản phẩm từ response
             mentioned_ids = []
             clean_response = response
+            suggest_cskh = False
             
             import re
+            
+            # Kiểm tra tag gợi ý CSKH
+            if '[SUGGEST_CSKH]' in response:
+                suggest_cskh = True
+                clean_response = clean_response.replace('[SUGGEST_CSKH]', '').strip()
+            
             # Thử nhiều pattern để bắt tag [PRODUCTS: ...]
             patterns = [
                 r'\[PRODUCTS:\s*([\d,\s]*)\]',
@@ -866,7 +877,7 @@ def ask_chatbot():
                     break
             
             # Xóa tag [PRODUCTS: ...] khỏi response (tất cả biến thể)
-            clean_response = re.sub(r'\s*\[?PRODUCTS:\s*[\d,\s]*\]?\s*', '', response, flags=re.IGNORECASE).strip()
+            clean_response = re.sub(r'\s*\[?PRODUCTS:\s*[\d,\s]*\]?\s*', '', clean_response, flags=re.IGNORECASE).strip()
             
             # Lọc sản phẩm CHỈ những cái được đề cập trong response
             filtered_products = []
@@ -884,11 +895,12 @@ def ask_chatbot():
                         filtered_products.append(products_dict[pid])
             
             print(f"[CHAT] Response kết thúc với: ...{response[-100:] if len(response) > 100 else response}")
-            print(f"[CHAT] ID được đề cập: {mentioned_ids}, Sản phẩm đã lọc: {len(filtered_products)}")
+            print(f"[CHAT] ID được đề cập: {mentioned_ids}, Sản phẩm đã lọc: {len(filtered_products)}, Suggest CSKH: {suggest_cskh}")
             
             return jsonify({
                 'response': clean_response,
                 'products': filtered_products,
+                'suggest_cskh': suggest_cskh,
                 'source': 'gemini'
             })
         else:
@@ -911,6 +923,7 @@ def ask_chatbot():
             return jsonify({
                 'response': fallback_response,
                 'products': products[:3] if products else [],
+                'suggest_cskh': False,
                 'source': 'fallback'
             })
             
