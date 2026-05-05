@@ -35,7 +35,8 @@ dist/
 # Uploads (keep .gitkeep)
 backend/uploads/*
 !backend/uploads/.gitkeep
-README.md
 
-*.md
-*.puml
+# Documentation and notes (uncomment if you want to ignore)
+# README.md
+# *.md
+# *.puml

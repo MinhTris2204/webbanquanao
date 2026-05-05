@@ -9,14 +9,14 @@ from config import Config
 
 momo_bp = Blueprint('momo', __name__)
 
-# MoMo Configuration - Sandbox Environment
+# MoMo Configuration - Use environment variables from Config
 MOMO_CONFIG = {
-    'partnerCode': 'MOMOBKUN20180529',
-    'accessKey': 'klm05TvNBzhg7h7j',
-    'secretKey': 'at67qH6mk8w5Y1nAyMoYKMWACiEi2bsa',
-    'endpoint': 'https://test-payment.momo.vn',
-    'redirectUrl': 'http://localhost:5173/checkout/momo-return',
-    'ipnUrl': 'http://localhost:5000/api/momo/ipn'
+    'partnerCode': Config.MOMO_PARTNER_CODE,
+    'accessKey': Config.MOMO_ACCESS_KEY,
+    'secretKey': Config.MOMO_SECRET_KEY,
+    'endpoint': Config.MOMO_ENDPOINT,
+    'redirectUrl': Config.MOMO_REDIRECT_URL,
+    'ipnUrl': Config.MOMO_IPN_URL
 }
 
 def create_signature(data, secret_key):
