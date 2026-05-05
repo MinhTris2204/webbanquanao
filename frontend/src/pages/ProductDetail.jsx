@@ -238,6 +238,14 @@ export default function ProductDetail() {
               <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold">{product.gioi_tinh}</span>
             </div>
             <p className="text-sm text-gray-400 mb-2">Mã sản phẩm: #{product.products_id}</p>
+            
+            {/* Số lượng đã bán */}
+            {product.total_sold > 0 && (
+              <p className="text-sm text-orange-600 font-semibold mb-2">
+                🔥 Đã bán: {product.total_sold} sản phẩm
+              </p>
+            )}
+            
             <h1 className="text-4xl font-bold mb-4 text-gray-800">{product.ten_san_pham}</h1>
             {product.promotion ? (
               <div className="space-y-3 mb-6">
@@ -305,7 +313,6 @@ export default function ProductDetail() {
 
       <ProductReviews productId={product.products_id} />
       <div className="mt-16"><RecommendedProducts title=" Gợi ý dành cho bạn" limit={8} type="for-you" /></div>
-      <div className="mt-16"><RecommendedProducts title=" Thường được mua cùng nhau" limit={4} type="frequently-bought" productId={product.products_id} /></div>
       <div className="mt-16"><RecommendedProducts title=" Sản phẩm tương tự" limit={8} type="similar" productId={product.products_id} /></div>
     </div>
   )

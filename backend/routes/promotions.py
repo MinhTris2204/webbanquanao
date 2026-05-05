@@ -20,7 +20,7 @@ def admin_required(fn):
 @promotions_bp.route('/', methods=['GET'])
 @admin_required
 def get_promotions():
-    """Get all promotions with filters"""
+    """Lấy tất cả khuyến mãi với bộ lọc"""
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 20, type=int)
     search = request.args.get('search', '')
@@ -28,11 +28,11 @@ def get_promotions():
     
     query = Promotion.query.join(Product)
     
-    # Search by product name
+    # Tìm kiếm theo tên sản phẩm
     if search:
         query = query.filter(Product.ten_san_pham.ilike(f'%{search}%'))
     
-    # Filter by status
+    # Lọc theo trạng thái
     now = datetime.utcnow()
     if status == 'active':
         query = query.filter(
@@ -53,7 +53,7 @@ def get_promotions():
             )
         )
     
-    # Order by created_at descending
+    # Sắp xếp theo created_at giảm dần
     query = query.order_by(Promotion.created_at.desc())
     
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
@@ -68,28 +68,28 @@ def get_promotions():
 @promotions_bp.route('/<int:promotion_id>', methods=['GET'])
 @admin_required
 def get_promotion(promotion_id):
-    """Get single promotion details"""
+    """Lấy chi tiết một khuyến mãi"""
     promotion = Promotion.query.get_or_404(promotion_id)
     return jsonify(promotion.to_dict()), 200
 
 @promotions_bp.route('/', methods=['POST'])
 @admin_required
 def create_promotion():
-    """Create new promotion"""
+    """Tạo khuyến mãi mới"""
     data = request.get_json()
     
-    # Validate required fields
+    # Kiểm tra các trường bắt buộc
     required_fields = ['product_id', 'discount_type', 'discount_value', 'start_date', 'end_date']
     for field in required_fields:
         if field not in data:
             return jsonify({'error': f'Thiếu trường {field}'}), 400
     
-    # Get product
+    # Lấy sản phẩm
     product = Product.query.get(data['product_id'])
     if not product:
         return jsonify({'error': 'Sản phẩm không tồn tại'}), 404
     
-    # Validate discount value
+    # Kiểm tra giá trị giảm giá
     discount_type = data['discount_type']
     discount_value = float(data['discount_value'])
     
@@ -102,13 +102,13 @@ def create_promotion():
     else:
         return jsonify({'error': 'Loại giảm giá không hợp lệ'}), 400
     
-    # Parse dates
+    # Phân tích ngày tháng
     try:
-        # Handle ISO format datetime strings from frontend
+        # Xử lý chuỗi datetime ISO từ frontend
         start_date_str = data['start_date']
         end_date_str = data['end_date']
         
-        # Remove 'Z' and milliseconds if present, then parse
+        # Xóa 'Z' và milliseconds nếu có, sau đó phân tích
         if 'Z' in start_date_str:
             start_date_str = start_date_str.replace('Z', '+00:00')
         if 'Z' in end_date_str:
@@ -117,14 +117,14 @@ def create_promotion():
         start_date = datetime.fromisoformat(start_date_str)
         end_date = datetime.fromisoformat(end_date_str)
         
-        # Convert to UTC if timezone-aware
+        # Chuyển sang UTC nếu có thông tin múi giờ
         if start_date.tzinfo is not None:
             start_date = start_date.replace(tzinfo=None)
         if end_date.tzinfo is not None:
             end_date = end_date.replace(tzinfo=None)
             
     except Exception as e:
-        print(f"Date parsing error: {e}")
+        print(f"Lỗi phân tích ngày: {e}")
         return jsonify({'error': f'Định dạng ngày không hợp lệ: {str(e)}'}), 400
     
     # Validate dates - không cho phép đặt thời gian trong quá khứ
@@ -138,7 +138,7 @@ def create_promotion():
     if end_date <= start_date:
         return jsonify({'error': 'Thời gian kết thúc phải sau thời gian bắt đầu'}), 400
     
-    # Check for overlapping promotions
+    # Kiểm tra khuyến mãi trùng thời gian
     overlapping = Promotion.query.filter(
         Promotion.product_id == data['product_id'],
         Promotion.is_active == True,
@@ -152,7 +152,7 @@ def create_promotion():
     if overlapping:
         return jsonify({'error': 'Sản phẩm đã có khuyến mãi trong khoảng thời gian này'}), 400
     
-    # Create promotion
+    # Tạo khuyến mãi
     promotion = Promotion(
         product_id=data['product_id'],
         discount_type=discount_type,
@@ -170,11 +170,11 @@ def create_promotion():
 @promotions_bp.route('/<int:promotion_id>', methods=['PUT'])
 @admin_required
 def update_promotion(promotion_id):
-    """Update promotion"""
+    """Cập nhật khuyến mãi"""
     promotion = Promotion.query.get_or_404(promotion_id)
     data = request.get_json()
     
-    # Validate discount value if provided
+    # Kiểm tra giá trị giảm giá nếu có
     if 'discount_value' in data:
         discount_type = data.get('discount_type', promotion.discount_type)
         discount_value = float(data['discount_value'])
@@ -187,7 +187,7 @@ def update_promotion(promotion_id):
             if discount_value <= 0 or discount_value >= float(product.gia_ban):
                 return jsonify({'error': 'Giảm giá cố định phải nhỏ hơn giá sản phẩm'}), 400
     
-    # Parse and validate dates if provided
+    # Phân tích và kiểm tra ngày tháng nếu có
     start_date = promotion.start_date
     end_date = promotion.end_date
     
@@ -200,7 +200,7 @@ def update_promotion(promotion_id):
             if start_date.tzinfo is not None:
                 start_date = start_date.replace(tzinfo=None)
         except Exception as e:
-            print(f"Start date parsing error: {e}")
+            print(f"Lỗi phân tích ngày bắt đầu: {e}")
             return jsonify({'error': f'Định dạng ngày bắt đầu không hợp lệ: {str(e)}'}), 400
     
     if 'end_date' in data:
@@ -212,7 +212,7 @@ def update_promotion(promotion_id):
             if end_date.tzinfo is not None:
                 end_date = end_date.replace(tzinfo=None)
         except Exception as e:
-            print(f"End date parsing error: {e}")
+            print(f"Lỗi phân tích ngày kết thúc: {e}")
             return jsonify({'error': f'Định dạng ngày kết thúc không hợp lệ: {str(e)}'}), 400
     
     # Validate dates - không cho phép đặt thời gian trong quá khứ
@@ -225,7 +225,7 @@ def update_promotion(promotion_id):
     if end_date <= start_date:
         return jsonify({'error': 'Thời gian kết thúc phải sau thời gian bắt đầu'}), 400
     
-    # Update fields
+    # Cập nhật các trường
     if 'discount_type' in data:
         promotion.discount_type = data['discount_type']
     if 'discount_value' in data:
@@ -246,7 +246,7 @@ def update_promotion(promotion_id):
 @promotions_bp.route('/<int:promotion_id>', methods=['DELETE'])
 @admin_required
 def delete_promotion(promotion_id):
-    """Delete promotion"""
+    """Xóa khuyến mãi"""
     promotion = Promotion.query.get_or_404(promotion_id)
     
     db.session.delete(promotion)
@@ -257,7 +257,7 @@ def delete_promotion(promotion_id):
 @promotions_bp.route('/bulk', methods=['POST'])
 @admin_required
 def bulk_create_promotions():
-    """Create promotions for multiple products"""
+    """Tạo khuyến mãi cho nhiều sản phẩm cùng lúc"""
     data = request.get_json()
     
     required_fields = ['product_ids', 'discount_type', 'discount_value', 'start_date', 'end_date']
@@ -270,11 +270,11 @@ def bulk_create_promotions():
     discount_value = float(data['discount_value'])
     
     try:
-        # Handle ISO format datetime strings from frontend
+        # Xử lý chuỗi datetime ISO từ frontend
         start_date_str = data['start_date']
         end_date_str = data['end_date']
         
-        # Remove 'Z' and milliseconds if present, then parse
+        # Xóa 'Z' và milliseconds nếu có, sau đó phân tích
         if 'Z' in start_date_str:
             start_date_str = start_date_str.replace('Z', '+00:00')
         if 'Z' in end_date_str:
@@ -283,14 +283,14 @@ def bulk_create_promotions():
         start_date = datetime.fromisoformat(start_date_str)
         end_date = datetime.fromisoformat(end_date_str)
         
-        # Convert to UTC if timezone-aware
+        # Chuyển sang UTC nếu có thông tin múi giờ
         if start_date.tzinfo is not None:
             start_date = start_date.replace(tzinfo=None)
         if end_date.tzinfo is not None:
             end_date = end_date.replace(tzinfo=None)
             
     except Exception as e:
-        print(f"Date parsing error: {e}")
+        print(f"Lỗi phân tích ngày: {e}")
         return jsonify({'error': f'Định dạng ngày không hợp lệ: {str(e)}'}), 400
     
     # Validate dates - không cho phép đặt thời gian trong quá khứ
@@ -312,7 +312,7 @@ def bulk_create_promotions():
             failed_products.append({'product_id': product_id, 'reason': 'Sản phẩm không tồn tại'})
             continue
         
-        # Validate discount
+        # Kiểm tra giá trị giảm giá
         if discount_type == 'percent':
             if discount_value <= 0 or discount_value >= 100:
                 failed_products.append({'product_id': product_id, 'reason': 'Giảm giá không hợp lệ'})
@@ -322,7 +322,7 @@ def bulk_create_promotions():
                 failed_products.append({'product_id': product_id, 'reason': 'Giảm giá lớn hơn giá sản phẩm'})
                 continue
         
-        # Check overlapping
+        # Kiểm tra trùng thời gian
         overlapping = Promotion.query.filter(
             Promotion.product_id == product_id,
             Promotion.is_active == True,
@@ -337,7 +337,7 @@ def bulk_create_promotions():
             failed_products.append({'product_id': product_id, 'reason': 'Đã có khuyến mãi trùng thời gian'})
             continue
         
-        # Create promotion
+        # Tạo khuyến mãi
         promotion = Promotion(
             product_id=product_id,
             discount_type=discount_type,
@@ -361,7 +361,7 @@ def bulk_create_promotions():
 @promotions_bp.route('/stats', methods=['GET'])
 @admin_required
 def get_promotion_stats():
-    """Get promotion statistics"""
+    """Lấy thống kê khuyến mãi"""
     now = datetime.utcnow()
     
     active_count = Promotion.query.filter(

@@ -23,28 +23,28 @@ def get_products():
     query = Product.query
     
     if search:
-        # Check if search is a number (ID search)
+        # Kiểm tra nếu từ khóa là số (tìm theo ID)
         if search.isdigit():
             query = query.filter(Product.products_id == int(search))
         elif search.startswith('#') and search[1:].isdigit():
-            # Support searching with # prefix like "#123"
+            # Hỗ trợ tìm kiếm với tiền tố # như "#123"
             query = query.filter(Product.products_id == int(search[1:]))
         else:
             query = query.filter(Product.ten_san_pham.ilike(f'%{search}%'))
     
-    # Filter by category (loai)
+    # Lọc theo danh mục (loai)
     if category:
         query = query.filter(Product.loai == category)
     
-    # Filter by gender (gioi_tinh)
+    # Lọc theo giới tính (gioi_tinh)
     if gender:
         query = query.filter(Product.gioi_tinh == gender)
     
-    # Filter by size (contains check for comma-separated sizes)
+    # Lọc theo size (kiểm tra chuỗi phân cách bằng dấu phẩy)
     if size:
         query = query.filter(Product.size.ilike(f'%{size}%'))
     
-    # Filter by price range
+    # Lọc theo khoảng giá
     if min_price is not None:
         query = query.filter(Product.gia_ban >= min_price)
     if max_price is not None:
@@ -60,7 +60,7 @@ def get_products():
         ).subquery()
         query = query.filter(Product.products_id.in_(active_product_ids))
     
-    # Sorting
+    # Sắp xếp
     if sort_by == 'newest':
         query = query.order_by(desc(Product.created_at))
     elif sort_by == 'oldest':
@@ -72,12 +72,34 @@ def get_products():
     elif sort_by == 'price_desc':
         query = query.order_by(desc(Product.gia_ban))
     else:
-        query = query.order_by(desc(Product.created_at))  # Default: newest first
+        query = query.order_by(desc(Product.created_at))  # Mặc định: mới nhất trước
     
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
     
+    # Tính số lượng đã bán cho mỗi sản phẩm
+    product_ids = [p.products_id for p in pagination.items]
+    sold_counts = {}
+    if product_ids:
+        sold_query = db.session.query(
+            OrderDetail.product_id,
+            func.sum(OrderDetail.quantity).label('total_sold')
+        ).join(Order, OrderDetail.order_id == Order.id)\
+         .filter(
+            OrderDetail.product_id.in_(product_ids),
+            Order.trangthai == 'hoan_thanh'
+        ).group_by(OrderDetail.product_id).all()
+        
+        sold_counts = {product_id: int(total_sold) for product_id, total_sold in sold_query}
+    
+    # Thêm số lượng đã bán vào mỗi sản phẩm
+    products_with_sold = []
+    for product in pagination.items:
+        product_dict = product.to_dict()
+        product_dict['total_sold'] = sold_counts.get(product.products_id, 0)
+        products_with_sold.append(product_dict)
+    
     return jsonify({
-        'products': [p.to_dict() for p in pagination.items],
+        'products': products_with_sold,
         'total': pagination.total,
         'pages': pagination.pages,
         'current_page': page
@@ -85,7 +107,7 @@ def get_products():
 
 @products_bp.route('/categories', methods=['GET'])
 def get_categories():
-    # Get distinct product categories
+    # Lấy danh sách loại sản phẩm không trùng lặp
     categories = db.session.query(Product.loai).distinct().all()
     category_list = [cat[0] for cat in categories if cat[0]]
     
@@ -111,7 +133,7 @@ def autocomplete():
             Product.trang_thai == 'Con_hang'
         ).limit(8).all()
     else:
-        # Search for products with case-insensitive matching
+        # Tìm kiếm sản phẩm không phân biệt hoa thường
         products = Product.query.filter(
             Product.ten_san_pham.ilike(f'%{query}%'),
             Product.trang_thai == 'Con_hang'
@@ -131,25 +153,45 @@ def autocomplete():
 def get_best_sellers():
     """Get best selling products based on completed orders"""
     limit = request.args.get('limit', 8, type=int)
-    
-    # Get products with most sales from completed orders (hoan_thanh)
-    best_sellers = db.session.query(
+    period = request.args.get('period', 'all')  # day, month, year, all
+
+    from datetime import timedelta
+    now = datetime.utcnow()
+
+    query = db.session.query(
         Product,
         func.sum(OrderDetail.quantity).label('total_sold')
     ).join(OrderDetail, Product.products_id == OrderDetail.product_id)\
      .join(Order, OrderDetail.order_id == Order.id)\
      .filter(
-        Order.trangthai == 'hoan_thanh',  # Only completed orders
-        Product.trang_thai == 'Con_hang'   # Only available products
-    ).group_by(Product.products_id)\
-     .order_by(desc('total_sold'))\
-     .limit(limit).all()
-    
-    # Only return products that have actual sales data
-    products = [p[0] for p in best_sellers]
-    
+        Order.trangthai == 'hoan_thanh',
+        Product.trang_thai == 'Con_hang'
+    )
+
+    if period == 'day':
+        start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        query = query.filter(Order.created_at >= start)
+    elif period == 'month':
+        start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        query = query.filter(Order.created_at >= start)
+    elif period == 'year':
+        start = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+        query = query.filter(Order.created_at >= start)
+    # 'all' => không lọc thời gian
+
+    best_sellers = query.group_by(Product.products_id)\
+        .order_by(desc('total_sold'))\
+        .limit(limit).all()
+
+    # Thêm số lượng đã bán vào mỗi sản phẩm
+    products_with_sold = []
+    for product, total_sold in best_sellers:
+        product_dict = product.to_dict()
+        product_dict['total_sold'] = int(total_sold) if total_sold else 0
+        products_with_sold.append(product_dict)
+
     return jsonify({
-        'products': [p.to_dict() for p in products]
+        'products': products_with_sold
     }), 200
 
 @products_bp.route('/on-sale', methods=['GET'])
@@ -177,7 +219,7 @@ def get_sale_products():
         Product.products_id.in_(active_product_ids)
     )
     
-    # Apply filters
+    # Áp dụng bộ lọc
     if category:
         query = query.filter(Product.loai == category)
     
@@ -193,13 +235,13 @@ def get_sale_products():
     if max_price is not None:
         query = query.filter(Product.gia_ban <= max_price)
     
-    # Sorting
+    # Sắp xếp
     if sort_by == 'price':
         query = query.order_by(Product.gia_ban.asc())
     elif sort_by == 'name':
         query = query.order_by(Product.ten_san_pham.asc())
     else:
-        # Default: sort by newest
+        # Mặc định: mới nhất trước
         query = query.order_by(Product.created_at.desc())
     
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
@@ -214,4 +256,17 @@ def get_sale_products():
 @products_bp.route('/<int:product_id>', methods=['GET'])
 def get_product(product_id):
     product = Product.query.get_or_404(product_id)
-    return jsonify(product.to_dict()), 200
+    
+    # Tính số lượng đã bán
+    sold_count = db.session.query(
+        func.sum(OrderDetail.quantity)
+    ).join(Order, OrderDetail.order_id == Order.id)\
+     .filter(
+        OrderDetail.product_id == product_id,
+        Order.trangthai == 'hoan_thanh'
+    ).scalar()
+    
+    product_dict = product.to_dict()
+    product_dict['total_sold'] = int(sold_count) if sold_count else 0
+    
+    return jsonify(product_dict), 200

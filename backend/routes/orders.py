@@ -43,7 +43,7 @@ def create_order():
         product_dict = product.to_dict()
         original_price = float(product.gia_ban)
         
-        # Check promotion
+        # Kiểm tra khuyến mãi
         has_promotion = product_dict.get('promotion') and product_dict['promotion'].get('promotional_price')
         if has_promotion:
             unit_price = product_dict['promotion']['promotional_price']
@@ -58,7 +58,7 @@ def create_order():
         line_total = unit_price * quantity
         total_float = line_total
         
-        # Apply voucher if provided
+        # Áp dụng voucher nếu có
         voucher_id = None
         discount_amount = 0
         ma_voucher = data.get('ma_voucher')
@@ -82,7 +82,7 @@ def create_order():
         
         final_total = max(0, total_float - discount_amount)
         
-        # Create order
+        # Tạo đơn hàng
         order = Order(
             user_id=user_id,
             hoten=data.get('hoten'),
@@ -99,7 +99,7 @@ def create_order():
         db.session.add(order)
         db.session.flush()
         
-        # Create order detail
+        # Tạo chi tiết đơn hàng
         order_detail = OrderDetail(
             order_id=order.id,
             product_id=product.products_id,
@@ -121,13 +121,13 @@ def create_order():
     if not cart or not cart.cart_items:
         return jsonify({'error': 'Giỏ hàng trống'}), 400
     
-    # Calculate total first (with promotional prices if available)
+    # Tính tổng tiền trước (dùng giá khuyến mãi nếu có)
     total = 0
     for item in cart.cart_items:
         product = item.product
         product_dict = product.to_dict()
         
-        # Use promotional price if available, otherwise use regular price
+        # Dùng giá khuyến mãi nếu có, ngược lại dùng giá thường
         if product_dict.get('promotion') and product_dict['promotion'].get('promotional_price'):
             unit_price = product_dict['promotion']['promotional_price']
         else:
@@ -136,10 +136,10 @@ def create_order():
         line_total = unit_price * item.quantity
         total += line_total
     
-    # Convert total to float for calculations
+    # Chuyển tổng tiền sang float để tính toán
     total_float = float(total)
     
-    # Apply voucher if provided
+    # Áp dụng voucher nếu có
     voucher_id = None
     discount_amount = 0
     ma_voucher = data.get('ma_voucher')
@@ -147,12 +147,12 @@ def create_order():
     if ma_voucher:
         voucher = Voucher.query.filter_by(code=ma_voucher).first()
         if voucher:
-            # Validate voucher
+            # Kiểm tra voucher hợp lệ
             now = datetime.utcnow()
             if voucher.is_active and voucher.start_date <= now <= voucher.end_date:
                 min_order = float(voucher.min_order_value) if voucher.min_order_value else 0
                 if (voucher.usage_limit is None or voucher.used_count < voucher.usage_limit) and total_float >= min_order:
-                    # Calculate discount
+                    # Tính giảm giá
                     if voucher.discount_type == 'percent':
                         discount_amount = (total_float * float(voucher.discount_value)) / 100
                         if voucher.max_discount:
@@ -161,12 +161,12 @@ def create_order():
                         discount_amount = float(voucher.discount_value)
                     
                     voucher_id = voucher.id
-                    # Increase used count
+                    # Tăng số lần sử dụng
                     voucher.used_count += 1
     
     final_total = max(0, total_float - discount_amount)
     
-    # Create order with total
+    # Tạo đơn hàng với tổng tiền
     order = Order(
         user_id=user_id,
         hoten=data.get('hoten'),
@@ -183,13 +183,13 @@ def create_order():
     db.session.add(order)
     db.session.flush()
     
-    # Create order details (with promotional prices if available)
+    # Tạo chi tiết đơn hàng (dùng giá khuyến mãi nếu có)
     for item in cart.cart_items:
         product = item.product
         product_dict = product.to_dict()
         original_price = float(product.gia_ban)
         
-        # Check if product has active promotion
+        # Kiểm tra sản phẩm có khuyến mãi đang hoạt động không
         has_promotion = product_dict.get('promotion') and product_dict['promotion'].get('promotional_price')
         
         if has_promotion:

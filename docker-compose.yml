@@ -43,7 +43,7 @@ services:
       # OpenWeatherMap API Key
       OPENWEATHER_API_KEY: "88b5318004f13c1bdbbba8a221833b9c"
       # Gemini API Configuration
-      GEMINI_API_KEY: "AIzaSyBL1eqjNRCSVgTW4NufX37sCpCdVAJDvco"
+      GEMINI_API_KEY: "AIzaSyDlxbFzkGUc4Wt9rdXwJeoCCG5wm6GpAoU"
       # Email Validation APIs
       # Mailboxlayer API (ưu tiên - 250 requests/month miễn phí)
       MAILBOXLAYER_API_KEY: "7654f228e277563ec7b323736572f6d4"

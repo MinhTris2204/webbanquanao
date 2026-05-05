@@ -34,7 +34,7 @@ def is_disposable_email(email: str) -> bool:
 def validate_email_format(email: str):
     """
     Validate email format using email-validator library.
-    Returns (is_valid: bool, error_msg: str)
+    Returns (is_valid: bool, error_msg: str | None)
     """
     try:
         from email_validator import validate_email, EmailNotValidError
@@ -53,7 +53,7 @@ def validate_email_format(email: str):
 def check_domain_mx(email: str):
     """
     Check if the email domain has valid MX records.
-    Returns (has_mx: bool, error_msg: str)
+    Returns (has_mx: bool, error_msg: str | None)
     """
     try:
         import dns.resolver
@@ -73,7 +73,10 @@ def check_domain_mx(email: str):
 def validate_email_via_api(email: str):
     """
     Validate email using Abstract API (optional).
-    Returns (is_valid: bool, warning: str | None, error_msg: str | None)
+    Returns (is_valid, warning, error_msg)
+        - (True, warning_or_None, None)  -> valid
+        - (False, None, error_msg)       -> invalid
+        - (None, None, None)             -> API not configured or failed (skip)
     """
     api_key = os.getenv('ABSTRACT_API_KEY', '')
     if not api_key or api_key == 'your_abstract_api_key_here':
@@ -88,7 +91,6 @@ def validate_email_via_api(email: str):
             deliverability = data.get('deliverability', '')
             is_valid_format = data.get('is_valid_format', {}).get('value', False)
             is_disposable = data.get('is_disposable_email', {}).get('value', False)
-            is_free = data.get('is_free_email', {}).get('value', True)
 
             if not is_valid_format:
                 return False, None, 'Định dạng email không hợp lệ'
@@ -97,11 +99,10 @@ def validate_email_via_api(email: str):
             if deliverability == 'UNDELIVERABLE':
                 return False, None, 'Email không tồn tại hoặc không thể nhận thư'
             if deliverability == 'RISKY':
-                warning = 'Email có thể không nhận được thư, hãy kiểm tra lại'
-                return True, warning, None
+                return True, 'Email có thể không nhận được thư, hãy kiểm tra lại', None
             return True, None, None
-    except Exception:
-        pass
+    except Exception as e:
+        print(f'[AbstractAPI] call failed: {e}')
 
     return None, None, None  # API call failed, skip
 
@@ -111,11 +112,11 @@ def validate_email_full(email: str, check_smtp: bool = False, use_api: bool = Tr
     Full email validation pipeline:
     1. Format check
     2. MX/domain check
-    3. Optional API check (Abstract API)
+    3. Optional Abstract API check
 
-    Returns (is_valid: bool, error_or_warning: str | None)
-    On success, returns (True, warning_message_or_None)
-    On failure, returns (False, error_message)
+    Returns:
+        (True, warning_or_None)  -> valid
+        (False, error_msg)       -> invalid
     """
     email = email.strip().lower()
 
@@ -134,7 +135,7 @@ def validate_email_full(email: str, check_smtp: bool = False, use_api: bool = Tr
         api_valid, warning, api_error = validate_email_via_api(email)
         if api_valid is False:
             return False, api_error
-        if api_valid is True and warning:
-            return True, warning  # valid but with a warning
+        if api_valid is True:
+            return True, warning
 
     return True, None

@@ -1,7 +1,17 @@
 http://localhost:5173/admin.html 
 http://localhost:5173
 
-docker-compose up --build
+
+
+git pull origin main
+Sau khi pull xong, restart Docker để áp dụng thay đổi:
+
+docker compose restart backend
+Hoặc nếu họ có thêm thư viện mới (sửa requirements.txt) thì cần rebuild:
+
+docker compose up -d --build
+
+
 
 
 Frontend (React/Vite): Tự động hot reload, không cần chạy lệnh gì
@@ -15,3 +25,10 @@ docker-compose up --build
 Thêm migration database: docker-compose exec backend flask db upgrade
 
 docker-compose exec backend python seed_data.py
+
+
+Số thẻ: 9704 0000 0000 0018
+Tên: NGUYEN VAN A
+Ngày hết hạn: 03/07
+0379991650
+OTP: OTP

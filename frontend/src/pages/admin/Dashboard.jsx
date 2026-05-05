@@ -9,7 +9,20 @@ export default function AdminDashboard() {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
   }
 
+  const getCurrentMonth = () => {
+    const d = new Date()
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+  }
+
+  const getCurrentYear = () => {
+    return `${new Date().getFullYear()}`
+  }
+
+  // viewMode: 'day' | 'month' | 'year'
+  const [viewMode, setViewMode] = useState('day')
   const [selectedDate, setSelectedDate] = useState(getTodayString())
+  const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth())
+  const [selectedYear, setSelectedYear] = useState(getCurrentYear())
   const [data, setData] = useState({
     products: [],
     orders: [],
@@ -44,7 +57,7 @@ export default function AdminDashboard() {
     if (!loading) {
       calculateStats()
     }
-  }, [selectedDate, data, loading])
+  }, [selectedDate, selectedMonth, selectedYear, viewMode, data, loading])
 
   const fetchData = async () => {
     try {
@@ -73,47 +86,54 @@ export default function AdminDashboard() {
     }
   }
 
+  // Kiểm tra một item có thuộc kỳ được chọn không
+  const inPeriod = (dateStr) => {
+    const d = new Date(dateStr)
+    if (viewMode === 'day') {
+      const s = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      return s === selectedDate
+    } else if (viewMode === 'month') {
+      const s = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+      return s === selectedMonth
+    } else {
+      return `${d.getFullYear()}` === selectedYear
+    }
+  }
+
+  const getPeriodLabel = () => {
+    if (viewMode === 'day') return selectedDate === getTodayString() ? 'Hôm nay' : new Date(selectedDate + 'T00:00:00').toLocaleDateString('vi-VN')
+    if (viewMode === 'month') return 'Tháng ' + selectedMonth.split('-').reverse().join('/')
+    return 'Năm ' + selectedYear
+  }
+
   const calculateStats = () => {
     const { products, orders, users, activePromotions, activeVouchers } = data
 
-    // Filter orders by selected date
-    const dateOrdersList = orders.filter(o => {
-      const orderDate = new Date(o.created_at)
-      const orderDateString = `${orderDate.getFullYear()}-${String(orderDate.getMonth() + 1).padStart(2, '0')}-${String(orderDate.getDate()).padStart(2, '0')}`
-      return orderDateString === selectedDate
-    })
+    // Lọc theo kỳ
+    const filteredOrders = orders.filter(o => inPeriod(o.created_at))
+    const filteredUsers = users.filter(u => inPeriod(u.created_at))
 
-    // Calculate stats based on ALL orders for totals
-    const totalRevenue = orders
+    // Doanh thu kỳ (chỉ đơn hoàn thành)
+    const periodRevenue = filteredOrders
       .filter(o => o.trangthai === 'hoan_thanh')
       .reduce((sum, o) => sum + parseFloat(o.tongtien || 0), 0)
 
-    // Calculate daily stats
-    const dateRevenue = dateOrdersList
-      .filter(o => o.trangthai === 'hoan_thanh')
-      .reduce((sum, o) => sum + parseFloat(o.tongtien || 0), 0)
+    // Trạng thái đơn hàng theo kỳ
+    const pendingOrders = filteredOrders.filter(o => o.trangthai === 'cho_xac_nhan').length
+    const processingOrders = filteredOrders.filter(o => o.trangthai === 'dang_xu_ly').length
+    const shippingOrders = filteredOrders.filter(o => o.trangthai === 'dang_giao').length
+    const completedOrders = filteredOrders.filter(o => o.trangthai === 'hoan_thanh').length
+    const cancelledOrders = filteredOrders.filter(o => o.trangthai === 'huy').length
 
-    // Status counts - let's make these reflect the selected date to match "View by Date" intent
-    // If the user selects a date, they probably want to see the status breakup of orders from that date
-    // Or we could keep them global. Let's keep them global as per typical dashboard behavior (current system status)
-    // BUT user asked "choose date to view", so maybe they want to drill down?
-    // Let's stick to: Totals are Global, "Today/Date" stats are filtered.
-    // Status badges typically show the Current State of the pipeline. Filtering by date created is a nice analysis feature though.
-    // Let's filtered status counts by date? No, that might be confusing if the totals don't match up.
-    // Let's keep status counts GLOBAL (Current pending orders regardless of when they were made) to ensure operational utility.
-    // AND we provide "Date Orders" and "Date Revenue".
-
-    const pendingOrders = orders.filter(o => o.trangthai === 'cho_xac_nhan').length
-    const processingOrders = orders.filter(o => o.trangthai === 'dang_xu_ly').length
-    const shippingOrders = orders.filter(o => o.trangthai === 'dang_giao').length
-    const completedOrders = orders.filter(o => o.trangthai === 'hoan_thanh').length
-    const cancelledOrders = orders.filter(o => o.trangthai === 'huy').length
+    // Sản phẩm mới trong kỳ
+    const newProducts = products.filter(p => p.created_at && inPeriod(p.created_at)).length
 
     setStats({
       totalProducts: products.length,
-      totalOrders: orders.length,
-      totalUsers: users.length,
-      totalRevenue,
+      newProducts,
+      totalOrders: filteredOrders.length,
+      totalUsers: filteredUsers.length,
+      totalRevenue: periodRevenue,
       pendingOrders,
       processingOrders,
       shippingOrders,
@@ -121,14 +141,9 @@ export default function AdminDashboard() {
       cancelledOrders,
       activePromotions,
       activeVouchers,
-      dateOrders: dateOrdersList.length,
-      dateRevenue
     })
 
-    // Recent orders - show orders from selected date
-    setRecentOrders(dateOrdersList.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)))
-
-    // Top products (mock)
+    setRecentOrders(filteredOrders.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)))
     setTopProducts(products.slice(0, 5))
   }
 
@@ -166,14 +181,59 @@ export default function AdminDashboard() {
           <h1 className="text-2xl font-bold text-gray-800">Tổng quan</h1>
           <p className="text-gray-500 text-sm">Xem thống kê và báo cáo kinh doanh</p>
         </div>
-        <div className="flex items-center space-x-2 bg-white p-2 rounded-lg shadow-sm border border-gray-100">
-          <span className="text-gray-500 text-sm font-medium">📅 Chọn ngày:</span>
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            className="outline-none text-gray-700 font-medium bg-transparent"
-          />
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 bg-white p-2 rounded-lg shadow-sm border border-gray-100">
+          {/* Mode tabs */}
+          <div className="flex rounded-lg overflow-hidden border border-gray-200">
+            {[
+              { key: 'day', label: 'Ngày' },
+              { key: 'month', label: 'Tháng' },
+              { key: 'year', label: 'Năm' }
+            ].map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => setViewMode(key)}
+                className={`px-3 py-1.5 text-sm font-medium transition ${
+                  viewMode === key
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-white text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {/* Date input based on mode */}
+          <div className="flex items-center gap-2">
+            <span className="text-gray-500 text-sm">📅</span>
+            {viewMode === 'day' && (
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="outline-none text-gray-700 font-medium bg-transparent text-sm"
+              />
+            )}
+            {viewMode === 'month' && (
+              <input
+                type="month"
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                className="outline-none text-gray-700 font-medium bg-transparent text-sm"
+              />
+            )}
+            {viewMode === 'year' && (
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(e.target.value)}
+                className="outline-none text-gray-700 font-medium bg-transparent text-sm"
+              >
+                {Array.from({ length: 6 }, (_, i) => `${new Date().getFullYear() - i}`).map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            )}
+          </div>
         </div>
       </div>
       {/* Main Stats Cards */}
@@ -182,11 +242,9 @@ export default function AdminDashboard() {
         <div className="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-green-500">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-500 text-sm font-medium mb-1">TỔNG DOANH THU</p>
+              <p className="text-gray-500 text-sm font-medium mb-1">DOANH THU</p>
               <p className="text-3xl font-bold text-gray-800">{stats.totalRevenue.toLocaleString()}₫</p>
-              <p className="text-sm text-green-600 mt-2 font-medium">
-                {selectedDate === getTodayString() ? 'Hôm nay' : 'Ngày chọn'}: {stats.dateRevenue.toLocaleString()}₫
-              </p>
+              <p className="text-xs text-green-600 mt-2 font-medium">📅 {getPeriodLabel()}</p>
             </div>
             <div className="bg-green-100 p-4 rounded-full">
               <span className="text-4xl">💰</span>
@@ -198,11 +256,9 @@ export default function AdminDashboard() {
         <div className="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-blue-500">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-500 text-sm font-medium mb-1">TỔNG ĐƠN HÀNG</p>
+              <p className="text-gray-500 text-sm font-medium mb-1">ĐƠN HÀNG</p>
               <p className="text-3xl font-bold text-gray-800">{stats.totalOrders}</p>
-              <p className="text-sm text-blue-600 mt-2 font-medium">
-                {selectedDate === getTodayString() ? 'Hôm nay' : 'Ngày chọn'}: {stats.dateOrders} đơn
-              </p>
+              <p className="text-xs text-blue-600 mt-2 font-medium">📅 {getPeriodLabel()}</p>
             </div>
             <div className="bg-blue-100 p-4 rounded-full">
               <span className="text-4xl">📦</span>
@@ -214,10 +270,10 @@ export default function AdminDashboard() {
         <div className="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-teal-500">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-500 text-sm font-medium mb-1">SẢN PHẨM</p>
-              <p className="text-3xl font-bold text-gray-800">{stats.totalProducts}</p>
-              <p className="text-sm text-teal-600 mt-2 font-medium">
-                Đang khuyến mãi: {stats.activePromotions}
+              <p className="text-gray-500 text-sm font-medium mb-1">SẢN PHẨM MỚI</p>
+              <p className="text-3xl font-bold text-gray-800">{stats.newProducts}</p>
+              <p className="text-xs text-teal-600 mt-2 font-medium">
+                📅 {getPeriodLabel()} · Tổng kho: {stats.totalProducts} sản phẩm
               </p>
             </div>
             <div className="bg-teal-100 p-4 rounded-full">
@@ -230,10 +286,10 @@ export default function AdminDashboard() {
         <div className="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-orange-500">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-500 text-sm font-medium mb-1">KHÁCH HÀNG</p>
+              <p className="text-gray-500 text-sm font-medium mb-1">KHÁCH HÀNG MỚI</p>
               <p className="text-3xl font-bold text-gray-800">{stats.totalUsers}</p>
-              <p className="text-sm text-orange-600 mt-2 font-medium">
-                Voucher active: {stats.activeVouchers}
+              <p className="text-xs text-orange-600 mt-2 font-medium">
+                📅 {getPeriodLabel()} · Voucher: {stats.activeVouchers}
               </p>
             </div>
             <div className="bg-orange-100 p-4 rounded-full">
@@ -245,9 +301,10 @@ export default function AdminDashboard() {
 
       {/* Order Status Section */}
       <div className="bg-white rounded-2xl shadow-lg p-6">
-        <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+        <h2 className="text-xl font-bold text-gray-800 mb-1 flex items-center gap-2">
           📋 Trạng thái đơn hàng
         </h2>
+        <p className="text-sm text-gray-400 mb-6">📅 {getPeriodLabel()}</p>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <div className="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-4 text-center">
             <span className="text-3xl">⏳</span>
@@ -292,14 +349,18 @@ export default function AdminDashboard() {
           </div>
         </div>
       </div>
-
-      {/* Two Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Orders */}
         <div className="bg-white rounded-2xl shadow-lg p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-              🕐 Đơn hàng {selectedDate === getTodayString() ? 'gần đây' : 'ngày ' + new Date(selectedDate).toLocaleDateString('vi-VN')}
+              🕐 Đơn hàng{' '}
+              {viewMode === 'day'
+                ? (selectedDate === getTodayString() ? 'hôm nay' : 'ngày ' + new Date(selectedDate + 'T00:00:00').toLocaleDateString('vi-VN'))
+                : viewMode === 'month'
+                ? 'tháng ' + selectedMonth.split('-').reverse().join('/')
+                : 'năm ' + selectedYear
+              }
             </h2>
             <Link to="/orders" className="text-blue-600 hover:text-blue-700 text-sm font-bold">
               Xem tất cả →
@@ -309,7 +370,7 @@ export default function AdminDashboard() {
             {recentOrders.length === 0 ? (
               <div className="text-center py-8">
                 <span className="text-5xl">📭</span>
-                <p className="text-gray-500 mt-2">Không có đơn hàng nào trong ngày này</p>
+                <p className="text-gray-500 mt-2">Không có đơn hàng nào trong kỳ này</p>
               </div>
             ) : (
               recentOrders.map((order) => (

@@ -172,7 +172,7 @@ def handle_send_message(data):
                 return
             conversation = ChatConversation.query.get(conversation_id)
         else:
-            # Khách hàng đã đăng nhập - tìm hoặc tạo cuộc hội thoại
+            # Khách hàng đã đăng nhập - tìm hoặc tạo cuộc hội thoại DỰA TRÊN customer_id
             if conversation_id:
                 conversation = ChatConversation.query.get(conversation_id)
                 if conversation and conversation.customer_id != user.user_id:
@@ -180,19 +180,20 @@ def handle_send_message(data):
                     return
 
             if not conversation:
-                # Tạo cuộc hội thoại mới khi gửi tin nhắn đầu tiên
+                # Tìm cuộc hội thoại active dựa trên customer_id (KHÔNG dùng session_id)
                 conversation = ChatConversation.query.filter_by(
                     customer_id=user.user_id,
                     status='active'
                 ).first()
 
                 if not conversation:
+                    # Tạo cuộc hội thoại mới với customer_id (KHÔNG lưu session_id)
                     conversation = ChatConversation(customer_id=user.user_id)
                     db.session.add(conversation)
                     db.session.flush()
                     is_new_conversation = True
     elif session_id:
-        # Khách vãng lai
+        # Khách vãng lai - dùng session_id
         sender_type = 'customer'
         sender_id = None
 

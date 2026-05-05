@@ -19,7 +19,7 @@ def get_cart():
         product = item.product
         product_dict = product.to_dict()
         
-        # Use promotional price if available, otherwise use regular price
+        # Dùng giá khuyến mãi nếu có, ngược lại dùng giá thường
         if product_dict.get('promotion') and product_dict['promotion'].get('promotional_price'):
             unit_price = product_dict['promotion']['promotional_price']
         else:
@@ -56,7 +56,7 @@ def add_to_cart():
         db.session.add(cart)
         db.session.commit()
     
-    # Check if same product with same size exists
+    # Kiểm tra nếu cùng sản phẩm với cùng size đã tồn tại
     cart_item = CartItem.query.filter_by(
         cart_id=cart.id, 
         products_id=product_id,

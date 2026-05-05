@@ -11,6 +11,7 @@ export default function Home() {
   const [bestSellers, setBestSellers] = useState([])
   const [loading, setLoading] = useState(true)
   const [loadingBestSellers, setLoadingBestSellers] = useState(true)
+  const [bestSellerPeriod, setBestSellerPeriod] = useState('month')
 
   // Các slide banner
   const slides = [
@@ -69,7 +70,8 @@ export default function Home() {
   useEffect(() => {
     const fetchBestSellers = async () => {
       try {
-        const res = await api.get('/api/products/best-sellers?limit=8')
+        setLoadingBestSellers(true)
+        const res = await api.get(`/api/products/best-sellers?limit=8&period=${bestSellerPeriod}`)
         setBestSellers(res.data.products || [])
       } catch (err) {
         console.error(err)
@@ -78,7 +80,7 @@ export default function Home() {
       }
     }
     fetchBestSellers()
-  }, [])
+  }, [bestSellerPeriod])
 
   const categories = [
     { name: 'Áo', icon: '👕', link: '/products?category=Áo' },
@@ -180,12 +182,32 @@ export default function Home() {
 
       {/* Best Sellers */}
       <div className="max-w-7xl mx-auto px-4 py-16">
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
           <div>
             <h2 className="text-3xl font-bold">🔥 Sản phẩm bán chạy</h2>
             <p className="text-gray-600 mt-2">Được yêu thích nhất bởi khách hàng</p>
           </div>
-          <Link to="/products" className="text-blue-600 hover:text-blue-700 font-semibold">
+          <div className="flex items-center gap-2">
+            {[
+              { value: 'day', label: 'Hôm nay' },
+              { value: 'month', label: 'Tháng này' },
+              { value: 'year', label: 'Năm nay' },
+              { value: 'all', label: 'Tất cả' },
+            ].map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setBestSellerPeriod(opt.value)}
+                className={`px-4 py-1.5 rounded-full text-sm font-semibold border transition ${
+                  bestSellerPeriod === opt.value
+                    ? 'bg-red-500 text-white border-red-500'
+                    : 'bg-white text-gray-600 border-gray-300 hover:border-red-400 hover:text-red-500'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          <Link to="/products" className="text-blue-600 hover:text-blue-700 font-semibold hidden sm:block">
             Xem tất cả →
           </Link>
         </div>
@@ -195,6 +217,16 @@ export default function Home() {
             {[...Array(8)].map((_, i) => (
               <div key={i} className="bg-gray-200 rounded-xl h-80 animate-pulse" />
             ))}
+          </div>
+        ) : bestSellers.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-500 text-lg">Chưa có dữ liệu bán hàng trong khoảng thời gian này</p>
+            <button
+              onClick={() => setBestSellerPeriod('all')}
+              className="text-blue-600 hover:text-blue-700 font-semibold mt-3 inline-block"
+            >
+              Xem tất cả thời gian →
+            </button>
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
@@ -229,14 +261,19 @@ export default function Home() {
                     {product.ten_san_pham}
                   </h3>
 
-                  {/* Rating */}
-                  <div className="mb-2">
+                  {/* Rating và Số lượng đã bán */}
+                  <div className="flex items-center gap-2 mb-2">
                     <ProductRating
                       rating={product.rating?.average_rating || 0}
                       reviewCount={product.rating?.review_count || 0}
                       size="xs"
-                      showCount={true}
+                      showCount={false}
                     />
+                    {product.total_sold > 0 && (
+                      <span className="text-xs text-gray-600">
+                        Đã bán <span className="font-semibold text-orange-600">{product.total_sold}</span>
+                      </span>
+                    )}
                   </div>
 
                   {product.promotion ? (
@@ -313,14 +350,19 @@ export default function Home() {
                       {product.ten_san_pham}
                     </h3>
 
-                    {/* Rating */}
-                    <div className="mb-2">
+                    {/* Rating và Số lượng đã bán */}
+                    <div className="flex items-center gap-2 mb-2">
                       <ProductRating
                         rating={product.rating?.average_rating || 0}
                         reviewCount={product.rating?.review_count || 0}
                         size="xs"
-                        showCount={true}
+                        showCount={false}
                       />
+                      {product.total_sold > 0 && (
+                        <span className="text-xs text-gray-600">
+                          Đã bán <span className="font-semibold text-orange-600">{product.total_sold}</span>
+                        </span>
+                      )}
                     </div>
 
                     <div className="space-y-1">

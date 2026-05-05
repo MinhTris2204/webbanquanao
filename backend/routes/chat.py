@@ -379,3 +379,19 @@ def get_unread_count():
     ).count()
     
     return jsonify({'unread_count': count})
+
+
+@chat_bp.route('/admin-status', methods=['GET'])
+def check_admin_status():
+    """Kiểm tra xem có admin nào đang online không"""
+    from socket_events import admin_sids
+    
+    is_online = len(admin_sids) > 0
+    online_count = len(admin_sids)
+    
+    return jsonify({
+        'is_online': is_online,
+        'online_count': online_count,
+        'message': f'Có {online_count} nhân viên đang online' if is_online else 'Nhân viên đang offline'
+    })
+

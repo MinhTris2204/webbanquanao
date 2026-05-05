@@ -24,7 +24,12 @@ def admin_required(fn):
 
 
 def generate_store_info_embedding(info):
-    """Generate and save embedding for store info"""
+    """
+    ============================================================
+    TỰ ĐỘNG TẠO VÀ LƯU EMBEDDING CHO THÔNG TIN CỬA HÀNG (CHATBOT AI)
+
+    ============================================================
+    """
     try:
         from routes.chatbot import get_embedding
         text = f"{info.title} {info.content}"

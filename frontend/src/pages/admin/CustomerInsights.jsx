@@ -318,10 +318,10 @@ function PromotionSuggestions({ suggestions }) {
     )
   }
 
-  // Lấy danh sách loại sản phẩm
+  // Lay danh sach loai san pham
   const categories = [...new Set(suggestions.map(s => s.loai).filter(Boolean))]
 
-  // Lọc dữ liệu
+  // Loc du lieu
   const filteredSuggestions = suggestions.filter(s => {
     if (filterPriority !== 'all' && s.priority !== filterPriority) return false
     if (filterStatus === 'need' && s.has_promotion) return false
@@ -354,7 +354,7 @@ function PromotionSuggestions({ suggestions }) {
         </div>
       </div>
 
-      {/* Bộ lọc */}
+      {/* Bo loc */}
       <div className="bg-white p-4 rounded-lg border flex flex-wrap gap-4 items-end">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">{`M\u1EE9c \u0111\u1ED9 \u01B0u ti\u00EAn`}</label>
@@ -554,7 +554,7 @@ function CustomerSegments({ data }) {
   }
 
   const maxCount = Math.max(...segments.map(s => s.count), 1)
-  const hasCustomers = segments.filter(s => s.name !== 'Ch\u01B0a mua h\u00E0ng').reduce((sum, s) => sum + s.count, 0)
+  const hasCustomers = segments.filter(s => !s.name.includes('Chua mua') && !s.name.includes('Ch\u01B0a mua')).reduce((sum, s) => sum + s.count, 0)
 
   return (
     <div className="space-y-6">
@@ -601,17 +601,17 @@ function CustomerSegments({ data }) {
                   <span className="font-medium">{segment.name}</span>
                   <p className="text-xs text-gray-500">
                     {segment.name.includes('VIP') && `Chi ti\u00EAu tr\u00EAn 5 tri\u1EC7u`}
-                    {segment.name.includes('Trung th\u00E0nh') && `Chi ti\u00EAu 2-5 tri\u1EC7u`}
-                    {segment.name.includes('Th\u01B0\u1EDDng xuy\u00EAn') && `Chi ti\u00EAu 500k-2 tri\u1EC7u`}
-                    {segment.name.includes('M\u1EDBi') && `Chi ti\u00EAu d\u01B0\u1EDBi 500k`}
-                    {segment.name.includes('Ch\u01B0a mua') && `Ch\u01B0a c\u00F3 \u0111\u01A1n h\u00E0ng n\u00E0o`}
+                    {segment.name.includes('Trung th') && `Chi ti\u00EAu 2-5 tri\u1EC7u`}
+                    {segment.name.includes('ng xuy') && `Chi ti\u00EAu 500k-2 tri\u1EC7u`}
+                    {segment.name.includes('i (<') && `Chi ti\u00EAu d\u01B0\u1EDBi 500k`}
+                    {(segment.name.includes('Chua mua') || segment.name.includes('Ch\u01B0a mua')) && `Ch\u01B0a c\u00F3 \u0111\u01A1n h\u00E0ng n\u00E0o`}
                   </p>
                 </div>
                 <span className="font-bold text-lg">{segment.count}</span>
               </div>
             ))}
           </div>
-          
+
           <div className="mt-6 pt-4 border-t">
             <h4 className="font-semibold text-gray-700 mb-3">{ICONS.bulb} {`G\u1EE3i \u00FD h\u00E0nh \u0111\u1ED9ng marketing:`}</h4>
             <ul className="text-sm text-gray-600 space-y-2">

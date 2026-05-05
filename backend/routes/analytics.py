@@ -161,9 +161,9 @@ def get_sales_trend():
 @analytics_bp.route('/promotion-suggestions', methods=['GET'])
 @admin_required
 def get_promotion_suggestions():
-    """Gợi ý sản phẩm cần khuyến mãi dựa trên dữ liệu"""
+    """Goi y san pham can khuyen mai dua tren du lieu"""
     
-    # Sản phẩm có nhiều lượt xem nhưng ít mua
+    # San pham co nhieu luot xem nhung it mua
     low_conversion = db.session.query(
         Product.products_id,
         Product.ten_san_pham,
@@ -184,7 +184,7 @@ def get_promotion_suggestions():
         views = r.total_views or 0
         sold = r.total_sold or 0
 
-        # Bỏ qua sản phẩm bán tốt (sold >= views * 0.1 và sold >= 5)
+        # Bo qua san pham ban tot (sold >= views * 0.1 va sold >= 5)
         if sold >= 5 and views > 0 and (sold / views) >= 0.1:
             continue
 
@@ -192,7 +192,7 @@ def get_promotion_suggestions():
         if hinh_anh and not hinh_anh.startswith('http') and not hinh_anh.startswith('data:'):
             hinh_anh = f"/uploads/{hinh_anh}"
         
-        # Kiểm tra khuyến mãi đang hoạt động
+        # Kiem tra khuyen mai dang hoat dong
         active_promotion = Promotion.query.filter(
             Promotion.product_id == r.products_id,
             Promotion.is_active == True,
@@ -212,26 +212,25 @@ def get_promotion_suggestions():
                 promotion_info = f'-{discount_val:.0f}%'
             else:
                 promotion_price = gia_ban - discount_val
-                promotion_info = f'-{int(discount_val):,}đ'
+                promotion_info = f'-{int(discount_val):,}d'
         
-        # Mức độ ưu tiên dựa trên: lượt xem cao + bán ít
-        # Score = views - sold * 10 (xem nhiều mà bán ít thì score cao)
+        # Muc do uu tien dua tren: luot xem cao + ban it
         priority_score = views - sold * 10
 
         if views >= 50 and sold == 0:
             priority = 'high'
             priority_label = 'Cao'
-            reason = 'Rất nhiều lượt xem nhưng gần như không bán được - CẦN KHUYẾN MÃI NGAY'
+            reason = 'Rat nhieu luot xem nhung gan nhu khong ban duoc - CAN KHUYEN MAI NGAY'
             suggested_discount = '20-30%'
         elif views >= 20 and sold < 3:
             priority = 'medium'
-            priority_label = 'Trung bình'
-            reason = 'Nhiều lượt xem nhưng ít mua - nên tạo khuyến mãi'
+            priority_label = 'Trung binh'
+            reason = 'Nhieu luot xem nhung it mua - nen tao khuyen mai'
             suggested_discount = '10-20%'
         else:
             priority = 'low'
-            priority_label = 'Thấp'
-            reason = 'Lượt xem khá nhưng chưa có nhiều đơn - có thể cân nhắc khuyến mãi nhẹ'
+            priority_label = 'Thap'
+            reason = 'Luot xem kha nhung chua co nhieu don - co the can nhac khuyen mai nhe'
             suggested_discount = '5-10%'
         
         suggestions.append({
@@ -248,11 +247,11 @@ def get_promotion_suggestions():
             'priority': priority,
             'priority_label': priority_label,
             'priority_score': priority_score,
-            'reason': reason if not has_promotion else 'Đang khuyến mãi nhưng vẫn ít người mua - cần xem xét lại chiến lược',
+            'reason': reason if not has_promotion else 'Dang khuyen mai nhung van it nguoi mua - can xem xet lai chien luoc',
             'suggested_discount': suggested_discount
         })
     
-    # Sản phẩm tồn kho lâu (ít bán trong 30 ngày qua)
+    # San pham ton kho lau (it ban trong 30 ngay qua)
     thirty_days_ago = datetime.utcnow() - timedelta(days=30)
     
     slow_moving = db.session.query(
@@ -299,19 +298,19 @@ def get_promotion_suggestions():
                     promotion_info = f'-{discount_val:.0f}%'
                 else:
                     promotion_price = gia_ban - discount_val
-                    promotion_info = f'-{int(discount_val):,}đ'
+                    promotion_info = f'-{int(discount_val):,}d'
             
             recent_sold = r.recent_sold or 0
             if recent_sold == 0:
                 priority = 'high'
                 priority_label = 'Cao'
-                reason = 'Đang khuyến mãi nhưng vẫn không bán được - cần xem xét giảm giá mạnh hơn' if has_promotion else 'Không bán được sản phẩm nào trong 30 ngày - CẦN KHUYẾN MÃI NGAY'
+                reason = 'Dang khuyen mai nhung van khong ban duoc - can xem xet giam gia manh hon' if has_promotion else 'Khong ban duoc san pham nao trong 30 ngay - CAN KHUYEN MAI NGAY'
                 suggested_discount = '25-35%'
                 priority_score = 100
             else:
                 priority = 'medium'
-                priority_label = 'Trung bình'
-                reason = 'Đang khuyến mãi nhưng bán chậm - cần điều chỉnh mức giảm giá' if has_promotion else 'Sản phẩm bán chậm trong 30 ngày qua - nên tạo khuyến mãi'
+                priority_label = 'Trung binh'
+                reason = 'Dang khuyen mai nhung ban cham - can dieu chinh muc giam gia' if has_promotion else 'San pham ban cham trong 30 ngay qua - nen tao khuyen mai'
                 suggested_discount = '15-25%'
                 priority_score = 50
             
@@ -333,7 +332,7 @@ def get_promotion_suggestions():
                 'suggested_discount': suggested_discount
             })
     
-    # Sắp xếp theo priority_score cao nhất lên đầu
+    # Sap xep theo priority_score cao nhat len dau
     suggestions.sort(key=lambda x: x['priority_score'], reverse=True)
     
     return jsonify({'suggestions': suggestions}), 200
@@ -409,9 +408,9 @@ def get_view_to_purchase_analytics():
 @analytics_bp.route('/customer-segments', methods=['GET'])
 @admin_required
 def get_customer_segments():
-    """Phân khúc khách hàng theo giá trị"""
+    """Phan khuc khach hang theo gia tri"""
     
-    # Lấy tổng chi tiêu của từng khách hàng
+    # Lay tong chi tieu cua tung khach hang
     customer_spending = db.session.query(
         User.user_id,
         func.sum(Order.tongtien).label('total_spent')
@@ -419,11 +418,11 @@ def get_customer_segments():
      .filter(Order.trangthai == 'hoan_thanh')\
      .group_by(User.user_id).all()
     
-    # Phân khúc
-    vip = 0  # > 5 triệu
-    loyal = 0  # 2-5 triệu
-    regular = 0  # 500k - 2 triệu
-    new_customer = 0  # < 500k
+    # Phan khuc
+    vip = 0          # > 5 trieu
+    loyal = 0        # 2-5 trieu
+    regular = 0      # 500k - 2 trieu
+    new_customer = 0 # < 500k
     
     for c in customer_spending:
         spent = float(c.total_spent) if c.total_spent else 0
@@ -436,17 +435,17 @@ def get_customer_segments():
         else:
             new_customer += 1
     
-    # Khách chưa mua hàng
+    # Khach chua mua hang
     total_users = User.query.filter(User.role == 'customer').count()
     no_purchase = total_users - len(customer_spending)
     
     return jsonify({
         'segments': [
-            {'name': 'VIP (>5 triệu)', 'count': vip, 'color': '#FFD700'},
-            {'name': 'Trung thành (2-5 triệu)', 'count': loyal, 'color': '#4CAF50'},
-            {'name': 'Thường xuyên (500k-2 triệu)', 'count': regular, 'color': '#2196F3'},
-            {'name': 'Mới (<500k)', 'count': new_customer, 'color': '#9E9E9E'},
-            {'name': 'Chưa mua hàng', 'count': no_purchase, 'color': '#F44336'}
+            {'name': 'VIP (>5 trieu)', 'count': vip, 'color': '#FFD700'},
+            {'name': 'Trung thanh (2-5 trieu)', 'count': loyal, 'color': '#4CAF50'},
+            {'name': 'Thuong xuyen (500k-2 trieu)', 'count': regular, 'color': '#2196F3'},
+            {'name': 'Moi (<500k)', 'count': new_customer, 'color': '#9E9E9E'},
+            {'name': 'Chua mua hang', 'count': no_purchase, 'color': '#F44336'}
         ],
         'total_customers': total_users
     }), 200

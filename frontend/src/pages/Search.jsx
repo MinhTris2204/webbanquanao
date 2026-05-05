@@ -262,13 +262,19 @@ export default function Search() {
                       {product.ten_san_pham}
                     </h3>
                     
-                    {/* Rating */}
-                    <div className="mb-2">
+                    {/* Rating và Số lượng đã bán */}
+                    <div className="flex items-center gap-3 mb-2">
                       <ProductRating 
                         rating={product.rating?.average_rating || 0}
                         reviewCount={product.rating?.review_count || 0}
                         size="sm"
+                        showCount={false}
                       />
+                      {product.total_sold > 0 && (
+                        <span className="text-xs text-gray-600">
+                          Đã bán <span className="font-semibold text-orange-600">{product.total_sold}</span>
+                        </span>
+                      )}
                     </div>
                     
                     {product.size && (

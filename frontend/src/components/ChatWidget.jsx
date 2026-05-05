@@ -173,21 +173,26 @@ export default function ChatWidget() {
   const toastTimerRef = useRef(null)
 
   const showAdminNotification = (content) => {
-    // 1. Browser Notification (nếu được cấp quyền)
-    if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification('CSKH Shop Quần Áo', {
-        body: content || 'Nhân viên vừa gửi tin nhắn',
-        icon: cskhImg,
-        tag: 'cskh-msg'
-      })
-    } else if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission()
-    }
-    // 2. In-app toast popup
+    // In-app toast popup (không dùng browser notification vì localhost không hỗ trợ)
     setToastMsg(content || 'Nhân viên vừa gửi tin nhắn')
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
     toastTimerRef.current = setTimeout(() => setToastMsg(null), 4000)
   }
+
+  // Kiểm tra admin online định kỳ khi ở chế độ CSKH
+  useEffect(() => {
+    if (cskhMode && isOpen) {
+      // Kiểm tra ngay khi chuyển sang CSKH
+      checkAdminOnline()
+      
+      // Kiểm tra mỗi 30 giây
+      const interval = setInterval(() => {
+        checkAdminOnline()
+      }, 30000)
+      
+      return () => clearInterval(interval)
+    }
+  }, [cskhMode, isOpen])
 
   // Socket events
   useEffect(() => {
@@ -197,7 +202,8 @@ export default function ChatWidget() {
         const unified = makeCskhMsg(msg)
         setMessages(prev => prev.some(m => m.id === msg.id) ? prev : [...prev, unified])
         if (msg.sender_type === 'admin' && isOpen && cskhMode && conversation?.id) {
-          markAsRead(conversation.id, guestSessionId)
+          // Chỉ gửi guestSessionId nếu KHÔNG đăng nhập
+          markAsRead(conversation.id, isAuthenticated ? null : guestSessionId)
         }
         // Thông báo khi widget đóng hoặc đang ở tab khác
         if (msg.sender_type === 'admin' && !isOpen) {
@@ -250,10 +256,11 @@ export default function ChatWidget() {
 
   useEffect(() => {
     if (conversation?.id && isSocketReady) {
-      joinConversation(conversation.id, guestSessionId)
+      // Chỉ gửi guestSessionId nếu KHÔNG đăng nhập
+      joinConversation(conversation.id, isAuthenticated ? null : guestSessionId)
       return () => leaveConversation(conversation.id)
     }
-  }, [conversation?.id, isSocketReady, joinConversation, leaveConversation, guestSessionId])
+  }, [conversation?.id, isSocketReady, joinConversation, leaveConversation, guestSessionId, isAuthenticated])
 
   const loadConversation = async () => {
     setCskhLoading(true)
@@ -321,28 +328,77 @@ export default function ChatWidget() {
     setShowCloseConfirm(false)
   }
 
+  // Kiểm tra admin online
+  const [adminOnlineStatus, setAdminOnlineStatus] = useState(null)
+  const [checkingAdminStatus, setCheckingAdminStatus] = useState(false)
+  const [showOfflineWarning, setShowOfflineWarning] = useState(false)
+
+  const checkAdminOnline = async () => {
+    setCheckingAdminStatus(true)
+    try {
+      const res = await api.get('/api/chat/admin-status')
+      setAdminOnlineStatus(res.data)
+      return res.data.is_online
+    } catch (err) {
+      console.error('Error checking admin status:', err)
+      return false
+    } finally {
+      setCheckingAdminStatus(false)
+    }
+  }
+
+  // Thực hiện chuyển sang CSKH
+  const proceedToCskh = (isAdminOnline) => {
+    setCskhMode(true)
+    setMessages(prev => [...prev, makeSystemMsg(
+      isAdminOnline 
+        ? '— Đã chuyển sang hỗ trợ nhân viên CSKH —' 
+        : '— Đã chuyển sang CSKH (Nhân viên đang offline) —'
+    )])
+    
+    if (conversation) {
+      markAsRead(conversation.id, isAuthenticated ? null : guestSessionId)
+      setUnreadCount(0)
+    }
+    
+    // Lấy câu hỏi cuối cùng của user để đính kèm context
+    const lastUserMsg = [...messages].reverse().find(m => m.type === 'user')
+    const contextNote = lastUserMsg
+      ? `👋 Khách hàng cần hỗ trợ từ nhân viên CSKH.\n📝 Vấn đề: "${lastUserMsg.content}"`
+      : '👋 Khách hàng cần hỗ trợ từ nhân viên CSKH.'
+    
+    // Gửi qua socket → tạo conversation + notify admin ngay lập tức
+    sendSocketMessage(
+      conversation?.id || null,
+      contextNote,
+      'text',
+      null,
+      isAuthenticated ? null : guestSessionId
+    )
+  }
+
   // Chuyen sang che do CSKH
-  const switchToCskh = () => {
+  const switchToCskh = async () => {
     if (!cskhMode) {
-      setCskhMode(true)
-      setMessages(prev => [...prev, makeSystemMsg('— Đã chuyển sang hỗ trợ nhân viên CSKH —')])
-      if (conversation) {
-        markAsRead(conversation.id, guestSessionId)
-        setUnreadCount(0)
+      // Kiểm tra admin có online không
+      const isAdminOnline = await checkAdminOnline()
+      
+      if (!isAdminOnline) {
+        // Thông báo admin offline
+        setMessages(prev => [...prev, makeAiMsg(
+          '⚠️ Hiện tại nhân viên CSKH đang offline. Bạn vẫn có thể gửi tin nhắn và chúng tôi sẽ phản hồi sớm nhất khi có thể.\n\n' +
+          'Hoặc bạn có thể tiếp tục chat với trợ lý AI để được hỗ trợ ngay lập tức.',
+          [],
+          false
+        )])
+        
+        // Hiển thị modal xác nhận thay vì window.confirm()
+        setShowOfflineWarning(true)
+        return
       }
-      // Lấy câu hỏi cuối cùng của user để đính kèm context
-      const lastUserMsg = [...messages].reverse().find(m => m.type === 'user')
-      const contextNote = lastUserMsg
-        ? `👋 Khách hàng cần hỗ trợ từ nhân viên CSKH.\n📝 Vấn đề: "${lastUserMsg.content}"`
-        : '👋 Khách hàng cần hỗ trợ từ nhân viên CSKH.'
-      // Gửi qua socket → tạo conversation + notify admin ngay lập tức
-      sendSocketMessage(
-        conversation?.id || null,
-        contextNote,
-        'text',
-        null,
-        guestSessionId
-      )
+      
+      // Admin online - chuyển ngay
+      proceedToCskh(true)
     }
   }
 
@@ -384,17 +440,19 @@ export default function ChatWidget() {
   const sendCskhMessage = (e) => {
     e.preventDefault()
     if (!cskhInput.trim()) return
-    sendSocketMessage(conversation?.id || null, cskhInput.trim(), 'text', null, guestSessionId)
+    // Chỉ gửi guestSessionId nếu KHÔNG đăng nhập
+    sendSocketMessage(conversation?.id || null, cskhInput.trim(), 'text', null, isAuthenticated ? null : guestSessionId)
     setCskhInput('')
-    if (conversation?.id) sendTyping(conversation.id, false, guestSessionId)
+    if (conversation?.id) sendTyping(conversation.id, false, isAuthenticated ? null : guestSessionId)
   }
 
   const handleCskhInputChange = (e) => {
     setCskhInput(e.target.value)
     if (conversation?.id) {
-      sendTyping(conversation.id, true, guestSessionId)
+      // Chỉ gửi guestSessionId nếu KHÔNG đăng nhập
+      sendTyping(conversation.id, true, isAuthenticated ? null : guestSessionId)
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
-      typingTimeoutRef.current = setTimeout(() => sendTyping(conversation.id, false, guestSessionId), 2000)
+      typingTimeoutRef.current = setTimeout(() => sendTyping(conversation.id, false, isAuthenticated ? null : guestSessionId), 2000)
     }
   }
 
@@ -405,7 +463,8 @@ export default function ChatWidget() {
     if (file.size > 5 * 1024 * 1024) return alert('Ảnh không được vượt quá 5MB')
     setUploadingImage(true)
     const reader = new FileReader()
-    reader.onload = () => { sendSocketMessage(conversation?.id || null, '', 'image', reader.result, guestSessionId); setUploadingImage(false) }
+    // Chỉ gửi guestSessionId nếu KHÔNG đăng nhập
+    reader.onload = () => { sendSocketMessage(conversation?.id || null, '', 'image', reader.result, isAuthenticated ? null : guestSessionId); setUploadingImage(false) }
     reader.onerror = () => { alert('Lỗi khi đọc file ảnh'); setUploadingImage(false) }
     reader.readAsDataURL(file)
     e.target.value = ''
@@ -420,7 +479,11 @@ export default function ChatWidget() {
         return
       }
       setIsOpen(true)
-      if (cskhMode && conversation) { markAsRead(conversation.id, guestSessionId); setUnreadCount(0) }
+      if (cskhMode && conversation) { 
+        // Chỉ gửi guestSessionId nếu KHÔNG đăng nhập
+        markAsRead(conversation.id, isAuthenticated ? null : guestSessionId); 
+        setUnreadCount(0) 
+      }
     }
   }
 
@@ -542,12 +605,31 @@ export default function ChatWidget() {
                   {cskhMode ? 'Hỗ trợ khách hàng' : 'Trợ lý AI'}
                 </p>
                 <div className="flex items-center gap-1.5">
-                  <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-300 animate-pulse' : 'bg-gray-300'}`}></span>
-                  <span className={`text-xs ${cskhMode ? 'text-orange-100' : 'text-blue-100'}`}>
-                    {cskhMode
-                      ? (isConnected ? 'Đang hoạt động' : 'Đang kết nối...')
-                      : 'Hỗ trợ 24/7'}
-                  </span>
+                  {cskhMode ? (
+                    <>
+                      <span className={`w-2 h-2 rounded-full ${
+                        checkingAdminStatus 
+                          ? 'bg-yellow-300 animate-pulse' 
+                          : (adminOnlineStatus?.is_online 
+                              ? 'bg-green-300 animate-pulse' 
+                              : 'bg-gray-300')
+                      }`}></span>
+                      <span className={`text-xs ${cskhMode ? 'text-orange-100' : 'text-blue-100'}`}>
+                        {checkingAdminStatus 
+                          ? 'Đang kiểm tra...' 
+                          : (adminOnlineStatus?.is_online 
+                              ? `${adminOnlineStatus.online_count} nhân viên online` 
+                              : 'Nhân viên offline')}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-300 animate-pulse' : 'bg-gray-300'}`}></span>
+                      <span className={`text-xs ${cskhMode ? 'text-orange-100' : 'text-blue-100'}`}>
+                        Hỗ trợ 24/7
+                      </span>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -863,6 +945,49 @@ export default function ChatWidget() {
                 <button
                   onClick={() => setShowCloseConfirm(false)}
                   className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium py-2 rounded-lg transition-colors"
+                >
+                  Hủy
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal cảnh báo admin offline */}
+      {showOfflineWarning && (
+        <div className="fixed inset-0 bg-black/40 flex items-end justify-end z-[60] pb-24 pr-6">
+          <div className="bg-white rounded-2xl shadow-2xl w-[360px] overflow-hidden animate-fade-in">
+            <div className="bg-orange-500 px-4 py-3 flex items-center gap-2">
+              <span className="text-2xl">⚠️</span>
+              <p className="font-semibold text-white text-sm">Nhân viên đang offline</p>
+            </div>
+            <div className="p-4">
+              <p className="text-sm text-gray-700 mb-3 leading-relaxed">
+                Hiện tại nhân viên CSKH đang offline. Bạn vẫn có thể gửi tin nhắn 
+                và chúng tôi sẽ phản hồi <span className="font-semibold text-orange-600">sớm nhất</span> khi có thể.
+              </p>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                <p className="text-xs text-blue-700">
+                  💡 <span className="font-semibold">Gợi ý:</span> Bạn có thể tiếp tục chat với trợ lý AI để được hỗ trợ ngay lập tức!
+                </p>
+              </div>
+              <p className="text-sm text-gray-600 mb-4">
+                Bạn có muốn tiếp tục chuyển sang CSKH không?
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => { 
+                    setShowOfflineWarning(false)
+                    proceedToCskh(false)
+                  }}
+                  className="flex-1 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium py-2.5 rounded-lg transition-colors shadow-sm"
+                >
+                  Tiếp tục
+                </button>
+                <button
+                  onClick={() => setShowOfflineWarning(false)}
+                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium py-2.5 rounded-lg transition-colors"
                 >
                   Hủy
                 </button>

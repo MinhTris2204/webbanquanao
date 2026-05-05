@@ -9,7 +9,7 @@ import base64
 
 admin_bp = Blueprint('admin', __name__)
 
-# Upload configuration
+# Cấu hình thư mục upload
 UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 
@@ -19,12 +19,12 @@ def allowed_file(filename):
 
 
 def save_base64_image(base64_string, original_filename=None):
-    """Save base64 image to uploads folder and return the filename"""
+    """Lưu ảnh base64 vào thư mục uploads và trả về tên file"""
     try:
-        # Remove data URL prefix if present
+        # Xóa tiền tố data URL nếu có
         if ',' in base64_string:
             header, base64_data = base64_string.split(',', 1)
-            # Get extension from header
+            # Lấy phần mở rộng từ header
             if 'png' in header:
                 ext = 'png'
             elif 'gif' in header:
@@ -37,14 +37,14 @@ def save_base64_image(base64_string, original_filename=None):
             base64_data = base64_string
             ext = 'jpg'
         
-        # Decode base64
+        # Giải mã base64
         image_data = base64.b64decode(base64_data)
         
-        # Use original filename if provided, otherwise generate unique name
+        # Dùng tên file gốc nếu có, ngược lại tạo tên duy nhất
         if original_filename:
-            # Secure the filename and keep original name
+            # Làm sạch tên file và giữ tên gốc
             filename = secure_filename(original_filename)
-            # If file exists, add timestamp to make unique
+            # Nếu file đã tồn tại, thêm timestamp để tránh trùng
             upload_path = os.path.join(os.getcwd(), UPLOAD_FOLDER)
             os.makedirs(upload_path, exist_ok=True)
             filepath = os.path.join(upload_path, filename)
@@ -59,18 +59,18 @@ def save_base64_image(base64_string, original_filename=None):
             os.makedirs(upload_path, exist_ok=True)
             filepath = os.path.join(upload_path, filename)
         
-        # Save file
+        # Lưu file
         with open(filepath, 'wb') as f:
             f.write(image_data)
         
         return filename
     except Exception as e:
-        print(f"Error saving base64 image: {e}")
+        print(f"Lỗi lưu ảnh base64: {e}")
         return None
 
 
 def delete_image_file(filename):
-    """Delete image file from uploads folder"""
+    """Xóa file ảnh khỏi thư mục uploads"""
     if not filename or filename.startswith('http') or filename.startswith('data:'):
         return
     try:
@@ -78,11 +78,16 @@ def delete_image_file(filename):
         if os.path.exists(filepath):
             os.remove(filepath)
     except Exception as e:
-        print(f"Error deleting image: {e}")
+        print(f"Lỗi xóa ảnh: {e}")
 
 
 def generate_product_embedding(product):
-    """Generate and save embedding for a product"""
+    """
+    ============================================================
+    TỰ ĐỘNG TẠO VÀ LƯU EMBEDDING CHO SẢN PHẨM (CHATBOT AI)
+ 
+    ============================================================
+    """
     try:
         from routes.chatbot import get_embedding
         text = f"{product.ten_san_pham} {product.loai} {product.mo_ta or ''} {product.chat_lieu or ''} {product.gioi_tinh}"
@@ -90,7 +95,7 @@ def generate_product_embedding(product):
         product.embedding = embedding
         return True
     except Exception as e:
-        print(f"Error generating embedding for product {product.products_id}: {e}")
+        print(f"Lỗi tạo embedding cho sản phẩm {product.products_id}: {e}")
         return False
 
 def admin_required(fn):
@@ -100,7 +105,7 @@ def admin_required(fn):
         user_id = int(get_jwt_identity())
         user = User.query.get(user_id)
         if not user or user.role != 'admin':
-            return jsonify({'error': 'Admin access required'}), 403
+            return jsonify({'error': 'Cần quyền admin'}), 403
         return fn(*args, **kwargs)
     return wrapper
 
@@ -109,17 +114,17 @@ def admin_required(fn):
 def create_product():
     data = request.get_json()
     
-    # Handle image - convert base64 to file
+    # Xử lý ảnh - chuyển base64 thành file
     hinh_anh = data.get('hinh_anh')
     original_filename = data.get('hinh_anh_filename')
     if hinh_anh:
         if hinh_anh.startswith('data:'):
-            # Save base64 image to file with original filename
+            # Lưu ảnh base64 thành file với tên gốc
             filename = save_base64_image(hinh_anh, original_filename)
             if filename:
                 hinh_anh = filename
         elif hinh_anh.startswith('/uploads/'):
-            # Extract just the filename
+            # Lấy chỉ tên file từ đường dẫn URL
             hinh_anh = hinh_anh.replace('/uploads/', '')
     
     product = Product(
@@ -135,9 +140,9 @@ def create_product():
     )
     
     db.session.add(product)
-    db.session.flush()  # Get product ID before commit
+    db.session.flush()  # Lấy product ID trước khi commit
     
-    # Generate embedding for chatbot search
+    # Tạo embedding cho chatbot tìm kiếm
     generate_product_embedding(product)
     
     db.session.commit()
@@ -150,28 +155,28 @@ def update_product(product_id):
     product = Product.query.get_or_404(product_id)
     data = request.get_json()
     
-    # Track if text fields changed (need to regenerate embedding)
+    # Theo dõi nếu các trường text thay đổi (cần tạo lại embedding)
     text_fields = ['ten_san_pham', 'loai', 'mo_ta', 'chat_lieu', 'gioi_tinh']
     need_embedding_update = any(key in data for key in text_fields)
     
-    # Handle image update
+    # Xử lý cập nhật ảnh
     if 'hinh_anh' in data:
         new_image = data['hinh_anh']
         old_image = product.hinh_anh
         
         if new_image and new_image.startswith('data:'):
-            # Save new base64 image to file with original filename
+            # Lưu ảnh base64 mới thành file với tên gốc
             original_filename = data.get('hinh_anh_filename')
             filename = save_base64_image(new_image, original_filename)
             if filename:
-                # Delete old image file if it exists
+                # Xóa file ảnh cũ nếu tồn tại
                 delete_image_file(old_image)
                 data['hinh_anh'] = filename
         elif new_image and new_image.startswith('/uploads/'):
-            # Frontend sent back the URL format, extract just the filename
+            # Frontend gửi lại định dạng URL, lấy chỉ tên file
             data['hinh_anh'] = new_image.replace('/uploads/', '')
         elif not new_image:
-            # Image was cleared
+            # Ảnh đã bị xóa
             delete_image_file(old_image)
             data['hinh_anh'] = None
     
@@ -179,7 +184,7 @@ def update_product(product_id):
         if hasattr(product, key) and key != 'embedding':
             setattr(product, key, value)
     
-    # Regenerate embedding if text fields changed
+    # Tạo lại embedding nếu các trường text thay đổi
     if need_embedding_update:
         generate_product_embedding(product)
     
@@ -251,7 +256,7 @@ def delete_product(product_id):
         db.session.rollback()
         return jsonify({'error': f'Lỗi khi xóa dữ liệu liên quan: {str(e)}'}), 500
     
-    # Delete image file if exists
+    # Xóa file ảnh nếu tồn tại
     delete_image_file(product.hinh_anh)
     
     db.session.delete(product)
@@ -296,11 +301,11 @@ def get_all_orders():
     
     query = Order.query
     
-    # Status filter
+    # Lọc theo trạng thái
     if status_filter:
         query = query.filter(Order.trangthai == status_filter)
     
-    # Search filter (search by customer name, phone, or order ID)
+    # Lọc tìm kiếm (theo tên khách hàng, số điện thoại, hoặc mã đơn hàng)
     if search:
         query = query.filter(
             db.or_(
@@ -353,7 +358,7 @@ def update_order(order_id):
     order = Order.query.get_or_404(order_id)
     data = request.get_json()
     
-    # Update allowed fields
+    # Cập nhật các trường được phép
     if 'hoten' in data:
         order.hoten = data['hoten']
     if 'sdt' in data:
@@ -403,7 +408,7 @@ def get_all_users():
     
     query = User.query
     
-    # Search filter - use new column names
+    # Lọc tìm kiếm - dùng tên cột mới
     if search:
         query = query.filter(
             db.or_(
@@ -413,7 +418,7 @@ def get_all_users():
             )
         )
     
-    # Role filter
+    # Lọc theo vai trò
     if role_filter:
         query = query.filter(User.role == role_filter)
     
@@ -440,7 +445,7 @@ def update_user(user_id):
     user = User.query.get_or_404(user_id)
     data = request.get_json()
     
-    # Update allowed fields - support both old and new field names
+    # Cập nhật các trường được phép - hỗ trợ cả tên cũ và mới
     if 'hoten' in data or 'full_name' in data:
         user.full_name = data.get('full_name') or data.get('hoten')
     if 'email' in data:
@@ -488,7 +493,7 @@ def check_delete_user(user_id):
 def delete_user(user_id):
     current_user_id = int(get_jwt_identity())
     
-    # Prevent deleting yourself
+    # Không cho phép xóa chính mình
     if user_id == current_user_id:
         return jsonify({'error': 'Không thể xóa tài khoản của chính mình'}), 400
     
@@ -525,7 +530,7 @@ def create_user():
     data = request.get_json()
     
     username = data.get('taikhoan') or data.get('username')
-    # Check if username or email already exists
+    # Kiểm tra tên đăng nhập hoặc email đã tồn tại chưa
     if User.query.filter_by(username=username).first():
         return jsonify({'error': 'Tài khoản đã tồn tại'}), 400
     
@@ -539,7 +544,7 @@ def create_user():
         phone=data.get('sdt') or data.get('phone'),
         address=data.get('diachi') or data.get('address'),
         role=data.get('role', 'customer'),
-        is_verified=True  # Admin-created users are verified by default
+        is_verified=True  # Tài khoản do admin tạo mặc định đã xác thực
     )
     user.set_password(data.get('matkhau') or data.get('password'))
     

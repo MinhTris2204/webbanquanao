@@ -50,10 +50,11 @@ export const SocketProvider = ({ children }) => {
       console.log('Socket đã kết nối')
       setIsConnected(true)
       setIsSocketReady(false) // reset, chờ authenticated
-      // Xác thực - dùng token nếu đã đăng nhập, session_id nếu là khách
+      // Xác thực - ưu tiên token nếu đã đăng nhập, chỉ dùng session_id cho khách vãng lai
       if (token && isAuthenticated) {
         newSocket.emit('authenticate', { token })
-      } else {
+      } else if (!token) {
+        // Chỉ gửi session_id khi KHÔNG có token (khách vãng lai)
         newSocket.emit('authenticate', { session_id: guestSessionId })
       }
     })
@@ -87,11 +88,15 @@ export const SocketProvider = ({ children }) => {
   const joinConversation = useCallback((conversationId, guestSessionId = null) => {
     if (socket && isSocketReady) {
       const token = localStorage.getItem(tokenKey)
-      socket.emit('join_conversation', { 
+      const payload = { 
         conversation_id: conversationId, 
-        token: token || null,
-        session_id: guestSessionId || getGuestSessionId()
-      })
+        token: token || null
+      }
+      // Chỉ gửi session_id nếu KHÔNG có token (khách vãng lai)
+      if (!token && guestSessionId) {
+        payload.session_id = guestSessionId
+      }
+      socket.emit('join_conversation', payload)
     }
   }, [socket, isSocketReady, tokenKey])
 
@@ -104,37 +109,49 @@ export const SocketProvider = ({ children }) => {
   const sendMessage = useCallback((conversationId, content, messageType = 'text', imageUrl = null, guestSessionId = null) => {
     if (socket && isConnected) {
       const token = localStorage.getItem(tokenKey)
-      socket.emit('send_message', {
+      const payload = {
         conversation_id: conversationId,
         content,
         message_type: messageType,
         image_url: imageUrl,
-        token: token || null,
-        session_id: guestSessionId || getGuestSessionId()
-      })
+        token: token || null
+      }
+      // Chỉ gửi session_id nếu KHÔNG có token (khách vãng lai)
+      if (!token && guestSessionId) {
+        payload.session_id = guestSessionId
+      }
+      socket.emit('send_message', payload)
     }
   }, [socket, isConnected, tokenKey])
 
   const sendTyping = useCallback((conversationId, isTyping, guestSessionId = null) => {
     if (socket && isConnected) {
       const token = localStorage.getItem(tokenKey)
-      socket.emit('typing', {
+      const payload = {
         conversation_id: conversationId,
         is_typing: isTyping,
-        token: token || null,
-        session_id: guestSessionId || getGuestSessionId()
-      })
+        token: token || null
+      }
+      // Chỉ gửi session_id nếu KHÔNG có token (khách vãng lai)
+      if (!token && guestSessionId) {
+        payload.session_id = guestSessionId
+      }
+      socket.emit('typing', payload)
     }
   }, [socket, isConnected, tokenKey])
 
   const markAsRead = useCallback((conversationId, guestSessionId = null) => {
     if (socket && isConnected) {
       const token = localStorage.getItem(tokenKey)
-      socket.emit('mark_read', {
+      const payload = {
         conversation_id: conversationId,
-        token: token || null,
-        session_id: guestSessionId || getGuestSessionId()
-      })
+        token: token || null
+      }
+      // Chỉ gửi session_id nếu KHÔNG có token (khách vãng lai)
+      if (!token && guestSessionId) {
+        payload.session_id = guestSessionId
+      }
+      socket.emit('mark_read', payload)
     }
   }, [socket, isConnected, tokenKey])
 
